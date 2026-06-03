@@ -1,4 +1,3 @@
-readme_content = """# Argendar 🚀
 
 **Argendar** es una aplicación web moderna e intuitiva desarrollada en **Node.js** diseñada para optimizar la gestión del tiempo, la programación de turnos y la organización de agendas tanto para profesionales independientes como para pequeñas y medianas empresas.
 
