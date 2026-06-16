@@ -1,0 +1,38 @@
+version: '3.8'
+
+networks:
+  argendar_net:
+    driver: bridge
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: argendar_backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules # Volumen anónimo: protege los binarios de Linux de ser pisados
+    env_file:
+      - ./backend/.env
+    networks:
+      - argendar_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: argendar_frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    env_file:
+      - ./frontend/.env
+    networks:
+      - argendar_net
+    depends_on:
+      - backend
