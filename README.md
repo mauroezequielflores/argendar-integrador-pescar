@@ -90,17 +90,17 @@ https://learn.microsoft.com/es-es/windows/wsl/install
 ### Paso 1: Clonar el proyecto en Linux
 Abre tu **Windows Terminal**, selecciona la pestaña de **Ubuntu** y corre:
 ```bash
-mkdir Proyectos
-cd Proyectos
-git clone -b develop [https://github.com/TU_ORGANIZACION/argendar-integrador-pescar.git](https://github.com/TU_ORGANIZACION/argendar-integrador-pescar.git)
+mkdir argendar
+cd argendar
+git clone github.com/mauroezequielflores/argendar-integrador-pescar
 cd argendar-integrador-pescar
 ```
 
 ### Paso 2: Crear tus archivos de configuración local (`.env`)
-Los datos sensibles como las claves de Supabase no se suben a GitHub. Debes crear tus propios archivos locales copiando las plantillas de ejemplo que ya dejamos listas:
+Los datos sensibles como las claves de Supabase no se suben a GitHub. Debes crear y copiar los .env que se pasaron al discord y deberia quedar de las siguientes manera:
 ```bash
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
+backend/.env
+frontend/.env
 ```
 *(Solicita al Administrador del proyecto las credenciales de Supabase en la nube para rellenar los archivos `.env` recién creados).*
 
