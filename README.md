@@ -92,7 +92,7 @@ Abre tu **Windows Terminal**, selecciona la pestaña de **Ubuntu** y corre:
 ```bash
 mkdir argendar
 cd argendar
-git clone github.com/mauroezequielflores/argendar-integrador-pescar
+git clone https://github.com/mauroezequielflores/argendar-integrador-pescar.git
 cd argendar-integrador-pescar
 ```
 
