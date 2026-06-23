@@ -4,6 +4,20 @@
 El sistema permite automatizar reservas, enviar recordatorios y centralizar la gestión de clientes en una interfaz ágil, responsiva y fácil de usar.
 
 ---
+## 🙏🙌Integrantes
+
+(Agregar los nombres de cada uno)
+   - Mauro 
+   - Grego
+   - Diego
+   - Rocio
+   - Nancy
+   - 
+   - 
+   - 
+   - Santi
+
+---
 
 ## 📋 Características Principales
 
@@ -160,4 +174,4 @@ git commit -m "Feat: Se creó el componente de login con Tailwind"
 # 3. Subir tu rama a GitHub
 git push origin feature/nombre-de-tu-tarea
 ```
-Una vez subida, ve al repositorio en GitHub y abre un **Pull Request (PR)** hacia la rama **`develop`** para que el equipo revise tu código.
+Una vez subida, ve al repositorio en GitHub y abre un **Pull Request (PR)** hacia la rama **`develop`** para que el equipo revise tu código. ¡A codificar!
