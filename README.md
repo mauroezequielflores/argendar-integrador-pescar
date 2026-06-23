@@ -160,4 +160,4 @@ git commit -m "Feat: Se creó el componente de login con Tailwind"
 # 3. Subir tu rama a GitHub
 git push origin feature/nombre-de-tu-tarea
 ```
-Una vez subida, ve al repositorio en GitHub y abre un **Pull Request (PR)** hacia la rama **`develop`** para que el equipo revise tu código. ¡A codificar!
+Una vez subida, ve al repositorio en GitHub y abre un **Pull Request (PR)** hacia la rama **`develop`** para que el equipo revise tu código.
