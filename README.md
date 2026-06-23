@@ -4,6 +4,20 @@
 El sistema permite automatizar reservas, enviar recordatorios y centralizar la gestión de clientes en una interfaz ágil, responsiva y fácil de usar.
 
 ---
+## 🙏🙌Integrantes
+
+(Agregar los nombres de cada uno)
+   - Mauro 
+   - Grego
+   - Diego
+   - Rocio
+   - Nancy
+   - 
+   - 
+   - 
+   - Santi
+
+---
 
 ## 📋 Características Principales
 
