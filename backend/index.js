@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+import turnoRoutes from './routes/turnoRoutes.js';
 
 // 1. Cargar las variables del archivo .env
 dotenv.config();
@@ -11,6 +12,9 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+
+// Rutas de la API v1
+app.use('/api/v1/turnos', turnoRoutes);
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;

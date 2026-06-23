@@ -44,6 +44,8 @@ desktop.ini
 *.njsproj
 *.sln
 *.swp
+.antigravity/
+
 
 # --- Logs de Error y Diagnóstico ---
 logs
