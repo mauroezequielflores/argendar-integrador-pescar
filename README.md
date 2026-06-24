@@ -34,7 +34,7 @@ El sistema permite automatizar reservas, enviar recordatorios y centralizar la g
 
 * **Backend:** Node.js, Express.js
 * **Base de Datos:** 
-* **Frontend:** HTML5, CSS3, JavaScript 
+* **Frontend:** React, TanStack Query, React Router, HTML5, Tailwindcss, JavaScript 
 * **Autenticación:** JSON Web Tokens (JWT) y Bcrypt para encriptación de contraseñas
 * **Control de Versiones:** Git y GitHub
 
