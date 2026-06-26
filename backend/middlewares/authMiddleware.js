@@ -1,7 +1,9 @@
+import { supabase } from '../config/supabase.js';
+
 /**
- * Middleware para simular la validación del token de Supabase
+ * Middleware para validar el token de Supabase (JWT)
  */
-export const authMiddleware = (req, res, next) => {
+export const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -13,19 +15,23 @@ export const authMiddleware = (req, res, next) => {
 
   const token = authHeader.split(' ')[1];
 
-  // Simulación: Validamos que el token no esté vacío o sea un token simulado 'argendar-token-valido'
-  if (!token || token.length < 10) {
-    return res.status(401).json({
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+
+    if (error || !user) {
+      return res.status(401).json({
+        status: "error",
+        message: "Token inválido o expirado."
+      });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error("Error en authMiddleware:", error);
+    return res.status(500).json({
       status: "error",
-      message: "Token inválido o expirado."
+      message: "Error interno al verificar la autenticación."
     });
   }
-
-  // Simulación de guardar los datos del usuario decodificados en la request
-  req.user = {
-    id: "user-simulated-id",
-    role: "authenticated"
-  };
-
-  next();
 };
