@@ -23,7 +23,7 @@ export async function registerUser({ nombre, apellido, email, password }) {
     });
 
     if (error) {
-      throw new Error(error.message);
+      throw error;
     }
 
     // Esperar a que el trigger inserte en public.usuarios y retornar el perfil
@@ -32,7 +32,7 @@ export async function registerUser({ nombre, apellido, email, password }) {
       try {
         perfil = await getUserProfileById(data.user.id);
       } catch (profileError) {
-        console.warn("No se pudo obtener el perfil inmediatamente:", profileError.message);
+        console.warn("[Register Service] No se pudo obtener el perfil inmediatamente:", profileError.message);
       }
     }
 
@@ -51,13 +51,13 @@ export async function registerUser({ nombre, apellido, email, password }) {
       } : null
     };
   } catch (error) {
-    console.error("Error en registerUser service:", error.message || error);
+    console.error("[Register Service Error]:", error.message || error);
     throw error;
   }
 }
 
 /**
- * Autentica un usuario con email y contraseña en Supabase Auth
+ * Autentica un usuario con email y contraseña en Supabase Auth de forma resiliente
  * @param {string} email - Email
  * @param {string} password - Contraseña
  * @returns {Promise<Object>} Datos del usuario y sesión
@@ -70,18 +70,23 @@ export async function loginUser({ email, password }) {
     });
 
     if (error) {
-      throw new Error(error.message);
+      throw error;
     }
 
-    // Obtener el perfil público del usuario
-    const perfil = await getUserProfileById(data.user.id);
+    // Resiliencia al obtener el perfil: si falla la base de datos de perfiles, no bloqueamos la autenticación
+    let perfil = null;
+    try {
+      perfil = await getUserProfileById(data.user.id);
+    } catch (profileError) {
+      console.warn("[Login Service] No se pudo obtener el perfil de la base de datos:", profileError.message);
+    }
 
     return {
       user: {
         id: data.user.id,
         email: data.user.email,
-        nombre: perfil?.nombre || '',
-        apellido: perfil?.apellido || '',
+        nombre: perfil?.nombre || data.user.user_metadata?.nombre || '',
+        apellido: perfil?.apellido || data.user.user_metadata?.apellido || '',
         created_at: data.user.created_at
       },
       session: {
@@ -91,7 +96,21 @@ export async function loginUser({ email, password }) {
       }
     };
   } catch (error) {
-    console.error("Error en loginUser service:", error.message || error);
+    console.error("[Login Service Error]:", error.message || error);
+    throw error;
+  }
+}
+
+/**
+ * Obtiene el perfil del usuario actual llamando al modelo
+ * @param {string} userId - UUID del usuario
+ * @returns {Promise<Object>} Perfil de usuario
+ */
+export async function getCurrentUserProfile(userId) {
+  try {
+    return await getUserProfileById(userId);
+  } catch (error) {
+    console.error("[Auth Service Error]: Fallo al recuperar perfil por ID:", error.message || error);
     throw error;
   }
 }

@@ -1,12 +1,12 @@
+// 1. Cargar las variables del archivo .env inmediatamente antes de evaluar otros módulos
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
-import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
+import { supabase } from './config/supabase.js';
 import turnoRoutes from './routes/turnoRoutes.js';
-import authRoutes from './routes/auth.routes.js'
-
-// 1. Cargar las variables del archivo .env
-dotenv.config();
+import authRoutes from './routes/auth.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -18,22 +18,12 @@ app.use(express.json());
 app.use('/api/v1/turnos', turnoRoutes);
 app.use('/api/v1/auth', authRoutes);
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-
-// Avisa si las variables no cargaron
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("ERROR : Falta configurar SUPABASE_URL o SUPABASE_ANON_KEY en backend/.env");
-}
-
-// Definir 'supabase' a nivel global del archivo
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
 // Endpoint base de chequeo
 app.get('/', (req, res) => {
   res.json({ message: "Servidor de Argendar activo" });
 });
-// 2. Endpoint de ejemplo para el equipo
+
+// Endpoint de ejemplo para el equipo
 app.get('/api/v1/ejemplo', (req, res) => {
   res.json({
     status: "ok",
@@ -46,9 +36,8 @@ app.get('/api/v1/ejemplo', (req, res) => {
 });
 
 // Endpoint Traer la lista de usuarios de la aplicación
-app.get('/api/v1/usuarios', async (req, res) => {
+app.get('/api/v1/usuarios', async (req, res, next) => {
   try {
-    // Aquí es donde Node.js necesita que 'supabase' esté definido arriba
     const { data, error } = await supabase
       .from('usuarios')
       .select('id, nombre, apellido, email, created_at')
@@ -56,18 +45,28 @@ app.get('/api/v1/usuarios', async (req, res) => {
 
     if (error) throw error;
 
-    res.json({
+    return res.json({
       status: "success",
       data: data
     });
   } catch (error) {
-    // Si falla, capturamos el error real de Supabase
-    console.error("Error al consultar la tabla usuarios:", error.message || error);
-    res.status(500).json({ 
-      status: "error", 
-      message: "Error al conectar con la tabla de usuarios." 
-    });
+    next(error);
   }
+});
+
+// Middleware Global de Manejo de Errores (Express Error Handler)
+app.use((err, req, res, next) => {
+  console.error("[Global Error Handler]:", err.stack || err.message || err);
+  
+  const status = err.status || 500;
+  const message = status === 500 
+    ? "Ocurrió un error interno en el servidor." 
+    : err.message;
+
+  return res.status(status).json({
+    status: "error",
+    message
+  });
 });
 
 app.listen(PORT, () => {

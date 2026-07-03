@@ -1,5 +1,4 @@
-import { registerUser, loginUser } from '../services/auth.service.js';
-import { getUserProfileById } from '../models/userModel.js';
+import { registerUser, loginUser, getCurrentUserProfile } from '../services/auth.service.js';
 
 /**
  * Controlador para registrar un nuevo usuario
@@ -21,12 +20,16 @@ export async function registrar(req, res) {
     let statusCode = 500;
     let message = "Ocurrió un error interno al registrar el usuario.";
 
-    if (error.message.includes("already registered") || error.message.includes("User already exists")) {
-      statusCode = 400;
+    const errMsg = error.message || "";
+    if (errMsg.includes("already registered") || errMsg.includes("User already exists") || errMsg.includes("registered")) {
+      statusCode = 409; // 409 Conflict
       message = "El correo electrónico ya está registrado.";
-    } else if (error.message) {
-      statusCode = 400;
+    } else if (error.status && error.status < 500) {
+      statusCode = error.status;
       message = error.message;
+    } else if (errMsg.includes("weak_password") || errMsg.includes("password")) {
+      statusCode = 400;
+      message = "La contraseña proporcionada es muy débil o inválida.";
     }
 
     return res.status(statusCode).json({
@@ -55,14 +58,15 @@ export async function iniciarSesion(req, res) {
     console.error("Error en iniciarSesion controller:", error);
 
     let statusCode = 401;
-    let message = "Credenciales incorrectas o inválidas.";
+    let message = "Email o contraseña incorrectos.";
 
-    if (error.message.includes("invalid login credentials") || error.message.includes("Invalid login credentials")) {
+    const errMsg = error.message || "";
+    if (errMsg.includes("invalid") || errMsg.includes("credentials") || error.status === 400) {
       statusCode = 401;
       message = "Email o contraseña incorrectos.";
-    } else if (error.message) {
-      statusCode = 400;
-      message = error.message;
+    } else if (error.status && error.status >= 500) {
+      statusCode = 500;
+      message = "Ocurrió un error interno del servidor al iniciar sesión.";
     }
 
     return res.status(statusCode).json({
@@ -84,7 +88,8 @@ export async function obtenerUsuarioActual(req, res) {
       });
     }
 
-    const perfil = await getUserProfileById(req.user.id);
+    // Cumplimos con la arquitectura de capas llamando a la capa de servicio
+    const perfil = await getCurrentUserProfile(req.user.id);
 
     return res.status(200).json({
       status: "success",
@@ -102,8 +107,7 @@ export async function obtenerUsuarioActual(req, res) {
     console.error("Error en obtenerUsuarioActual controller:", error);
     return res.status(500).json({
       status: "error",
-      message: "Error al recuperar los datos del usuario.",
-      details: error.message || error
+      message: "Error interno al recuperar los datos del usuario."
     });
   }
 }
