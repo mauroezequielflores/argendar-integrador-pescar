@@ -2,8 +2,11 @@ import express from "express";
 import cors from "cors";
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
+
+//Importacion de rutas de la API
 import turnoRoutes from "./routes/turnoRoutes.js";
 import authRoutes from "./routes/authRoutes.js"; // <-- 1. Agrege Import de las nuevas rutas
+import usuarioRoutes from "./routes/usuarioRoutes.js"; // <-- agregue enrutador
 
 // 1. Cargar las variables del archivo .env
 dotenv.config();
@@ -14,9 +17,10 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Rutas de la API v1
+// Rutas de la API v1 (Mapeo de Endpoints)
 app.use("/api/v1/turnos", turnoRoutes);
-app.use('/api/v1/auth', authRoutes) // <-- 2. Agrege Registro de los endpoints de Auth
+app.use("/api/v1/auth", authRoutes); // <-- 2. Agrege Registro de los endpoints de Auth
+app.use("/api/v1/usuarios", usuarioRoutes); // <-- Reemplace el app.get manual
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
