@@ -8,6 +8,7 @@ import turnoRoutes from './routes/turnoRoutes.js';
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
@@ -15,6 +16,7 @@ app.use(express.json());
 
 // Rutas de la API v1
 app.use('/api/v1/turnos', turnoRoutes);
+
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
@@ -26,6 +28,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 // Definir 'supabase' a nivel global del archivo
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/usuarios', usuariosRoutes);
+
 
 // Endpoint base de chequeo
 app.get('/', (req, res) => {
@@ -71,3 +77,7 @@ app.get('/api/v1/usuarios', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en el puerto ${PORT}`);
 });
+
+
+export default app;
+
