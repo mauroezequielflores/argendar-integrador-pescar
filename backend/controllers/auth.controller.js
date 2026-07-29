@@ -1,4 +1,5 @@
 import { registerUser, loginUser, getCurrentUserProfile } from '../services/auth.service.js';
+import { registrarHistorialDispositivo } from '../services/historial.service.js';
 
 /**
  * Controlador para registrar un nuevo usuario
@@ -48,11 +49,19 @@ export async function iniciarSesion(req, res) {
   try {
     const result = await loginUser({ email, password });
 
+    // Registro de historial asíncrono no bloqueante (overheads < 50ms)
+    registrarHistorialDispositivo({
+      userId: result.user?.id,
+      ipAddress: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+      userAgent: req.headers['user-agent']
+    }).catch(err => {
+      console.error("[Historial Dispositivos Background Error]:", err.message);
+    });
+
     return res.status(200).json({
       status: "success",
       message: "Sesión iniciada con éxito.",
-      data: result,
-      accessToken: result.session?.accessToken
+      data: result
     });
   } catch (error) {
     console.error("Error en iniciarSesion controller:", error);

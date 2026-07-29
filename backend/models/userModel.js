@@ -41,3 +41,23 @@ export async function getUserProfileByEmail(email) {
     throw error;
   }
 }
+
+/**
+ * Obtiene la lista de perfiles de todos los usuarios ordenados por fecha de creación descendente
+ * @returns {Promise<Array>} Lista de perfiles de usuarios
+ */
+export async function getAllUserProfiles() {
+  try {
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('id, nombre, apellido, email, created_at')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Error en getAllUserProfiles:", error.message || error);
+    throw error;
+  }
+}
+

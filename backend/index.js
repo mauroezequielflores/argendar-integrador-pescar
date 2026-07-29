@@ -4,11 +4,12 @@ dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
-import { supabase } from './config/supabase.js';
 import turnoRoutes from './routes/turnoRoutes.js';
 import authRoutes from './routes/auth.routes.js';
+import usuariosRoutes from './routes/usuarios.routes.js';
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
@@ -17,6 +18,7 @@ app.use(express.json());
 // Rutas de la API v1
 app.use('/api/v1/turnos', turnoRoutes);
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/usuarios', usuariosRoutes);
 
 // Endpoint base de chequeo
 app.get('/', (req, res) => {
@@ -35,24 +37,7 @@ app.get('/api/v1/ejemplo', (req, res) => {
   });
 });
 
-// Endpoint Traer la lista de usuarios de la aplicación
-app.get('/api/v1/usuarios', async (req, res, next) => {
-  try {
-    const { data, error } = await supabase
-      .from('usuarios')
-      .select('id, nombre, apellido, email, created_at')
-      .order('created_at', { ascending: false });
 
-    if (error) throw error;
-
-    return res.json({
-      status: "success",
-      data: data
-    });
-  } catch (error) {
-    next(error);
-  }
-});
 
 // Middleware Global de Manejo de Errores (Express Error Handler)
 app.use((err, req, res, next) => {
@@ -69,6 +54,10 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor escuchando en el puerto ${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`Servidor escuchando en el puerto ${PORT}`);
+  });
+}
+
+export default app;
