@@ -1,30 +1,34 @@
-/**
- * Middleware para simular la validación del token de Supabase
- */
-export const authMiddleware = (req, res, next) => {
+// backend/middlewares/authMiddleware.js
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY,
+);
+
+export const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({
-      status: "error",
-      message: "No autorizado. Token de autenticación faltante o inválido."
-    });
+  if (!authHeader?.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Token no proporcionado" });
   }
 
-  const token = authHeader.split(' ')[1];
+  const token = authHeader.split(" ")[1];
 
-  // Simulación: Validamos que el token no esté vacío o sea un token simulado 'argendar-token-valido'
-  if (!token || token.length < 10) {
-    return res.status(401).json({
-      status: "error",
-      message: "Token inválido o expirado."
-    });
+  // Validación real con Supabase Auth
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser(token);
+
+  if (error || !user) {
+    return res.status(401).json({ error: "Token inválido o expirado" });
   }
 
-  // Simulación de guardar los datos del usuario decodificados en la request
+  // Inyectamos el usuario real autenticado
   req.user = {
-    id: "user-simulated-id",
-    role: "authenticated"
+    id: user.id,
+    email: user.email,
+    role: user.app_metadata?.role || "cliente", // Leído de metadatos protegidos
   };
 
   next();
