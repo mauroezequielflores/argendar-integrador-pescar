@@ -67,5 +67,10 @@ coverage/
 .nyc_output/
 .jest/
 
+docs/
+.agents/
+
+
+skills-lock.json
 
 CLAUDE.md
