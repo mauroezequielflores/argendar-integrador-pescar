@@ -3,17 +3,17 @@ import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { loginSchema } from "../validations/login.schema";
-import { useAuth } from "./context/AuthContext";
-import { ROLES } from "./constants/roles";
-import { ROUTES } from "./constants/routes";
-import { MESSAGES } from "./constants/messages";
+import {loginSchema } from "../validations/login.schema";
+import { useAuth } from "../context/AuthContext";
+import { ROLES } from "../constants/roles";
+import { ROUTES } from "../constants/routes";
+import { MESSAGES } from "../constants/messages";
 
-import AuthCard from "./components/ui/AuthCard";
-import Button from "./components/ui/Button";
-import Input from "./components/ui/Input";
+import AuthCard from "../components/ui/AuthCard";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
 
-import authBg from "./assets/images/auth-bg.png";
+import authBg from "../assets/images/auth-bg.png";
 
 /**
  * LoginPage — Pantalla de inicio de sesión.
