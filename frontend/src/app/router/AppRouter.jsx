@@ -1,20 +1,20 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 
-import { ROUTES } from "../constants/routes";
-import { ROLES } from "../constants/roles";
+import { ROUTES } from "../../constants/routes";
+import { ROLES } from "../../constants/roles";
 
-import ProtectedRoute from "../routes/ProtectedRoute";
-import RoleRoute from "../routes/RoleRoute";
+import ProtectedRoute from "./ProtectedRoute";
+import RoleRoute from "./RoleRoute";
 
 // Auth
-import LoginPage from "../features/auth/pages/LoginPage";
-import RoleSelectionPage from "../features/auth/pages/RoleSelectionPage";
-import RegisterPage from "../features/auth/pages/RegisterPage";
+import LoginPage from "../../features/auth/pages/LoginPage";
+import RoleSelectionPage from "../../features/auth/pages/RoleSelectionPage";
+import RegisterPage from "../../features/auth/pages/RegisterPage";
 
 // Home pages por rol
-//import ClientHomePage from "../../features/client/pages/ClientHomePage";
-//import ProfessionalHomePage from "../../features/professional/pages/ProfessionalHomePage";
-//import AdminHomePage from "../../features/admin/pages/AdminHomePage";
+import ClientHomePage from "../../features/home/pages/ClientHomePage";
+import ProfessionalHomePage from "../../features/home/pages/ProfessionalHomePage";
+import AdminHomePage from "../../features/home/pages/AdminHomePage";
 
 /**
  * AppRouter — Árbol de rutas principal de Argendar.

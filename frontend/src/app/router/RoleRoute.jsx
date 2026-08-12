@@ -1,6 +1,6 @@
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { ROUTES } from "../constants/routes";
+import { useAuth } from "../../context/AuthContext";
+import { ROUTES } from "../../constants/routes";
 
 /**
  * RoleRoute — Verifica que el usuario tenga uno de los roles permitidos.

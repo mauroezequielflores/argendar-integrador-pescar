@@ -2,7 +2,7 @@ import { BrowserRouter } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./libs/queryClient";
 import { AuthProvider } from "./context/AuthContext";
-import AppRouter from "./routes/AppRouter";
+import AppRouter from "./app/router/AppRouter";
 
 /**
  * App — Raíz de la aplicación Argendar.

@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { ROUTES } from "../constants/routes";
-import Loader from "../components/ui/Loader";
+import { useAuth } from "../../context/AuthContext";
+import { ROUTES } from "../../constants/routes";
+import Loader from "../../components/ui/Loader";
 
 /**
  * ProtectedRoute — Protege rutas que requieren autenticación.

@@ -3,16 +3,16 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { registerSchema } from "../validations/register.schema";
-import { useAuth } from "../context/AuthContext";
-import { ROLES } from "../constants/roles";
-import { ROUTES } from "../constants/routes";
+import { registerSchema } from "../../../validations/register.schema";
+import { useAuth } from "../../../context/AuthContext";
+import { ROLES } from "../../../constants/roles";
+import { ROUTES } from "../../../constants/routes";
 
-import AuthCard from "../components/ui/AuthCard";
-import Button from "../components/ui/Button";
-import Input from "../components/ui/Input";
+import AuthCard from "../../../components/ui/AuthCard";
+import Button from "../../../components/ui/Button";
+import Input from "../../../components/ui/Input";
 
-import authBg from "../assets/images/auth-bg.png";
+import authBg from "../../../assets/images/auth-bg.png";
 
 /**
  * RegisterPage — Pantalla de registro para Cliente y Profesional.
