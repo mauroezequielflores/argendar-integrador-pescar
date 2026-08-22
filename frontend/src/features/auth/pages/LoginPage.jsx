@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import {loginSchema } from "../../../validations/login.schema";
+import { loginSchema } from "../../../validations/login.schema";
 import { useAuth } from "../../../context/AuthContext";
 import { ROLES } from "../../../constants/roles";
 import { ROUTES } from "../../../constants/routes";
@@ -27,7 +27,7 @@ import authBg from "../../../assets/images/auth-bg.png";
 
 // ─── Demo role selector ────────────────────────────────────────────────────
 // Cambiá este valor para simular diferentes roles en el login demo:
-const DEMO_LOGIN_ROLE = ROLES.PROFESIONAL;
+const DEMO_LOGIN_ROLE = ROLES.CLIENTE;
 // ──────────────────────────────────────────────────────────────────────────
 
 const ROLE_REDIRECT = {

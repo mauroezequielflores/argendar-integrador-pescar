@@ -16,6 +16,19 @@ import ClientHomePage from "../../features/home/pages/ClientHomePage";
 import ProfessionalHomePage from "../../features/home/pages/ProfessionalHomePage";
 import AdminHomePage from "../../features/home/pages/AdminHomePage";
 
+// Layouts & Client Pages
+import ClientLayout from "../layouts/ClientLayout";
+import AgendaPage from "../../features/agenda/pages/AgendaPage";
+import NotificationsPage from "../../features/notifications/pages/NotificationsPage";
+import MarketplacePage from "../../features/marketplace/pages/MarketplacePage";
+import ProfilePage from "../../features/profile/pages/ProfilePage";
+import EditProfilePage from "../../features/profile/pages/EditProfilePage";
+import ProfileSettingsPage from "../../features/profile/pages/ProfileSettingsPage";
+import ProfilePrivacyPage from "../../features/profile/pages/ProfilePrivacyPage";
+import PaymentMethodsPage from "../../features/profile/pages/PaymentMethodsPage";
+import SettingsPage from "../../features/configurations/pages/SettingsPage";
+import HelpPage from "../../features/help/pages/HelpPage";
+
 /**
  * AppRouter — Árbol de rutas principal de Argendar.
  *
@@ -46,15 +59,24 @@ export default function AppRouter() {
         element={
           <ProtectedRoute>
             <RoleRoute allowedRoles={[ROLES.CLIENTE]}>
-              <Routes>
-                <Route path="home" element={<ClientHomePage />} />
-                {/* Agregar más rutas de cliente aquí */}
-                <Route path="*" element={<Navigate to="home" replace />} />
-              </Routes>
+              <ClientLayout />
             </RoleRoute>
           </ProtectedRoute>
         }
-      />
+      >
+        <Route path="agenda" element={<AgendaPage />} />
+        <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="marketplace" element={<MarketplacePage />} />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="profile/edit-profile" element={<EditProfilePage />} />
+        <Route path="profile/profile-settings" element={<ProfileSettingsPage />} />
+        <Route path="profile/profile-privacy" element={<ProfilePrivacyPage />} />
+        <Route path="profile/payment-methods" element={<PaymentMethodsPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="help" element={<HelpPage />} />
+        <Route path="home" element={<ClientHomePage />} />
+        <Route path="*" element={<Navigate to="agenda" replace />} />
+      </Route>
 
       {/* ── Profesional ─────────────────────────────────────── */}
       <Route
