@@ -27,7 +27,8 @@ import authBg from "../../../assets/images/auth-bg.png";
 
 // ─── Demo role selector ────────────────────────────────────────────────────
 // Cambiá este valor para simular diferentes roles en el login demo:
-const DEMO_LOGIN_ROLE = ROLES.CLIENTE;
+//const DEMO_LOGIN_ROLE = ROLES.CLIENTE;
+const DEMO_LOGIN_ROLE = ROLES.PROFESIONAL;
 // ──────────────────────────────────────────────────────────────────────────
 
 const ROLE_REDIRECT = {
@@ -55,7 +56,9 @@ export default function LoginPage() {
     try {
       // DEMO: ignora las credenciales, autentica con usuario demo
       const user = await login(DEMO_LOGIN_ROLE);
-      const redirectTo = ROLE_REDIRECT[user.role] || ROUTES.CLIENT_HOME;
+
+     // const redirectTo = ROLE_REDIRECT[user.role] || ROUTES.CLIENT_HOME;
+      const redirectTo = ROUTES.PROFESSIONAL_HOME;
       navigate(redirectTo, { replace: true });
     } catch {
       setServerError(MESSAGES.LOGIN_ERROR);
