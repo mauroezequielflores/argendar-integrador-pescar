@@ -25,6 +25,7 @@ import ProfessionalNotificationsPage from "../../features/notifications/pages/Pr
 import ProfessionalMarketplacePage from "../../features/marketplace/pages/ProfessionalMarketplacePage";
 import ProfessionalHelpPage from "../../features/help/pages/ProfessionalHelpPage";
 import ProfessionalProfilePage from "../../features/profile/pages/ProfessionalProfilePage";
+import EditProfessionalProfilePage from "../../features/profile/pages/EditProfessionalProfilePage";
 import NotificationsPage from "../../features/notifications/pages/NotificationsPage";
 import MarketplacePage from "../../features/marketplace/pages/MarketplacePage";
 import ProfilePage from "../../features/profile/pages/ProfilePage";
@@ -99,7 +100,7 @@ export default function AppRouter() {
         <Route path="notifications" element={<ProfessionalNotificationsPage />} />
         <Route path="marketplace" element={<ProfessionalMarketplacePage />} />
         <Route path="profile" element={<ProfessionalProfilePage />} />
-        <Route path="profile/edit-profile" element={<EditProfilePage />} />
+        <Route path="profile/edit-profile" element={<EditProfessionalProfilePage />} />
         <Route path="profile/profile-settings" element={<ProfileSettingsPage />} />
         <Route path="profile/profile-privacy" element={<ProfilePrivacyPage />} />
         <Route path="profile/payment-methods" element={<PaymentMethodsPage />} />
