@@ -1,20 +1,23 @@
-import ApiTest from './components/ApiTest';
+import { BrowserRouter } from "react-router-dom";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./libs/queryClient";
+import { AuthProvider } from "./context/AuthContext";
+import AppRouter from "./app/router/AppRouter";
 
-function App() {
+/**
+ * App — Raíz de la aplicación Argendar.
+ *
+ * Providers (de exterior a interior):
+ *  BrowserRouter → QueryClientProvider → AuthProvider → AppRouter
+ */
+export default function App() {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-      <header className="mb-8 text-center">
-        <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
-          Argendar Ecosistema
-        </h1>
-        <p className="text-gray-600 mt-2">Plantilla base de desarrollo colaborativo</p>
-      </header>
-
-      <main className="w-full">
-        <ApiTest />
-      </main>
-    </div>
+    <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <AppRouter />
+        </AuthProvider>
+      </QueryClientProvider>
+    </BrowserRouter>
   );
 }
-
-export default App;

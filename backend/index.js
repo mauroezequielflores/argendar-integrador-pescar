@@ -9,6 +9,7 @@ import turnoRoutes from './routes/turnoRoutes.js';
 import authRoutes from './routes/auth.routes.js';
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
@@ -17,6 +18,8 @@ app.use(express.json());
 // Rutas de la API v1
 app.use('/api/v1/turnos', turnoRoutes);
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/usuarios', usuariosRoutes);
+
 
 // Endpoint base de chequeo
 app.get('/', (req, res) => {
@@ -72,3 +75,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en el puerto ${PORT}`);
 });
+
+
+export default app;
+

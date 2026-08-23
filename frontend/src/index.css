@@ -1,1 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
+
+/* =============================================
+   ARGENDAR — Design System Tokens
+   ============================================= */
+
+@theme {
+  /* Colors */
+  --color-argendar-bg: #292929;
+  --color-argendar-card: #202020;
+  --color-argendar-surface: #2e2e2e;
+  --color-argendar-border: #3a3a3a;
+  --color-argendar-orange: #FD7B03;
+  --color-argendar-orange-hover: #e06d00;
+  --color-argendar-white: #FFFFFF;
+  --color-argendar-muted: #A8A8AA;
+  --color-argendar-error: #ef4444;
+  --color-argendar-success: #22c55e;
+
+  /* Font */
+  --font-sans: 'Roboto', sans-serif;
+
+  /* Border radius */
+  --radius-input: 0.375rem;  /* 6px */
+  --radius-card: 1.25rem;    /* 20px */
+  --radius-btn: 0.375rem;    /* 6px */
+}
+
+/* =============================================
+   Base
+   ============================================= */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: #292929;
+  color: #FFFFFF;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* =============================================
+   Typography scale
+   h1 → 32px / 700
+   h2 → 24px / 600
+   h3 → 18px / 600
+   body → 14px / 400
+   small → 12px / 400
+   ============================================= */
+
+/* =============================================
+   Scrollbar
+   ============================================= */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #202020; }
+::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #FD7B03; }
