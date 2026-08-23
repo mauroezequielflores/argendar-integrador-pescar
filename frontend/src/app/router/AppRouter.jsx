@@ -113,7 +113,7 @@ export default function AppRouter() {
         <Route path="settings" element={<SettingsPage />} />
         <Route path="help" element={<ProfessionalHelpPage />} />
         <Route path="home" element={<ProfessionalHomePage />} />
-        <Route path="*" element={<Navigate to="agenda" replace />} />
+        <Route path="*" element={<Navigate to="/professional/agenda" replace />} />
       </Route>
 
       {/* ── Administrador ───────────────────────────────────── */}
