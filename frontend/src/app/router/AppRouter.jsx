@@ -22,6 +22,8 @@ import ProfessionalLayout from "../layouts/ProfessionalLayout";
 import AgendaPage from "../../features/agenda/pages/AgendaPage";
 import ProfessionalAgendaPage from "../../features/agenda/pages/ProfessionalAgendaPage";
 import ProfessionalNotificationsPage from "../../features/notifications/pages/ProfessionalNotificationsPage";
+import ProfessionalMarketplacePage from "../../features/marketplace/pages/ProfessionalMarketplacePage";
+import ProfessionalHelpPage from "../../features/help/pages/ProfessionalHelpPage";
 import NotificationsPage from "../../features/notifications/pages/NotificationsPage";
 import MarketplacePage from "../../features/marketplace/pages/MarketplacePage";
 import ProfilePage from "../../features/profile/pages/ProfilePage";
@@ -94,10 +96,14 @@ export default function AppRouter() {
       >
         <Route path="agenda" element={<ProfessionalAgendaPage />} />
         <Route path="notifications" element={<ProfessionalNotificationsPage />} />
-        <Route path="marketplace" element={<MarketplacePage />} />
+        <Route path="marketplace" element={<ProfessionalMarketplacePage />} />
         <Route path="profile" element={<ProfilePage />} />
+        <Route path="profile/edit-profile" element={<EditProfilePage />} />
+        <Route path="profile/profile-settings" element={<ProfileSettingsPage />} />
+        <Route path="profile/profile-privacy" element={<ProfilePrivacyPage />} />
+        <Route path="profile/payment-methods" element={<PaymentMethodsPage />} />
         <Route path="settings" element={<SettingsPage />} />
-        <Route path="help" element={<HelpPage />} />
+        <Route path="help" element={<ProfessionalHelpPage />} />
         <Route path="home" element={<ProfessionalHomePage />} />
         <Route path="*" element={<Navigate to="agenda" replace />} />
       </Route>
