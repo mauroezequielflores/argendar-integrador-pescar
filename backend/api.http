@@ -1,0 +1,150 @@
+### ============================================
+### ARGENDAR — API REST Client (VSCode)
+### ============================================
+### Extensión necesaria: "REST Client" (humao.rest-client)
+### Cómo usar: click en "Send Request" arriba de cada bloque
+### Los "###" separan cada request individual
+### ============================================
+
+### --- VARIABLES ---
+### Cambiá estos valores según tu entorno
+
+@baseUrl = http://localhost:5000
+@email = test@ejemplo.com
+@password = 123456
+@nombre = Juan
+@apellido = Pérez
+
+
+### ============================================
+### 1. HEALTH CHECK
+### ============================================
+### Verifica que el servidor esté corriendo.
+### Si responde "Servidor de Argendar activo", está OK.
+
+GET {{baseUrl}}
+
+### ============================================
+### 2. REGISTRO DE USUARIO
+### ============================================
+### Crea una cuenta nueva.
+### Responde 201 si se creó bien.
+### Responde 409 si el email ya existe.
+### IMPORTANTE: cambiá el email si ya lo registraste antes.
+
+POST {{baseUrl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "nombre": "{{nombre}}",
+  "apellido": "{{apellido}}",
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### ============================================
+### 3. LOGIN
+### ============================================
+### Inicia sesión con un usuario ya registrado.
+### Responde 200 con un accessToken (copialo para usarlo abajo).
+### Responde 401 si las credenciales son incorrectas.
+
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### ============================================
+### 4. OBTENER USUARIO ACTUAL (requiere token)
+### ============================================
+### Devuelve los datos del usuario autenticado.
+### Responde 401 si el token es inválido o falta.
+###
+### >>> INSTRUCCIÓN: después de hacer login, copiá el
+###     valor de "accessToken" de la respuesta y
+###     pegalo abajo reemplazando TU_TOKEN_AQUI
+
+@token = TU_TOKEN_AQUI
+
+GET {{baseUrl}}/api/v1/auth/me
+Authorization: Bearer {{token}}
+
+### ============================================
+### 5. SOLICITAR RECUPERACIÓN DE CONTRASEÑA
+### ============================================
+### Envía un email con un enlace para restablecer la contraseña.
+### NO requiere autenticación.
+### Responde SIEMPRE 200 con el mismo mensaje (por seguridad,
+### no revela si el email existe o no en la base de datos).
+###
+### REQUISITO: el dueño de Supabase debe haber configurado:
+###   - Site URL: http://localhost:5173
+###   - Redirect URLs: http://localhost:5173/reset-password
+###   en Supabase Dashboard > Authentication > URL Configuration
+
+POST {{baseUrl}}/api/v1/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "{{email}}"
+}
+
+### ============================================
+### 6. RESTABLECER CONTRASEÑA (con token del email)
+### ============================================
+### Actualiza la contraseña usando el token de recuperación.
+### NO requiere autenticación (el token actúa como verificación).
+### Responde 200 si se actualizó correctamente.
+### Responde 401 si el token es inválido o expiró.
+###
+### >>> INSTRUCCIÓN: cuando hagas click en el enlace del email,
+###     la URL va a tener un access_token en el hash (#).
+###     Copiá ese valor y pegalo abajo reemplazando TU_RECOVERY_TOKEN_AQUI
+###
+### Ejemplo de URL del email:
+### http://localhost:5173/reset-password#access_token=eyJhbG...&type=recovery
+
+@recoveryToken = TU_RECOVERY_TOKEN_AQUI
+
+POST {{baseUrl}}/api/v1/auth/reset-password
+Content-Type: application/json
+
+{
+  "token": "{{recoveryToken}}",
+  "password": "nuevaPassword123",
+  "confirmPassword": "nuevaPassword123"
+}
+
+### ============================================
+### 7. LISTAR TODOS LOS USUARIOS
+### ============================================
+### Devuelve la lista de todos los usuarios registrados.
+### NO requiere autenticación.
+
+GET {{baseUrl}}/api/v1/usuarios
+
+### ============================================
+### 8. OBTENER TURNOS DE UN USUARIO (requiere token)
+### ============================================
+### Devuelve los turnos asociados a un usuario.
+### Responde 400 si el ID no es un UUID válido.
+### Responde 401 si falta el token.
+###
+### >>> INSTRUCCIÓN: reemplazá el UUID de abajo con
+###     el "id" que te devolvió el login o el /me
+
+@usuarioId = TU_UUID_AQUI
+
+GET {{baseUrl}}/api/v1/turnos/{{usuarioId}}
+Authorization: Bearer {{token}}
+
+### ============================================
+### 9. ENDPOINT DE EJEMPLO
+### ============================================
+### Endpoint de prueba para el equipo.
+### NO requiere autenticación.
+
+GET {{baseUrl}}/api/v1/ejemplo

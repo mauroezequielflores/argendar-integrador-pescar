@@ -59,3 +59,50 @@ export const validarLogin = (req, res, next) => {
 
   next();
 };
+
+/**
+ * Validador para solicitar recuperación de contraseña
+ */
+export const validarForgotPassword = (req, res, next) => {
+  const { email } = req.body;
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !emailRegex.test(email)) {
+    return res.status(400).json({
+      status: "error",
+      message: "Debe proporcionar una dirección de correo válida."
+    });
+  }
+
+  next();
+};
+
+/**
+ * Validador para restablecer contraseña con token
+ */
+export const validarResetPassword = (req, res, next) => {
+  const { token, password, confirmPassword } = req.body;
+
+  if (!token || token.trim().length === 0) {
+    return res.status(400).json({
+      status: "error",
+      message: "El token de recuperación es obligatorio."
+    });
+  }
+
+  if (!password || password.length < 6) {
+    return res.status(400).json({
+      status: "error",
+      message: "La nueva contraseña debe tener al menos 6 caracteres."
+    });
+  }
+
+  if (!confirmPassword || confirmPassword !== password) {
+    return res.status(400).json({
+      status: "error",
+      message: "Las contraseñas no coinciden."
+    });
+  }
+
+  next();
+};
