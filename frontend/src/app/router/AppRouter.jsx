@@ -21,6 +21,7 @@ import ClientLayout from "../layouts/ClientLayout";
 import ProfessionalLayout from "../layouts/ProfessionalLayout";
 import AgendaPage from "../../features/agenda/pages/AgendaPage";
 import ProfessionalAgendaPage from "../../features/agenda/pages/ProfessionalAgendaPage";
+import ProfessionalNotificationsPage from "../../features/notifications/pages/ProfessionalNotificationsPage";
 import NotificationsPage from "../../features/notifications/pages/NotificationsPage";
 import MarketplacePage from "../../features/marketplace/pages/MarketplacePage";
 import ProfilePage from "../../features/profile/pages/ProfilePage";
@@ -92,7 +93,7 @@ export default function AppRouter() {
         }
       >
         <Route path="agenda" element={<ProfessionalAgendaPage />} />
-        <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="notifications" element={<ProfessionalNotificationsPage />} />
         <Route path="marketplace" element={<MarketplacePage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="settings" element={<SettingsPage />} />
