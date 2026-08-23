@@ -26,6 +26,7 @@ import EditProfilePage from "../../features/profile/pages/EditProfilePage";
 import ProfileSettingsPage from "../../features/profile/pages/ProfileSettingsPage";
 import EditProfileSettingsPage from "../../features/profile/pages/EditProfileSettingsPage";
 import ProfilePrivacyPage from "../../features/profile/pages/ProfilePrivacyPage";
+import ManagePrivacyPage from "../../features/profile/pages/ManagePrivacyPage";
 import PaymentMethodsPage from "../../features/profile/pages/PaymentMethodsPage";
 import SettingsPage from "../../features/configurations/pages/SettingsPage";
 import HelpPage from "../../features/help/pages/HelpPage";
@@ -73,6 +74,7 @@ export default function AppRouter() {
         <Route path="profile/profile-settings" element={<ProfileSettingsPage />} />
         <Route path="profile/profile-settings/edit-profile-settings" element={<EditProfileSettingsPage />} />
         <Route path="profile/profile-privacy" element={<ProfilePrivacyPage />} />
+        <Route path="profile/profile-privacy/manage-privacy" element={<ManagePrivacyPage />} />
         <Route path="profile/payment-methods" element={<PaymentMethodsPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="help" element={<HelpPage />} />
