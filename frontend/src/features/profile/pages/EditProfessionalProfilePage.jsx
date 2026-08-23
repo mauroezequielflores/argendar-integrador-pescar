@@ -79,9 +79,17 @@ function ModalDisponibilidad({ disponibilidad, onClose, onSave }) {
 
   const toggleDia = (i) =>
     setLocal((prev) =>
-      prev.map((d, idx) =>
-        idx === i ? { ...d, activo: !d.activo, franjas: d.activo ? [] : [{ inicio: "09:00", fin: "18:00" }] } : d
-      )
+      prev.map((d, idx) => {
+        if (idx !== i) return d;
+        if (d.activo) {
+          // Deshabilitar: guardar backup de franjas actuales
+          return { ...d, activo: false, _backup: d.franjas, franjas: [] };
+        } else {
+          // Habilitar: restaurar backup si existe, si no usar horario por defecto
+          const restored = d._backup?.length ? d._backup : [{ inicio: "09:00", fin: "18:00" }];
+          return { ...d, activo: true, franjas: restored, _backup: undefined };
+        }
+      })
     );
 
   const agregarFranja = (i) =>
@@ -243,7 +251,12 @@ export default function EditProfessionalProfilePage() {
 
   const handleImageChange = (e, setter) => {
     const file = e.target.files?.[0];
-    if (file) setter(URL.createObjectURL(file));
+    if (file) {
+      setter((prev) => {
+        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+        return URL.createObjectURL(file);
+      });
+    }
   };
 
   const handleEliminarHabilidad = (idx) =>

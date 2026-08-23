@@ -46,7 +46,7 @@ function FilterBar({ count }) {
   return (
     <div className="flex items-center justify-between">
       <p className="text-sm text-white">
-        Tenés <span className="font-semibold">{count}</span> turnos encontradas
+        Tenés <span className="font-semibold">{count}</span> notificaciones encontradas
       </p>
       <div className="flex items-center gap-2 text-sm text-[#A8A8AA]">
         Ordenar por:

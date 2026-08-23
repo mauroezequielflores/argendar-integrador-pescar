@@ -55,13 +55,13 @@ function ShortcutCard({ shortcut }) {
 
 // ─── FAQAccordion ─────────────────────────────────────────────────────────────
 
-function FAQAccordion({ faqRef }) {
+function FAQAccordion() {
   const [openId, setOpenId] = useState(FAQ_ITEMS[0].id);
 
   const toggle = (id) => setOpenId((prev) => (prev === id ? null : id));
 
   return (
-    <div ref={faqRef} className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2">
       {FAQ_ITEMS.map((item) => {
         const isOpen = openId === item.id;
         return (
@@ -395,9 +395,9 @@ export default function ProfessionalHelpPage() {
           <ContactForm />
 
           {/* FAQ */}
-          <div className="flex flex-col gap-4">
+          <div ref={faqRef} className="flex flex-col gap-4">
             <p className="text-base font-semibold text-white">Preguntas Frecuentes</p>
-            <FAQAccordion faqRef={faqRef} />
+            <FAQAccordion />
           </div>
         </div>
 

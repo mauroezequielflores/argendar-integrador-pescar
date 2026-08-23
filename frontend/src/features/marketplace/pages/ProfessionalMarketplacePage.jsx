@@ -112,16 +112,13 @@ function FilterPanel({
   );
 }
 
-function ActiveChips({ sortLabel, appliedCategories, onRemoveCategory, onRemoveSort }) {
+function ActiveChips({ sortLabel, appliedCategories, onRemoveCategory }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <span className="text-xs text-[#A8A8AA]">Filtros</span>
       <span className="text-xs text-[#A8A8AA]">|</span>
-      <span className="flex items-center gap-1 rounded-[6px] bg-[#323232] px-2 py-1 text-xs text-white">
+      <span className="rounded-[6px] bg-[#323232] px-2 py-1 text-xs text-white">
         {sortLabel}
-        <button onClick={onRemoveSort}>
-          <XMarkIcon className="h-3 w-3 text-[#A8A8AA]" />
-        </button>
       </span>
       {appliedCategories.map((cat) => (
         <span
@@ -267,7 +264,6 @@ export default function ProfessionalMarketplacePage() {
             sortLabel="Más nuevo"
             appliedCategories={appliedCategories}
             onRemoveCategory={handleRemoveCategory}
-            onRemoveSort={() => {}}
           />
 
           {/* Título sección */}
