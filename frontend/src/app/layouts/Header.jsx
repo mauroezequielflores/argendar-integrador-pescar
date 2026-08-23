@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Bars3Icon, MagnifyingGlassIcon, BellIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
-import Avatar from "./Avatar";
+import Avatar from "../../components/ui/Avatar";
 
 export default function Header({
   logoLink = "/",

@@ -24,6 +24,7 @@ import MarketplacePage from "../../features/marketplace/pages/MarketplacePage";
 import ProfilePage from "../../features/profile/pages/ProfilePage";
 import EditProfilePage from "../../features/profile/pages/EditProfilePage";
 import ProfileSettingsPage from "../../features/profile/pages/ProfileSettingsPage";
+import EditProfileSettingsPage from "../../features/profile/pages/EditProfileSettingsPage";
 import ProfilePrivacyPage from "../../features/profile/pages/ProfilePrivacyPage";
 import PaymentMethodsPage from "../../features/profile/pages/PaymentMethodsPage";
 import SettingsPage from "../../features/configurations/pages/SettingsPage";
@@ -70,12 +71,13 @@ export default function AppRouter() {
         <Route path="profile" element={<ProfilePage />} />
         <Route path="profile/edit-profile" element={<EditProfilePage />} />
         <Route path="profile/profile-settings" element={<ProfileSettingsPage />} />
+        <Route path="profile/profile-settings/edit-profile-settings" element={<EditProfileSettingsPage />} />
         <Route path="profile/profile-privacy" element={<ProfilePrivacyPage />} />
         <Route path="profile/payment-methods" element={<PaymentMethodsPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="help" element={<HelpPage />} />
         <Route path="home" element={<ClientHomePage />} />
-        <Route path="*" element={<Navigate to="agenda" replace />} />
+        <Route path="*" element={<Navigate to="/client/agenda" replace />} />
       </Route>
 
       {/* ── Profesional ─────────────────────────────────────── */}

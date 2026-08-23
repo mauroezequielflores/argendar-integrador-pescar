@@ -8,7 +8,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { ROLES } from "../../../constants/roles";
 import { ROUTES } from "../../../constants/routes";
 
-import AuthCard from "../../../components/ui/AuthCard";
+import AuthCard from "../components/AuthCard";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 

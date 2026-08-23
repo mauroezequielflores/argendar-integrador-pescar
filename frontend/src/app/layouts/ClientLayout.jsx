@@ -10,8 +10,8 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { ROUTES } from "../../constants/routes";
-import Header from "../../components/ui/Header";
-import Sidebar from "../../components/ui/Sidebar";
+import Header from "./Header";
+import Sidebar from "./Sidebar";
 
 export default function ClientLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar state

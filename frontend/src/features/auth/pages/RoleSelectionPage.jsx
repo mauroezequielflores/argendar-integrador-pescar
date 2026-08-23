@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { ROUTES } from "../../../constants/routes";
-import AuthCard from "../../../components/ui/AuthCard";
+import AuthCard from "../components/AuthCard";
 import authBg from "../../../assets/images/auth-bg.png";
 
 /**

@@ -14,6 +14,7 @@ const Input = forwardRef(function Input(
     type = "text",
     placeholder,
     error,
+    prefix,
     className = "",
     ...props
   },
@@ -43,7 +44,7 @@ const Input = forwardRef(function Input(
           aria-invalid={!!error}
           aria-describedby={error ? `${id}-error` : undefined}
           className={`
-            w-full rounded-[6px] border bg-transparent px-3 py-2.5 text-xs
+            w-full rounded-[6px] border bg-transparent py-2.5 text-xs
             text-sm text-white placeholder-[#A8A8AA]
             transition-colors duration-200
             focus:outline-none focus:ring-2 focus:ring-[#FD7B03] focus:ring-offset-0
@@ -51,11 +52,19 @@ const Input = forwardRef(function Input(
               ? "border-red-500 focus:ring-red-500"
               : "border-[#3a3a3a] hover:border-[#555] focus:border-[#FD7B03]"
             }
+            ${prefix ? "pl-12 pr-3" : "px-3"}
             ${isPassword ? "pr-10" : ""}
+            disabled:opacity-70 disabled:cursor-not-allowed
             ${className}
           `}
           {...props}
         />
+
+        {prefix && (
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A8AA] text-sm pointer-events-none flex items-center justify-center">
+            {prefix}
+          </div>
+        )}
 
         {isPassword && (
           <button

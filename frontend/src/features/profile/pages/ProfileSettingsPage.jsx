@@ -14,7 +14,7 @@ import Card from "../../../components/ui/Card";
 import Button from "../../../components/ui/Button";
 import Loader from "../../../components/ui/Loader";
 import Breadcrumbs from "../../../components/ui/Breadcrumbs";
-import InfoRow from "../../../components/ui/InfoRow";
+import InfoRow from "../components/InfoRow";
 
 export default function ProfileSettingsPage() {
   const navigate = useNavigate();
@@ -61,7 +61,10 @@ export default function ProfileSettingsPage() {
               Podés agregar, modificar o corregir tu información personal y los datos de la cuenta.
             </p>
           </div>
-          <button className="flex-shrink-0 flex items-center gap-2 rounded-md border border-[#3a3a3a] px-4 py-2 text-sm font-medium text-[#FFFFFF] hover:bg-[#3a3a3a] transition-colors bg-[#2e2e2e]">
+          <button 
+            onClick={() => navigate("/client/profile/profile-settings/edit-profile-settings")}
+            className="flex-shrink-0 flex items-center gap-2 rounded-md border border-[#3a3a3a] px-4 py-2 text-sm font-medium text-[#FFFFFF] hover:bg-[#3a3a3a] transition-colors bg-[#2e2e2e]"
+          >
             <PencilSquareIcon className="h-4 w-4" />
             Editar
           </button>
