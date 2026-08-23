@@ -74,3 +74,12 @@ docs/
 skills-lock.json
 
 CLAUDE.md
+pnpm-lock.yaml
+
+
+# --- Contexto de Claude Code ---
+claude-context/
+
+# --- Agentes y Skills ---
+skills-lock.json
+.agents/

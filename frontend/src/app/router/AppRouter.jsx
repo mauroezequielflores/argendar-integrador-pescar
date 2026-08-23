@@ -16,9 +16,16 @@ import ClientHomePage from "../../features/home/pages/ClientHomePage";
 import ProfessionalHomePage from "../../features/home/pages/ProfessionalHomePage";
 import AdminHomePage from "../../features/home/pages/AdminHomePage";
 
-// Layouts & Client Pages
+// Layouts
 import ClientLayout from "../layouts/ClientLayout";
+import ProfessionalLayout from "../layouts/ProfessionalLayout";
 import AgendaPage from "../../features/agenda/pages/AgendaPage";
+import ProfessionalAgendaPage from "../../features/agenda/pages/ProfessionalAgendaPage";
+import ProfessionalNotificationsPage from "../../features/notifications/pages/ProfessionalNotificationsPage";
+import ProfessionalMarketplacePage from "../../features/marketplace/pages/ProfessionalMarketplacePage";
+import ProfessionalHelpPage from "../../features/help/pages/ProfessionalHelpPage";
+import ProfessionalProfilePage from "../../features/profile/pages/ProfessionalProfilePage";
+import EditProfessionalProfilePage from "../../features/profile/pages/EditProfessionalProfilePage";
 import NotificationsPage from "../../features/notifications/pages/NotificationsPage";
 import MarketplacePage from "../../features/marketplace/pages/MarketplacePage";
 import ProfilePage from "../../features/profile/pages/ProfilePage";
@@ -90,15 +97,24 @@ export default function AppRouter() {
         element={
           <ProtectedRoute>
             <RoleRoute allowedRoles={[ROLES.PROFESIONAL]}>
-              <Routes>
-                <Route path="home" element={<ProfessionalHomePage />} />
-                {/* Agregar más rutas de profesional aquí */}
-                <Route path="*" element={<Navigate to="home" replace />} />
-              </Routes>
+              <ProfessionalLayout />
             </RoleRoute>
           </ProtectedRoute>
         }
-      />
+      >
+        <Route path="agenda" element={<ProfessionalAgendaPage />} />
+        <Route path="notifications" element={<ProfessionalNotificationsPage />} />
+        <Route path="marketplace" element={<ProfessionalMarketplacePage />} />
+        <Route path="profile" element={<ProfessionalProfilePage />} />
+        <Route path="profile/edit-profile" element={<EditProfessionalProfilePage />} />
+        <Route path="profile/profile-settings" element={<ProfileSettingsPage />} />
+        <Route path="profile/profile-privacy" element={<ProfilePrivacyPage />} />
+        <Route path="profile/payment-methods" element={<PaymentMethodsPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="help" element={<ProfessionalHelpPage />} />
+        <Route path="home" element={<ProfessionalHomePage />} />
+        <Route path="*" element={<Navigate to="agenda" replace />} />
+      </Route>
 
       {/* ── Administrador ───────────────────────────────────── */}
       <Route
