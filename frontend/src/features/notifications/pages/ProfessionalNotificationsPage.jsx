@@ -71,14 +71,18 @@ function FilterChips() {
   );
 }
 
+import NotificationCard from "../../../components/ui/NotificationCard";
+
 // ─── Paneles ─────────────────────────────────────────────────────────────────
 
 function PanelTodas({ items }) {
+  const navigate = useNavigate();
+
   return (
     <div className="flex flex-col gap-3">
       <FilterBar count={items.length} />
       <FilterChips />
-      <div className="rounded-[6px] border border-[#323232] bg-[#292929]">
+      <div className="flex flex-col gap-3">
         {items.length === 0 ? (
           <EmptyState
             icon={BellIcon}
@@ -86,20 +90,19 @@ function PanelTodas({ items }) {
             description="Te avisaremos cuando ocurra algo importante."
           />
         ) : (
-          <div className="flex flex-col divide-y divide-[#323232]">
-            {items.map((n) => (
-              <div key={n.id} className="flex items-start gap-3 p-4">
-                <div className="mt-0.5 rounded-full bg-[#323232] p-2">
-                  <BellIcon className="h-4 w-4 text-[#F78736]" />
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <p className="text-sm font-medium text-white">{n.titulo}</p>
-                  <p className="text-xs text-[#A8A8AA]">{n.descripcion}</p>
-                  <p className="text-xs text-[#727272]">{n.fecha}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          items.map((n) => (
+            <NotificationCard
+              key={n.id}
+              title={n.titulo}
+              description={n.descripcion}
+              time={n.fecha}
+              icon={n.icon}
+              iconBgColor={n.iconBgColor}
+              iconColor={n.iconColor}
+              isNew={n.isNew}
+              onClick={() => navigate(n.href || "#")}
+            />
+          ))
         )}
       </div>
     </div>
@@ -107,11 +110,13 @@ function PanelTodas({ items }) {
 }
 
 function PanelHistorial({ items }) {
+  const navigate = useNavigate();
+
   return (
     <div className="flex flex-col gap-3">
       <FilterBar count={items.length} />
       <FilterChips />
-      <div className="rounded-[6px] border border-[#323232] bg-[#292929]">
+      <div className="flex flex-col gap-3">
         {items.length === 0 ? (
           <EmptyState
             icon={BellIcon}
@@ -119,20 +124,19 @@ function PanelHistorial({ items }) {
             description="Te avisaremos cuando ocurra algo importante."
           />
         ) : (
-          <div className="flex flex-col divide-y divide-[#323232]">
-            {items.map((n) => (
-              <div key={n.id} className="flex items-start gap-3 p-4">
-                <div className="mt-0.5 rounded-full bg-[#323232] p-2">
-                  <BellIcon className="h-4 w-4 text-[#A8A8AA]" />
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <p className="text-sm font-medium text-white">{n.titulo}</p>
-                  <p className="text-xs text-[#A8A8AA]">{n.descripcion}</p>
-                  <p className="text-xs text-[#727272]">{n.fecha}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          items.map((n) => (
+            <NotificationCard
+              key={n.id}
+              title={n.titulo}
+              description={n.descripcion}
+              time={n.fecha}
+              icon={n.icon}
+              iconBgColor={n.iconBgColor}
+              iconColor={n.iconColor}
+              isNew={n.isNew}
+              onClick={() => navigate(n.href || "#")}
+            />
+          ))
         )}
       </div>
     </div>

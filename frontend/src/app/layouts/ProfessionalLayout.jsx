@@ -12,6 +12,7 @@ import {
 import { ROUTES } from "../../constants/routes";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
+import { mockNotificaciones } from "../../features/notifications/data/mockProfessionalNotifications";
 
 export default function ProfessionalLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -66,6 +67,7 @@ export default function ProfessionalLayout() {
         onSettingsClick={() => navigate(ROUTES.PROFESSIONAL_SETTINGS)}
         userInitials="JD"
         userName="Doe John"
+        notifications={mockNotificaciones}
       />
 
       {/* ── Cuerpo Inferior (Sidebar + Contenido) ────────────────── */}

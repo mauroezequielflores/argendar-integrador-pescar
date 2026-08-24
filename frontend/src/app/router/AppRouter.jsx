@@ -28,6 +28,11 @@ import CreateRequestLayout from "../../features/agenda/layouts/CreateRequestLayo
 import { CreateRequestProvider } from "../../features/agenda/context/CreateRequestContext";
 import ProfessionalAgendaPage from "../../features/agenda/pages/ProfessionalAgendaPage";
 import ProfessionalNotificationsPage from "../../features/notifications/pages/ProfessionalNotificationsPage";
+import OfferDetailsPage from "../../features/notifications/pages/OfferDetailsPage";
+import ReminderDetailsPage from "../../features/notifications/pages/ReminderDetailsPage";
+import CancellationDetailsPage from "../../features/notifications/pages/CancellationDetailsPage";
+import PaymentConfirmedDetailsPage from "../../features/notifications/pages/PaymentConfirmedDetailsPage";
+import ReviewDetailsPage from "../../features/notifications/pages/ReviewDetailsPage";
 import ProfessionalMarketplacePage from "../../features/marketplace/pages/ProfessionalMarketplacePage";
 import ProfessionalHelpPage from "../../features/help/pages/ProfessionalHelpPage";
 import ProfessionalProfilePage from "../../features/profile/pages/ProfessionalProfilePage";
@@ -118,6 +123,11 @@ export default function AppRouter() {
       >
         <Route path="agenda" element={<ProfessionalAgendaPage />} />
         <Route path="notifications" element={<ProfessionalNotificationsPage />} />
+        <Route path="offers/:id/details" element={<OfferDetailsPage />} />
+        <Route path="reminders/:id/details" element={<ReminderDetailsPage />} />
+        <Route path="cancellations/:id/details" element={<CancellationDetailsPage />} />
+        <Route path="payments/:id/details" element={<PaymentConfirmedDetailsPage />} />
+        <Route path="reviews/:id/details" element={<ReviewDetailsPage />} />
         <Route path="marketplace" element={<ProfessionalMarketplacePage />} />
         <Route path="profile" element={<ProfessionalProfilePage />} />
         <Route path="profile/edit-profile" element={<EditProfessionalProfilePage />} />
