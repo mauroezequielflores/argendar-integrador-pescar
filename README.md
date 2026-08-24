@@ -12,7 +12,7 @@ El sistema permite automatizar reservas, enviar recordatorios y centralizar la g
    - Diego
    - Rocio
    - Nancy
-   - 
+   - Nicole
    - 
    - 
    - Santi
