@@ -1,0 +1,652 @@
+{
+  "info": {
+    "_postman_id": "a9b8c7d6-e5f4-4a3b-8c2d-1e0f9a8b7c6d",
+    "name": "Argendar — EP-AUTH QA Automation Suite (v2.1)",
+    "description": "Colección de pruebas automatizadas E2E para la Épica de Registro y Autenticación (EP-AUTH) de Argendar. Contiene validación completa de status codes, JSON schema, headers y persistencia contra Supabase PostgreSQL.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Registro (HU-01 y HU-02)",
+      "item": [
+        {
+          "name": "1.1 Registro Exitoso - Cliente (201 Created)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const rand = Math.floor(Math.random() * 1000000);",
+                  "pm.collectionVariables.set('dynamic_client_email', `qa_cliente_${rand}@argendar.com`);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code es 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Estructura de respuesta válida para Cliente', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('success');",
+                  "    pm.expect(jsonData.data).to.have.property('user');",
+                  "    pm.expect(jsonData.data.user).to.have.property('id');",
+                  "    pm.expect(jsonData.data.user.role).to.eql('client');",
+                  "    pm.expect(jsonData.data.user.is_suspended).to.eql(false);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{dynamic_client_email}}\",\n  \"password\": \"{{default_password}}\",\n  \"first_name\": \"Carlos\",\n  \"last_name\": \"Gómez\",\n  \"role\": \"client\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "register"]
+            },
+            "description": "Registra un nuevo cliente con credenciales válidas y perfil inicial en Supabase."
+          },
+          "response": []
+        },
+        {
+          "name": "1.2 Registro Exitoso - Profesional (201 Created)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const rand = Math.floor(Math.random() * 1000000);",
+                  "pm.collectionVariables.set('dynamic_prof_email', `qa_profesional_${rand}@argendar.com`);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code es 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Estructura de Profesional con is_onboarding_complete = false', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('success');",
+                  "    pm.expect(jsonData.data.user.role).to.eql('professional');",
+                  "    pm.expect(jsonData.data.user.is_onboarding_complete).to.eql(false);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{dynamic_prof_email}}\",\n  \"password\": \"{{default_password}}\",\n  \"first_name\": \"Mario\",\n  \"last_name\": \"Rossi\",\n  \"role\": \"professional\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "register"]
+            },
+            "description": "Registra un nuevo profesional con estado de onboarding pendiente."
+          },
+          "response": []
+        },
+        {
+          "name": "1.3 Registro Rechazado - Email Duplicado (409 Conflict)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code es 409 Conflict', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "",
+                  "pm.test('Mensaje claro de conflicto por correo duplicado', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('error');",
+                  "    pm.expect(jsonData.message).to.include('ya está registrado');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{permanent_client_email}}\",\n  \"password\": \"{{default_password}}\",\n  \"first_name\": \"Intento\",\n  \"last_name\": \"Duplicado\",\n  \"role\": \"client\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "register"]
+            },
+            "description": "Verifica que el sistema rechace con 409 un correo ya existente en la base de datos."
+          },
+          "response": []
+        },
+        {
+          "name": "1.4 Registro Rechazado - Contraseña Débil (400 Bad Request)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code es 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Retorna errores de validación de complejidad de contraseña', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('error');",
+                  "    pm.expect(jsonData.errors).to.be.an('array');",
+                  "    pm.expect(jsonData.errors.some(e => e.includes('8 caracteres'))).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario_invalido@argendar.com\",\n  \"password\": \"debil\",\n  \"first_name\": \"Test\",\n  \"last_name\": \"Invalido\",\n  \"role\": \"client\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "register"]
+            },
+            "description": "Valida las reglas de complejidad de contraseña requeridas en HU-01."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Inicio de Sesión (HU-03)",
+      "item": [
+        {
+          "name": "2.1 Login Exitoso - Cliente Permanente (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code es 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const jsonData = pm.response.json();",
+                  "pm.test('Retorna JWT access_token y datos de perfil', function () {",
+                  "    pm.expect(jsonData.status).to.eql('success');",
+                  "    pm.expect(jsonData.data).to.have.property('session');",
+                  "    pm.expect(jsonData.data.session).to.have.property('access_token');",
+                  "    pm.expect(jsonData.data.user.role).to.eql('client');",
+                  "    pm.expect(jsonData.data.user.is_suspended).to.eql(false);",
+                  "});",
+                  "",
+                  "if (jsonData.data && jsonData.data.session && jsonData.data.session.access_token) {",
+                  "    pm.collectionVariables.set('jwt_token', jsonData.data.session.access_token);",
+                  "    console.log('JWT Token de Cliente guardado:', jsonData.data.session.access_token.slice(0, 15) + '...');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{permanent_client_email}}\",\n  \"password\": \"{{default_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Inicia sesión con el cliente persistente y actualiza la variable jwt_token."
+          },
+          "response": []
+        },
+        {
+          "name": "2.2 Login Exitoso - Profesional Permanente (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code es 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const jsonData = pm.response.json();",
+                  "pm.test('Retorna JWT y perfil con is_onboarding_complete = false', function () {",
+                  "    pm.expect(jsonData.status).to.eql('success');",
+                  "    pm.expect(jsonData.data.user.role).to.eql('professional');",
+                  "    pm.expect(jsonData.data.user.is_onboarding_complete).to.eql(false);",
+                  "});",
+                  "",
+                  "if (jsonData.data && jsonData.data.session && jsonData.data.session.access_token) {",
+                  "    pm.collectionVariables.set('prof_jwt_token', jsonData.data.session.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{permanent_prof_email}}\",\n  \"password\": \"{{default_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Inicia sesión con el profesional persistente y almacena su JWT."
+          },
+          "response": []
+        },
+        {
+          "name": "2.3 Login Fallido - Credenciales Incorrectas (401 Unauthorized)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code es 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Mensaje de error para credenciales incorrectas', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('error');",
+                  "    pm.expect(jsonData.message).to.eql('Correo o contraseña incorrectos');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{permanent_client_email}}\",\n  \"password\": \"ClaveTotalmenteErronea999!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Valida que el sistema retorne 401 ante contraseñas incorrectas."
+          },
+          "response": []
+        },
+        {
+          "name": "2.4 Login Rechazado - Cuenta Suspendida (403 Forbidden)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code es 403 Forbidden', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "",
+                  "pm.test('Mensaje explícito de suspensión de cuenta', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('error');",
+                  "    pm.expect(jsonData.message).to.include('suspendida');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{suspended_email}}\",\n  \"password\": \"{{default_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Valida que los usuarios suspendidos (is_suspended = true) tengan el login bloqueado."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Recuperación de Contraseña (HU-04)",
+      "item": [
+        {
+          "name": "3.1 Recuperar Contraseña - Email Válido (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code es 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Mensaje seguro anti-enumeración de usuarios', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('success');",
+                  "    pm.expect(jsonData.message).to.include('Si el correo electrónico está registrado');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{permanent_client_email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/recover-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "recover-password"]
+            },
+            "description": "Envía solicitud de recuperación de contraseña con respuesta segura."
+          },
+          "response": []
+        },
+        {
+          "name": "3.2 Recuperar Contraseña - Formato Inválido (400 Bad Request)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code es 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"correo-sin-formato-valido\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/recover-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "recover-password"]
+            },
+            "description": "Valida el rechazo de correos electrónicos malformados."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Endpoints Protegidos y Middlewares de Seguridad",
+      "item": [
+        {
+          "name": "4.1 Perfil de Usuario Actual (/me - 200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code es 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Retorna perfil del usuario autenticado', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('success');",
+                  "    pm.expect(jsonData.data.user).to.have.property('id');",
+                  "    pm.expect(jsonData.data.user).to.have.property('email');",
+                  "    pm.expect(jsonData.data.user.role).to.eql('client');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "me"]
+            },
+            "description": "Acceso al endpoint protegido con el JWT de sesión del cliente."
+          },
+          "response": []
+        },
+        {
+          "name": "4.2 Perfil sin Token (/me - 401 Unauthorized)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code es 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Mensaje de token ausente', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('error');",
+                  "    pm.expect(jsonData.message).to.include('Token de autenticación ausente');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "me"]
+            },
+            "description": "Verifica que el middleware authMiddleware bloquee solicitudes no autenticadas."
+          },
+          "response": []
+        },
+        {
+          "name": "4.3 Feed de Trabajos - Profesional sin Onboarding (/job-requests/feed - 403 Forbidden)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code es 403 Forbidden', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "",
+                  "pm.test('Código de error ONBOARDING_INCOMPLETE', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('error');",
+                  "    pm.expect(jsonData.code).to.eql('ONBOARDING_INCOMPLETE');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{prof_jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/job-requests/feed",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "job-requests", "feed"]
+            },
+            "description": "Verifica que requireOnboardingComplete bloquee a profesionales con onboarding incompleto."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "prof_jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "permanent_client_email",
+      "value": "test_permanente_cliente@argendar.com",
+      "type": "string"
+    },
+    {
+      "key": "permanent_prof_email",
+      "value": "test_permanente_profesional@argendar.com",
+      "type": "string"
+    },
+    {
+      "key": "suspended_email",
+      "value": "test_suspendido@argendar.com",
+      "type": "string"
+    },
+    {
+      "key": "default_password",
+      "value": "Password123!",
+      "type": "string"
+    },
+    {
+      "key": "dynamic_client_email",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "dynamic_prof_email",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

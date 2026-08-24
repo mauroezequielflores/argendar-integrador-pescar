@@ -69,6 +69,8 @@ coverage/
 
 docs/
 .agents/
+.context/
+.prompts/
 
 
 skills-lock.json
