@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   DocumentTextIcon, 
   CalendarIcon, 
@@ -26,6 +27,7 @@ const TABS = [
 export default function AgendaPage() {
   const [activeTab, setActiveTab] = useState("solicitudes");
   const [sortOrder, setSortOrder] = useState("newest");
+  const navigate = useNavigate();
   
   // Fake user name as there's no real backend yet
   const userName = "Nombre";
@@ -56,7 +58,7 @@ export default function AgendaPage() {
             title="No tenés solicitudes activas"
             description="Comenzá hoy mismo. Publicá lo que necesitás y recibí presupuestos de los mejores profesionales en tu zona."
             action={
-              <Button variant="primary" onClick={() => console.log('Nueva solicitud')}>
+              <Button variant="primary" onClick={() => navigate("/client/agenda/create-request")}>
                 Publicar mi primera solicitud
               </Button>
             }
@@ -98,7 +100,7 @@ export default function AgendaPage() {
           title={`Buenos días, ${userName}`}
           subtitle="Gestioná tus solicitudes, turnos e historial."
           actions={
-            <Button variant="primary" className="px-5 py-2 text-sm font-medium" onClick={() => console.log('Nueva solicitud')}>
+            <Button variant="primary" className="px-5 py-2 text-sm font-medium" onClick={() => navigate("/client/agenda/create-request")}>
               <PlusIcon className="h-4 w-4 stroke-2" /> Crear Nueva Solicitud
             </Button>
           }

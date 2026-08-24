@@ -19,7 +19,13 @@ import AdminHomePage from "../../features/home/pages/AdminHomePage";
 // Layouts
 import ClientLayout from "../layouts/ClientLayout";
 import ProfessionalLayout from "../layouts/ProfessionalLayout";
+
 import AgendaPage from "../../features/agenda/pages/AgendaPage";
+import CreateRequestPage from "../../features/agenda/pages/CreateRequestPage";
+import CreateRequestLocationPage from "../../features/agenda/pages/CreateRequestLocationPage";
+import CreateRequestRevisionPage from "../../features/agenda/pages/CreateRequestRevisionPage";
+import CreateRequestLayout from "../../features/agenda/layouts/CreateRequestLayout";
+import { CreateRequestProvider } from "../../features/agenda/context/CreateRequestContext";
 import ProfessionalAgendaPage from "../../features/agenda/pages/ProfessionalAgendaPage";
 import ProfessionalNotificationsPage from "../../features/notifications/pages/ProfessionalNotificationsPage";
 import ProfessionalMarketplacePage from "../../features/marketplace/pages/ProfessionalMarketplacePage";
@@ -75,6 +81,14 @@ export default function AppRouter() {
         }
       >
         <Route path="agenda" element={<AgendaPage />} />
+        
+        {/* Flujo de Creación de Solicitud envuelto en su Layout */}
+        <Route element={<CreateRequestLayout />}>
+          <Route path="agenda/create-request" element={<CreateRequestPage />} />
+          <Route path="agenda/create-request/location" element={<CreateRequestLocationPage />} />
+          <Route path="agenda/create-request/revision" element={<CreateRequestRevisionPage />} />
+        </Route>
+
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="marketplace" element={<MarketplacePage />} />
         <Route path="profile" element={<ProfilePage />} />
