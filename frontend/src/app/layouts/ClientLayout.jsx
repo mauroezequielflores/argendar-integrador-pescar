@@ -65,8 +65,8 @@ export default function ClientLayout() {
         onMobileMenuClick={() => setIsSidebarOpen(true)}
         onNotificationClick={() => navigate("/client/notifications")}
         onSettingsClick={() => navigate("/client/settings")}
-        userInitials="JD"
-        userName="Doe John"
+        userInitials="A"
+        userName="Apellido Nombre"
       />
 
       {/* ── Cuerpo Inferior (Sidebar + Contenido) ────────────────── */}

@@ -7,11 +7,12 @@ import NotificationCard from "../../components/ui/NotificationCard";
 export default function Header({
   logoLink = "/",
   logoText = "Argendar",
+  searchPlaceholder = "Buscar profesional o servicio",
   onMobileMenuClick,
   onNotificationClick,
   onSettingsClick,
-  userInitials = "U",
-  userName = "Usuario",
+  userInitials = "A",
+  userName = "Apellido Nombre",
   notifications = [], // Nuevo prop para las notificaciones
 }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -67,7 +68,7 @@ export default function Header({
           </div>
           <input
             type="text"
-            placeholder="Buscar"
+            placeholder={searchPlaceholder}
             className="w-full rounded-[6px] border border-[#292929] bg-[#292929] py-1.5 pl-10 pr-3 text-sm text-[#FFFFFF] placeholder-[#A8A8AA] focus:border-[#F78736] focus:outline-none focus:ring-1 focus:ring-[#F78736]"
           />
         </div>
