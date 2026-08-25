@@ -1,6 +1,6 @@
 /**
- * Rutas de la aplicación Argendar.
- * Centralizar todas las rutas aquí para facilitar el mantenimiento.
+ * Rutas de la aplicacion Argendar.
+ * Centralizar todas las rutas aqui para facilitar el mantenimiento.
  */
 export const ROUTES = {
   // Auth
@@ -35,6 +35,8 @@ export const ROUTES = {
   ADMIN_USERS: "/admin/users",
   ADMIN_PROFESSIONALS: "/admin/professionals",
   ADMIN_CLIENTS: "/admin/clients",
+  ADMIN_TRANSACTIONS: "/admin/transactions",
+  ADMIN_MODERATION: "/admin/moderation",
   ADMIN_REPORTS: "/admin/reports",
   ADMIN_SETTINGS: "/admin/settings",
 };

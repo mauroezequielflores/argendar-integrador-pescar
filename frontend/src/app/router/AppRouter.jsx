@@ -15,10 +15,12 @@ import RegisterPage from "../../features/auth/pages/RegisterPage";
 import ClientHomePage from "../../features/home/pages/ClientHomePage";
 import ProfessionalHomePage from "../../features/home/pages/ProfessionalHomePage";
 import AdminHomePage from "../../features/home/pages/AdminHomePage";
+import AdminDashboardPage from "../../features/home/pages/AdminDashboardPage";
 
 // Layouts
 import ClientLayout from "../layouts/ClientLayout";
 import ProfessionalLayout from "../layouts/ProfessionalLayout";
+import AdminLayout from "../layouts/AdminLayout";
 
 import AgendaPage from "../../features/agenda/pages/AgendaPage";
 import CreateRequestPage from "../../features/agenda/pages/CreateRequestPage";
@@ -51,25 +53,25 @@ import SettingsPage from "../../features/configurations/pages/SettingsPage";
 import HelpPage from "../../features/help/pages/HelpPage";
 
 /**
- * AppRouter — Árbol de rutas principal de Argendar.
+ * AppRouter — Arbol de rutas principal de Argendar.
  *
  * Estructura:
- *  / → redirige a /login
+ *  /               -> redirige a /login
  *  /login
  *  /role
- *  /register/:role  (client | professional)
+ *  /register/:role (client | professional)
  *
- *  /client/*        → requiere auth + rol CLIENTE
- *  /professional/*  → requiere auth + rol PROFESIONAL
- *  /admin/*         → requiere auth + rol ADMINISTRADOR
+ *  /client/*       -> requiere auth + rol CLIENTE
+ *  /professional/* -> requiere auth + rol PROFESIONAL
+ *  /admin/*        -> requiere auth + rol ADMINISTRADOR
  */
 export default function AppRouter() {
   return (
     <Routes>
-      {/* Redirect raíz */}
+      {/* Redirect raiz */}
       <Route path="/" element={<Navigate to={ROUTES.LOGIN} replace />} />
 
-      {/* ── Auth (públicas) ─────────────────────────────────── */}
+      {/* Auth (publicas) */}
       <Route path={ROUTES.LOGIN} element={<LoginPage />} />
       <Route path={ROUTES.ROLE_SELECTION} element={<RoleSelectionPage />} />
       <Route path="/register/:role" element={<RegisterPage />} />
@@ -86,8 +88,8 @@ export default function AppRouter() {
         }
       >
         <Route path="agenda" element={<AgendaPage />} />
-        
-        {/* Flujo de Creación de Solicitud envuelto en su Layout */}
+
+        {/* Flujo de Creacion de Solicitud envuelto en su Layout */}
         <Route element={<CreateRequestLayout />}>
           <Route path="agenda/create-request" element={<CreateRequestPage />} />
           <Route path="agenda/create-request/location" element={<CreateRequestLocationPage />} />
@@ -146,15 +148,16 @@ export default function AppRouter() {
         element={
           <ProtectedRoute>
             <RoleRoute allowedRoles={[ROLES.ADMINISTRADOR]}>
-              <Routes>
-                <Route path="home" element={<AdminHomePage />} />
-                {/* Agregar más rutas de admin aquí */}
-                <Route path="*" element={<Navigate to="home" replace />} />
-              </Routes>
+              <AdminLayout />
             </RoleRoute>
           </ProtectedRoute>
         }
-      />
+      >
+        <Route path="dashboard" element={<AdminDashboardPage />} />
+        <Route path="home" element={<AdminHomePage />} />
+        {/* Agregar mas rutas de admin aqui */}
+        <Route path="*" element={<Navigate to="dashboard" replace />} />
+      </Route>
 
       {/* 404 */}
       <Route
@@ -162,7 +165,7 @@ export default function AppRouter() {
         element={
           <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#292929] text-white">
             <p className="text-5xl font-bold text-[#FD7B03]">404</p>
-            <p className="text-lg font-semibold">Página no encontrada</p>
+            <p className="text-lg font-semibold">Pagina no encontrada</p>
             <a
               href={ROUTES.LOGIN}
               className="mt-2 rounded-[6px] bg-[#FD7B03] px-6 py-2.5 text-sm font-medium text-white hover:bg-[#e06d00] transition-colors"
