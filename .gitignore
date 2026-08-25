@@ -66,6 +66,8 @@ docker-compose.override.yml
 coverage/
 .nyc_output/
 .jest/
+.context/
+.prompt/
 
 docs/
 .agents/
