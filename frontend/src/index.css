@@ -11,8 +11,8 @@
   --color-argendar-card: #202020;
   --color-argendar-surface: #2e2e2e;
   --color-argendar-border: #3a3a3a;
-  --color-argendar-orange: #FD7B03;
-  --color-argendar-orange-hover: #e06d00;
+  --color-argendar-orange: #F78736;
+  --color-argendar-orange-hover: #e0752b;
   --color-argendar-white: #FFFFFF;
   --color-argendar-muted: #A8A8AA;
   --color-argendar-error: #ef4444;
@@ -64,4 +64,16 @@ body {
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: #202020; }
 ::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #FD7B03; }
+::-webkit-scrollbar-thumb:hover { background: #F78736; }
+
+/* =============================================
+   Forms (Hide spin buttons)
+   ============================================= */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield; /* Firefox */
+}

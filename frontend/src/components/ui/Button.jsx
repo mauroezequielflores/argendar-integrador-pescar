@@ -24,15 +24,15 @@ export default function Button({
   ...props
 }) {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-[6px] font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FD7B03] focus-visible:ring-offset-2 focus-visible:ring-offset-[#202020] disabled:cursor-not-allowed disabled:opacity-50";
+    "inline-flex items-center justify-center gap-2 rounded-[6px] font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F78736] focus-visible:ring-offset-2 focus-visible:ring-offset-[#202020] disabled:cursor-not-allowed disabled:opacity-50";
 
   const variants = {
     primary:
-      "bg-[#FD7B03] text-white hover:bg-[#e06d00] active:scale-[0.98]",
+      "bg-[#F78736] text-white hover:bg-[#e06d00] active:scale-[0.98]",
     secondary:
-      "bg-[#2e2e2e] text-white border border-[#3a3a3a] hover:bg-[#3a3a3a] active:scale-[0.98]",
+      "bg-[#727272] text-white hover:bg-[#606060] active:scale-[0.98]",
     ghost:
-      "bg-transparent text-[#A8A8AA] border border-[#3a3a3a] hover:border-[#FD7B03] hover:text-white",
+      "bg-transparent text-[#A8A8AA] border border-[#3a3a3a] hover:border-[#F78736] hover:text-white",
     google:
       "bg-[#2e2e2e] text-white border border-[#3a3a3a] hover:bg-[#3a3a3a] active:scale-[0.98]",
   };

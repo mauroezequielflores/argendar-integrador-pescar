@@ -47,10 +47,10 @@ const Input = forwardRef(function Input(
             w-full rounded-[6px] border bg-transparent py-2.5 text-xs
             text-sm text-white placeholder-[#A8A8AA]
             transition-colors duration-200
-            focus:outline-none focus:ring-2 focus:ring-[#FD7B03] focus:ring-offset-0
+            focus:outline-none focus:ring-2 focus:ring-[#F78736] focus:ring-offset-0
             ${error
               ? "border-red-500 focus:ring-red-500"
-              : "border-[#3a3a3a] hover:border-[#555] focus:border-[#FD7B03]"
+              : "border-[#3a3a3a] hover:border-[#555] focus:border-[#F78736]"
             }
             ${prefix ? "pl-12 pr-3" : "px-3"}
             ${isPassword ? "pr-10" : ""}

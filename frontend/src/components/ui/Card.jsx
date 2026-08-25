@@ -12,7 +12,7 @@ export default function Card({ children, className = "", rounded = "card" }) {
 
   return (
     <div
-      className={`bg-[#202020] ${radii[rounded]} ${className}`}
+      className={`bg-[#292929] ${radii[rounded]} ${className}`}
     >
       {children}
     </div>

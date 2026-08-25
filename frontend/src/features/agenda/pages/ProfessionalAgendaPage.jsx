@@ -14,10 +14,18 @@ import { useAuth } from "../../../context/AuthContext";
 import { ROUTES } from "../../../constants/routes";
 import EmptyState from "../../../components/ui/EmptyState";
 import {
-  mockProximosTurnos,
   mockOfertasPendientes,
   mockHistorial,
 } from "../data/mockProfessionalAgenda";
+
+// Feature Components
+import TurnoCard from "../components/TurnoCard";
+import TurnoDetalleModal from "../components/TurnoDetalleModal";
+import ConfirmacionFinalizarModal from "../components/ConfirmacionFinalizarModal";
+import RespuestaFinalizarModal from "../components/RespuestaFinalizarModal";
+
+// Data
+import { mockAgenda } from "../data/mockAgenda";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -128,7 +136,7 @@ function OfertaCard({ oferta }) {
 
 // ─── Paneles ─────────────────────────────────────────────────────────────────
 
-function PanelProximosTurnos({ items }) {
+function PanelProximosTurnos({ items, onVerDetalle }) {
   return (
     <div className="flex flex-col gap-3">
       <FilterBar
@@ -136,7 +144,7 @@ function PanelProximosTurnos({ items }) {
         label={items.length === 1 ? "turno encontrado" : "turnos encontradas"}
       />
       <FilterChips />
-      <div className="rounded-[6px] border border-[#323232] bg-[#292929]">
+      <div className="rounded-[6px] border-0">
         {items.length === 0 ? (
           <EmptyState
             icon={CalendarIcon}
@@ -144,11 +152,9 @@ function PanelProximosTurnos({ items }) {
             description="Cuando se confirme un servicio, tus próximos turnos aparecerán acá."
           />
         ) : (
-          <div className="flex flex-col gap-3 p-4">
+          <div className="flex flex-col gap-4">
             {items.map((turno) => (
-              <div key={turno.id} className="text-sm text-white">
-                {turno.servicio}
-              </div>
+              <TurnoCard key={turno.id} turno={turno} onVerDetalle={() => onVerDetalle(turno)} />
             ))}
           </div>
         )}
@@ -229,9 +235,71 @@ export default function ProfessionalAgendaPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("turnos");
+  
+  // States for Agenda data
+  const [turnos, setTurnos] = useState(mockAgenda);
+  const [selectedTurno, setSelectedTurno] = useState(null);
+  
+  // Modal states
+  const [isDetalleOpen, setIsDetalleOpen] = useState(false);
+  const [isConfirmFinalizarOpen, setIsConfirmFinalizarOpen] = useState(false);
+  const [isRespuestaOpen, setIsRespuestaOpen] = useState(false);
+  const [respuestaExito, setRespuestaExito] = useState(true);
 
   const greeting = getGreeting();
   const firstName = user?.name ?? "Profesional";
+
+  // ─── Acciones ──────────────────────────────────────────────────────────────
+
+  const handleVerDetalle = (turno) => {
+    setSelectedTurno(turno);
+    setIsDetalleOpen(true);
+  };
+
+  const handleConfirmarPago = () => {
+    if (!selectedTurno) return;
+    
+    // Update the selected turno locally
+    const updatedTurno = {
+      ...selectedTurno,
+      pago: {
+        ...selectedTurno.pago,
+        estado: "CONFIRMADO"
+      }
+    };
+    setSelectedTurno(updatedTurno);
+    
+    // Update the main list
+    setTurnos(turnos.map(t => t.id === updatedTurno.id ? updatedTurno : t));
+  };
+
+  const handleReprogramar = () => {
+    // Logic for reprogramar, just close for now
+    setIsDetalleOpen(false);
+  };
+
+  const handleFinalizarClick = () => {
+    setIsConfirmFinalizarOpen(true);
+  };
+
+  const handleConfirmarFinalizar = () => {
+    setIsConfirmFinalizarOpen(false);
+    setIsDetalleOpen(false);
+    
+    // Simulate backend response (success)
+    setRespuestaExito(true);
+    setIsRespuestaOpen(true);
+    
+    // Move to history in a real app, here we might just change status or filter it out
+    if (selectedTurno) {
+       setTurnos(turnos.map(t => t.id === selectedTurno.id ? {...t, estado: "FINALIZADO"} : t));
+    }
+  };
+
+  const handleCloseRespuesta = () => {
+    setIsRespuestaOpen(false);
+    setSelectedTurno(null);
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -271,7 +339,10 @@ export default function ProfessionalAgendaPage() {
 
       {/* Contenido del tab activo */}
       {activeTab === "turnos" && (
-        <PanelProximosTurnos items={mockProximosTurnos} />
+        <PanelProximosTurnos 
+          items={turnos.filter(t => t.estado !== "FINALIZADO")} 
+          onVerDetalle={handleVerDetalle} 
+        />
       )}
       {activeTab === "ofertas" && (
         <PanelOfertas items={mockOfertasPendientes} />
@@ -279,6 +350,28 @@ export default function ProfessionalAgendaPage() {
       {activeTab === "historial" && (
         <PanelHistorial items={mockHistorial} />
       )}
+
+      {/* Modals */}
+      <TurnoDetalleModal 
+        isOpen={isDetalleOpen} 
+        turno={selectedTurno}
+        onClose={() => setIsDetalleOpen(false)}
+        onConfirmarPago={handleConfirmarPago}
+        onReprogramar={handleReprogramar}
+        onFinalizar={handleFinalizarClick}
+      />
+
+      <ConfirmacionFinalizarModal 
+        isOpen={isConfirmFinalizarOpen}
+        onClose={() => setIsConfirmFinalizarOpen(false)}
+        onConfirm={handleConfirmarFinalizar}
+      />
+
+      <RespuestaFinalizarModal 
+        isOpen={isRespuestaOpen}
+        isSuccess={respuestaExito}
+        onClose={handleCloseRespuesta}
+      />
     </div>
   );
 }
