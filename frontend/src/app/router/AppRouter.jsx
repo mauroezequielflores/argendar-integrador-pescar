@@ -19,6 +19,9 @@ import AdminHomePage from "../../features/home/pages/AdminHomePage";
 // Layouts
 import ClientLayout from "../layouts/ClientLayout";
 import ProfessionalLayout from "../layouts/ProfessionalLayout";
+import AdminLayout from "../layouts/AdminLayout";
+
+import AdminDashboardPage from "../../features/dashboard/pages/AdminDashboardPage";
 
 import AgendaPage from "../../features/agenda/pages/AgendaPage";
 import CreateRequestPage from "../../features/agenda/pages/CreateRequestPage";
@@ -146,15 +149,15 @@ export default function AppRouter() {
         element={
           <ProtectedRoute>
             <RoleRoute allowedRoles={[ROLES.ADMINISTRADOR]}>
-              <Routes>
-                <Route path="home" element={<AdminHomePage />} />
-                {/* Agregar más rutas de admin aquí */}
-                <Route path="*" element={<Navigate to="home" replace />} />
-              </Routes>
+              <AdminLayout />
             </RoleRoute>
           </ProtectedRoute>
         }
-      />
+      >
+        <Route path="dashboard" element={<AdminDashboardPage />} />
+        <Route path="home" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+      </Route>
 
       {/* 404 */}
       <Route

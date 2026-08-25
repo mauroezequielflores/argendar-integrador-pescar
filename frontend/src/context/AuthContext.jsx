@@ -29,8 +29,8 @@ const DEMO_USERS = {
   },
   [ROLES.ADMINISTRADOR]: {
     id: 3,
-    name: "Admin",
-    lastName: "Argendar",
+    name: "Nombre",
+    lastName: "Apellido",
     email: "admin@argendar.com",
     role: ROLES.ADMINISTRADOR,
     avatar: null,
