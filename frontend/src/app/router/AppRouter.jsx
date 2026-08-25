@@ -19,6 +19,10 @@ import AdminHomePage from "../../features/home/pages/AdminHomePage";
 // Layouts
 import ClientLayout from "../layouts/ClientLayout";
 import ProfessionalLayout from "../layouts/ProfessionalLayout";
+import AdminLayout from "../layouts/AdminLayout";
+
+// Admin pages
+import AdminModerationPage from "../../features/moderation/pages/AdminModerationPage";
 
 import AgendaPage from "../../features/agenda/pages/AgendaPage";
 import CreateRequestPage from "../../features/agenda/pages/CreateRequestPage";
@@ -140,21 +144,22 @@ export default function AppRouter() {
         <Route path="*" element={<Navigate to="/professional/agenda" replace />} />
       </Route>
 
-      {/* ── Administrador ───────────────────────────────────── */}
+      {/* ── Administrador ──────────────────────────────────────── */}
       <Route
         path="/admin/*"
         element={
           <ProtectedRoute>
             <RoleRoute allowedRoles={[ROLES.ADMINISTRADOR]}>
-              <Routes>
-                <Route path="home" element={<AdminHomePage />} />
-                {/* Agregar más rutas de admin aquí */}
-                <Route path="*" element={<Navigate to="home" replace />} />
-              </Routes>
+              <AdminLayout />
             </RoleRoute>
           </ProtectedRoute>
         }
-      />
+      >
+        <Route path="home" element={<AdminHomePage />} />
+        <Route path="moderation" element={<AdminModerationPage />} />
+        {/* Agregar más rutas de admin aquí */}
+        <Route path="*" element={<Navigate to="home" replace />} />
+      </Route>
 
       {/* 404 */}
       <Route
