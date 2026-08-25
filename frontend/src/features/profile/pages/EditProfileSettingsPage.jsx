@@ -133,9 +133,9 @@ export default function EditProfileSettingsPage() {
   const handleSave = () => navigate("/professional/profile");
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex w-full flex-col gap-4 p-6">
       {/* CA01 — Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs text-[#A8A8AA]">
+      <nav className="flex items-center gap-2 text-xs text-[#A8A8AA]">
         <span
           className="cursor-pointer transition-colors hover:text-white"
           onClick={() => navigate("/professional/profile")}
@@ -154,19 +154,20 @@ export default function EditProfileSettingsPage() {
       </nav>
 
       {/* Contenedor principal */}
-      <div className="flex flex-col gap-8 rounded-[6px] bg-[#292929] p-6">
+      <div className="rounded-lg border border-[#262626] bg-[#212121]">
         {/* Título */}
-        <div>
-          <h1 className="text-2xl font-semibold text-white">
+        <div className="border-b border-[#2e2e2e] p-6 pb-5">
+          <h1 className="text-xl font-semibold text-white">
             Editar configuraciones de perfil
           </h1>
-          <p className="mt-1 text-sm text-[#A8A8AA]">
+          <p className="mt-1 text-xs text-[#8e8e93]">
             Podés agregar, modificar o corregir tu información personal y los
             datos de la cuenta.
           </p>
         </div>
 
-        <hr className="border-[#3a3a3a]" />
+        <div className="flex flex-col gap-8 p-6">
+        <hr className="border-[#2e2e2e]" />
 
         {/* CA02 — Información personal */}
         <div className="flex flex-col gap-4">
@@ -355,6 +356,7 @@ export default function EditProfileSettingsPage() {
             dos pasos.
           </InfoAlert>
         </div>
+        </div>{/* cierre flex flex-col gap-8 p-6 */}
       </div>
 
       {/* CA06 — Botones footer */}

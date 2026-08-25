@@ -98,43 +98,43 @@ export default function ProfessionalProfileSettingsPage() {
   const handleBack = () => navigate("/professional/profile");
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex w-full flex-col gap-4 p-6">
       {/* Breadcrumb */}
-      <nav className="text-xs text-[#A8A8AA]">
+      <nav className="flex items-center gap-2 text-xs text-[#A8A8AA]">
         <span
           className="cursor-pointer transition-colors hover:text-white"
           onClick={handleBack}
         >
           Mi perfil
         </span>
-        <span className="mx-1.5">›</span>
-        <span className="text-white">Configurar perfil</span>
+        <span>›</span>
+        <span className="font-medium text-white">Configurar perfil</span>
       </nav>
 
       {/* Contenedor principal */}
-      <div className="flex flex-col gap-6 rounded-[6px] bg-[#292929] p-6">
-
-        {/* CA01 — Encabezado: título + descripción + botón Editar */}
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-white">Configurar perfil</h1>
-            <p className="mt-1 text-sm text-[#A8A8AA]">
-              Podés agregar, modificar o corregir tu información personal y los datos de la cuenta.
-            </p>
+      <div className="flex min-h-[520px] flex-col justify-between rounded-lg border border-[#262626] bg-[#212121]">
+        <div>
+          {/* CA01 — Encabezado: título + descripción + botón Editar */}
+          <div className="flex items-start justify-between gap-4 border-b border-[#2e2e2e] p-6 pb-5">
+            <div>
+              <h1 className="text-xl font-semibold text-white">Configurar perfil</h1>
+              <p className="mt-1 text-xs text-[#8e8e93]">
+                Podés agregar, modificar o corregir tu información personal y los datos de la cuenta.
+              </p>
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="!w-auto shrink-0"
+              onClick={() => navigate("/professional/profile/profile-settings/edit-profile-settings")}
+            >
+              <PencilIcon className="h-4 w-4" />
+              Editar
+            </Button>
           </div>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="!w-auto shrink-0"
-            onClick={() => navigate("/professional/profile/profile-settings/edit-profile-settings")}
-          >
-            <PencilIcon className="h-4 w-4" />
-            Editar
-          </Button>
-        </div>
 
-        {/* Secciones de datos */}
-        <div className="flex flex-col gap-4">
+          {/* Secciones de datos */}
+          <div className="flex flex-col gap-4 p-6">
 
           {/* CA02 — Información personal */}
           <Section title="Información personal">
@@ -199,17 +199,26 @@ export default function ProfessionalProfileSettingsPage() {
               isComplete={true}
             />
           </Section>
+          </div>
         </div>
 
         {/* CA06 — Botones Volver / Cancelar */}
-        <div className="flex items-center justify-between gap-4 border-t border-[#3a3a3a] pt-4">
-          <Button variant="ghost" size="md" className="!w-auto" onClick={handleBack}>
-            <ArrowLeftIcon className="h-4 w-4" />
+        <div className="flex items-center justify-between border-t border-[#2e2e2e] p-6">
+          <button
+            type="button"
+            onClick={handleBack}
+            className="inline-flex items-center gap-2 rounded-md border border-[#3e3e3e] bg-transparent px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#2c2c2c]"
+          >
+            <ArrowLeftIcon className="h-3.5 w-3.5" />
             Volver
-          </Button>
-          <Button variant="ghost" size="md" className="!w-auto" onClick={handleBack}>
+          </button>
+          <button
+            type="button"
+            onClick={handleBack}
+            className="inline-flex items-center gap-2 rounded-md border border-[#3e3e3e] bg-transparent px-5 py-2 text-xs font-medium text-white transition-colors hover:bg-[#2c2c2c]"
+          >
             Cancelar
-          </Button>
+          </button>
         </div>
       </div>
 
