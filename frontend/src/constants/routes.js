@@ -8,6 +8,8 @@ export const ROUTES = {
   ROLE_SELECTION: "/role",
   REGISTER_CLIENT: "/register/client",
   REGISTER_PROFESSIONAL: "/register/professional",
+  RESET_PASSWORD: "/reset-password",
+  RESET_PASSWORD_CONFIRM: "/reset-password/confirm",
 
   // Cliente
   CLIENT_HOME: "/client/home",

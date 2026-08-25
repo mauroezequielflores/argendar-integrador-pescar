@@ -10,6 +10,8 @@ import RoleRoute from "./RoleRoute";
 import LoginPage from "../../features/auth/pages/LoginPage";
 import RoleSelectionPage from "../../features/auth/pages/RoleSelectionPage";
 import RegisterPage from "../../features/auth/pages/RegisterPage";
+import ResetPasswordPage from "../../features/auth/pages/ResetPasswordPage";
+import ResetPasswordConfirmPage from "../../features/auth/pages/ResetPasswordConfirmPage";
 
 // Home pages por rol
 import ClientHomePage from "../../features/home/pages/ClientHomePage";
@@ -75,6 +77,8 @@ export default function AppRouter() {
       <Route path={ROUTES.LOGIN} element={<LoginPage />} />
       <Route path={ROUTES.ROLE_SELECTION} element={<RoleSelectionPage />} />
       <Route path="/register/:role" element={<RegisterPage />} />
+      <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
+      <Route path={ROUTES.RESET_PASSWORD_CONFIRM} element={<ResetPasswordConfirmPage />} />
 
       {/* ── Cliente ─────────────────────────────────────────── */}
       <Route

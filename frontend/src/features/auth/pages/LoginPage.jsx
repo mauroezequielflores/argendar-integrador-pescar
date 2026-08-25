@@ -116,15 +116,13 @@ export default function LoginPage() {
           </div>
           <div>
             <Link
-              to={ROUTES.LOGIN}
+              to={ROUTES.RESET_PASSWORD}
               className="text-xs text-[#A8A8AA] hover:text-[#FD7B03] transition-colors"
             >
               ¿Olvidaste tu contraseña?
             </Link>
-
           </div>
         </div>
-
 
         {/* Error de servidor */}
         {serverError && (
@@ -156,7 +154,6 @@ export default function LoginPage() {
 
       {/* Links */}
       <div className="flex flex-col items-center gap-2">
-
         <p className="text-xs text-[#A8A8AA]">
           ¿No tenés una cuenta?{" "}
           <Link
