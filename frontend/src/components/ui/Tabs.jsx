@@ -9,21 +9,22 @@ import React from "react";
  */
 export default function Tabs({ tabs = [], activeTab, onChange, className = "" }) {
   return (
-    <div className={`flex items-center gap-6 border-b border-[#3f3f3f] ${className}`}>
+    <div className={`flex items-center gap-6 border-b border-[#323232] ${className}`}>
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
         return (
           <button
             key={tab.id}
+            type="button"
             onClick={() => onChange(tab.id)}
-            className={`flex items-center gap-2 pb-3 pt-1 text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 pb-3 pt-1 text-sm font-medium transition-colors cursor-pointer ${
               isActive
-                ? "border-b-2 border-[#FD7B03] text-white"
-                : "border-b-2 border-transparent text-[#A8A8AA] hover:text-white hover:border-[#3f3f3f]"
+                ? "border-b-2 border-[#F78736] text-white"
+                : "border-b-2 border-transparent text-[#A8A8AA] hover:text-white"
             }`}
           >
             {tab.icon && <tab.icon className="h-4 w-4" />}
-            {tab.label}
+            <span>{tab.label}</span>
           </button>
         );
       })}

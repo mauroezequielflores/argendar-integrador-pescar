@@ -27,8 +27,8 @@ import authBg from "../../../assets/images/auth-bg.png";
 
 // ─── Demo role selector ────────────────────────────────────────────────────
 // Cambiá este valor para simular diferentes roles en el login demo:
-// const DEMO_LOGIN_ROLE = ROLES.CLIENTE;
-const DEMO_LOGIN_ROLE = ROLES.ADMINISTRADOR;
+const DEMO_LOGIN_ROLE = ROLES.CLIENTE;
+//const DEMO_LOGIN_ROLE = ROLES.PROFESIONAL;
 // ──────────────────────────────────────────────────────────────────────────
 
 const ROLE_REDIRECT = {
