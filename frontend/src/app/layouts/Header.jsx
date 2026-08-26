@@ -14,7 +14,7 @@ export default function Header({
   userInitials = "A",
   userName = "Apellido Nombre",
   notifications = [], // Nuevo prop para las notificaciones
-  showNotifications = true,
+  showNotifications = true, // Permite ocultar el ícono de campana (ej. layout admin)
 }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -91,7 +91,7 @@ export default function Header({
         {/* Notificaciones y Configuración */}
         <div className="flex items-center gap-4">
           
-          {/* Dropdown de notificaciones */}
+          {/* Dropdown de notificaciones — se oculta cuando showNotifications=false */}
           {showNotifications && (
             <div className="relative" ref={dropdownRef}>
               <button
@@ -99,7 +99,7 @@ export default function Header({
                 onClick={handleNotificationIconClick}
               >
                 <BellIcon className="h-6 w-6" />
-                {/* Badge si hay notificaciones nuevas (opcional) */}
+                {/* Badge si hay notificaciones nuevas */}
                 {notifications.some(n => n.isNew) && (
                   <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-[#F78736] ring-2 ring-[#202020]"></span>
                 )}
