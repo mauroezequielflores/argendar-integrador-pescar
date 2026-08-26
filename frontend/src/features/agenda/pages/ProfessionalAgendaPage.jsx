@@ -23,6 +23,8 @@ import TurnoCard from "../components/TurnoCard";
 import TurnoDetalleModal from "../components/TurnoDetalleModal";
 import ConfirmacionFinalizarModal from "../components/ConfirmacionFinalizarModal";
 import RespuestaFinalizarModal from "../components/RespuestaFinalizarModal";
+import OfertaCard from "../components/OfertaCard";
+import SolicitudDetalleModal from "../components/SolicitudDetalleModal";
 
 // Data
 import { mockAgenda } from "../data/mockAgenda";
@@ -104,35 +106,7 @@ function FilterChips() {
   );
 }
 
-function OfertaCard({ oferta }) {
-  return (
-    <div className="rounded-[6px] border border-[#323232] bg-[#292929] p-4 flex flex-col gap-3">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm font-semibold text-white">{oferta.servicio}</p>
-          <p className="text-xs text-[#A8A8AA] mt-0.5">{oferta.cliente}</p>
-        </div>
-        <span className="rounded-full bg-[#323232] px-2.5 py-1 text-xs text-[#F78736] font-medium">
-          Pendiente
-        </span>
-      </div>
-      <div className="flex flex-wrap gap-3 text-xs text-[#A8A8AA]">
-        <span className="flex items-center gap-1">
-          <CalendarIcon className="h-4 w-4" />
-          {formatFecha(oferta.fecha)} · {oferta.hora}
-        </span>
-        <span className="flex items-center gap-1">
-          <MapPinIcon className="h-4 w-4" />
-          {oferta.direccion}
-        </span>
-        <span className="flex items-center gap-1">
-          <CurrencyDollarIcon className="h-4 w-4" />
-          ${oferta.monto.toLocaleString("es-AR")}
-        </span>
-      </div>
-    </div>
-  );
-}
+
 
 // ─── Paneles ─────────────────────────────────────────────────────────────────
 
@@ -163,7 +137,7 @@ function PanelProximosTurnos({ items, onVerDetalle }) {
   );
 }
 
-function PanelOfertas({ items }) {
+function PanelOfertas({ items, onVerDetalle, onVerMiOferta }) {
   const navigate = useNavigate();
 
   return (
@@ -192,7 +166,12 @@ function PanelOfertas({ items }) {
       ) : (
         <div className="flex flex-col gap-3">
           {items.map((oferta) => (
-            <OfertaCard key={oferta.id} oferta={oferta} />
+            <OfertaCard 
+              key={oferta.id} 
+              oferta={oferta} 
+              onVerDetalle={() => onVerDetalle(oferta)}
+              onVerMiOferta={() => onVerMiOferta(oferta)}
+            />
           ))}
         </div>
       )}
@@ -245,6 +224,10 @@ export default function ProfessionalAgendaPage() {
   const [isConfirmFinalizarOpen, setIsConfirmFinalizarOpen] = useState(false);
   const [isRespuestaOpen, setIsRespuestaOpen] = useState(false);
   const [respuestaExito, setRespuestaExito] = useState(true);
+  
+  // States para Ofertas
+  const [isSolicitudDetalleOpen, setIsSolicitudDetalleOpen] = useState(false);
+  const [selectedOferta, setSelectedOferta] = useState(null);
 
   const greeting = getGreeting();
   const firstName = user?.name ?? "Profesional";
@@ -254,6 +237,16 @@ export default function ProfessionalAgendaPage() {
   const handleVerDetalle = (turno) => {
     setSelectedTurno(turno);
     setIsDetalleOpen(true);
+  };
+
+  const handleVerDetalleOferta = (oferta) => {
+    setSelectedOferta(oferta);
+    setIsSolicitudDetalleOpen(true);
+  };
+
+  const handleVerMiOferta = (oferta) => {
+    // Lógica para ver detalle de la propuesta enviada
+    console.log("Ver mi oferta", oferta);
   };
 
   const handleConfirmarPago = () => {
@@ -345,7 +338,11 @@ export default function ProfessionalAgendaPage() {
         />
       )}
       {activeTab === "ofertas" && (
-        <PanelOfertas items={mockOfertasPendientes} />
+        <PanelOfertas 
+          items={mockOfertasPendientes} 
+          onVerDetalle={handleVerDetalleOferta}
+          onVerMiOferta={handleVerMiOferta}
+        />
       )}
       {activeTab === "historial" && (
         <PanelHistorial items={mockHistorial} />
@@ -371,6 +368,12 @@ export default function ProfessionalAgendaPage() {
         isOpen={isRespuestaOpen}
         isSuccess={respuestaExito}
         onClose={handleCloseRespuesta}
+      />
+      
+      <SolicitudDetalleModal
+        isOpen={isSolicitudDetalleOpen}
+        onClose={() => setIsSolicitudDetalleOpen(false)}
+        oferta={selectedOferta}
       />
     </div>
   );
