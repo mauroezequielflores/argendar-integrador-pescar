@@ -73,7 +73,8 @@ docs/
 .agents/
 .context/
 .prompts/
-
+prompts/
+promptsMauro/
 
 skills-lock.json
 
