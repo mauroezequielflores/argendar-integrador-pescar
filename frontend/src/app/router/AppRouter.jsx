@@ -23,6 +23,7 @@ import ProfessionalLayout from "../layouts/ProfessionalLayout";
 import AdminLayout from "../layouts/AdminLayout";
 import AdminDashboardPage from "../../features/dashboard/pages/AdminDashboardPage";
 import AdminModerationPage from "../../features/moderation/pages/AdminModerationPage";
+import { AdminTransactionsPage } from "../../features/transactions";
 
 import AgendaPage from "../../features/agenda/pages/AgendaPage";
 import CreateRequestPage from "../../features/agenda/pages/CreateRequestPage";
@@ -164,6 +165,7 @@ export default function AppRouter() {
       >
         <Route path="dashboard" element={<AdminDashboardPage />} />
         <Route path="moderation" element={<AdminModerationPage />} />
+        <Route path="transactions" element={<AdminTransactionsPage />} />
         <Route path="home" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
       </Route>

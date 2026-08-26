@@ -1,0 +1,47 @@
+export const mockTransactions = [
+  {
+    id: "TRX-10293",
+    usuario: "María González",
+    rol: "Cliente",
+    monto: 25000,
+    metodo: "MercadoPago",
+    fecha: "2024-03-15T14:30:00Z",
+    estado: "COMPLETADO",
+  },
+  {
+    id: "TRX-10294",
+    usuario: "Juan Pérez",
+    rol: "Profesional",
+    monto: 4500,
+    metodo: "Transferencia",
+    fecha: "2024-03-14T09:15:00Z",
+    estado: "PENDIENTE",
+  },
+  {
+    id: "TRX-10295",
+    usuario: "Laura Martínez",
+    rol: "Cliente",
+    monto: 12000,
+    metodo: "Tarjeta de Crédito",
+    fecha: "2024-03-13T16:45:00Z",
+    estado: "REEMBOLSADO",
+  },
+  {
+    id: "TRX-10296",
+    usuario: "Carlos López",
+    rol: "Profesional",
+    monto: 8500,
+    metodo: "MercadoPago",
+    fecha: "2024-03-12T11:20:00Z",
+    estado: "CANCELADO",
+  },
+  {
+    id: "TRX-10297",
+    usuario: "Ana Silva",
+    rol: "Cliente",
+    monto: 32000,
+    metodo: "Transferencia",
+    fecha: "2024-03-10T10:00:00Z",
+    estado: "COMPLETADO",
+  }
+];
