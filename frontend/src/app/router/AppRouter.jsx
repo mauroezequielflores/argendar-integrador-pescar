@@ -158,7 +158,7 @@ export default function AppRouter() {
         <Route path="home" element={<AdminHomePage />} />
         <Route path="moderation" element={<AdminModerationPage />} />
         {/* Agregar más rutas de admin aquí */}
-        <Route path="*" element={<Navigate to="home" replace />} />
+        <Route path="*" element={<Navigate to="/admin/home" replace />} />
       </Route>
 
       {/* 404 */}
