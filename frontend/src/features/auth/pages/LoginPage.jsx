@@ -29,12 +29,13 @@ import authBg from "../../../assets/images/auth-bg.png";
 // Cambiá este valor para simular diferentes roles en el login demo:
 const DEMO_LOGIN_ROLE = ROLES.CLIENTE;
 //const DEMO_LOGIN_ROLE = ROLES.PROFESIONAL;
+// const DEMO_LOGIN_ROLE = ROLES.ADMINISTRADOR;
 // ──────────────────────────────────────────────────────────────────────────
 
 const ROLE_REDIRECT = {
   [ROLES.CLIENTE]: ROUTES.CLIENT_HOME,
   [ROLES.PROFESIONAL]: ROUTES.PROFESSIONAL_HOME,
-  [ROLES.ADMINISTRADOR]: ROUTES.ADMIN_HOME,
+  [ROLES.ADMINISTRADOR]: ROUTES.ADMIN_DASHBOARD,
 };
 
 export default function LoginPage() {

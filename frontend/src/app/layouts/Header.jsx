@@ -14,6 +14,7 @@ export default function Header({
   userInitials = "A",
   userName = "Apellido Nombre",
   notifications = [], // Nuevo prop para las notificaciones
+  showNotifications = true,
 }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -91,62 +92,64 @@ export default function Header({
         <div className="flex items-center gap-4">
           
           {/* Dropdown de notificaciones */}
-          <div className="relative" ref={dropdownRef}>
-            <button
-              className="text-[#A8A8AA] hover:text-white transition-colors relative flex items-center justify-center"
-              onClick={handleNotificationIconClick}
-            >
-              <BellIcon className="h-6 w-6" />
-              {/* Badge si hay notificaciones nuevas (opcional) */}
-              {notifications.some(n => n.isNew) && (
-                <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-[#F78736] ring-2 ring-[#202020]"></span>
+          {showNotifications && (
+            <div className="relative" ref={dropdownRef}>
+              <button
+                className="text-[#A8A8AA] hover:text-white transition-colors relative flex items-center justify-center"
+                onClick={handleNotificationIconClick}
+              >
+                <BellIcon className="h-6 w-6" />
+                {/* Badge si hay notificaciones nuevas (opcional) */}
+                {notifications.some(n => n.isNew) && (
+                  <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-[#F78736] ring-2 ring-[#202020]"></span>
+                )}
+              </button>
+
+              {/* Menu del Dropdown */}
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-lg bg-[#292929] shadow-lg border border-[#323232] z-50 overflow-hidden">
+                  <div className="p-4 border-b border-[#323232] flex justify-between items-center">
+                    <h3 className="text-base font-bold text-white">Notificaciones</h3>
+                    <span className="text-xs text-[#A8A8AA] bg-[#323232] px-2 py-1 rounded-md">{notifications.length} nuevas</span>
+                  </div>
+                  
+                  <div className="max-h-96 overflow-y-auto p-2 flex flex-col gap-2">
+                    {notifications.slice(0, 5).map((n) => (
+                      <div key={n.id} onClick={() => setIsDropdownOpen(false)}>
+                        <NotificationCard
+                          title={n.titulo}
+                          description={n.descripcion}
+                          time={n.fecha}
+                          icon={n.icon}
+                          iconBgColor={n.iconBgColor}
+                          iconColor={n.iconColor}
+                          isNew={n.isNew}
+                          onClick={() => navigate(n.href || "#")}
+                        />
+                      </div>
+                    ))}
+                    {notifications.length === 0 && (
+                      <div className="p-4 text-center text-sm text-[#A8A8AA]">
+                        No hay notificaciones.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border-t border-[#323232]">
+                    <button
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        if (onNotificationClick) onNotificationClick();
+                      }}
+                      className="w-full text-center p-3 text-sm font-bold text-[#F78736] hover:bg-[#323232] transition-colors"
+                    >
+                      Ver todas las notificaciones
+                    </button>
+                  </div>
+                </div>
               )}
-            </button>
-
-            {/* Menu del Dropdown */}
-            {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-lg bg-[#292929] shadow-lg border border-[#323232] z-50 overflow-hidden">
-                <div className="p-4 border-b border-[#323232] flex justify-between items-center">
-                  <h3 className="text-base font-bold text-white">Notificaciones</h3>
-                  <span className="text-xs text-[#A8A8AA] bg-[#323232] px-2 py-1 rounded-md">{notifications.length} nuevas</span>
-                </div>
-                
-                <div className="max-h-96 overflow-y-auto p-2 flex flex-col gap-2">
-                  {notifications.slice(0, 5).map((n) => (
-                    <div key={n.id} onClick={() => setIsDropdownOpen(false)}>
-                      <NotificationCard
-                        title={n.titulo}
-                        description={n.descripcion}
-                        time={n.fecha}
-                        icon={n.icon}
-                        iconBgColor={n.iconBgColor}
-                        iconColor={n.iconColor}
-                        isNew={n.isNew}
-                        onClick={() => navigate(n.href || "#")}
-                      />
-                    </div>
-                  ))}
-                  {notifications.length === 0 && (
-                    <div className="p-4 text-center text-sm text-[#A8A8AA]">
-                      No hay notificaciones.
-                    </div>
-                  )}
-                </div>
-
-                <div className="border-t border-[#323232]">
-                  <button
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      if (onNotificationClick) onNotificationClick();
-                    }}
-                    className="w-full text-center p-3 text-sm font-bold text-[#F78736] hover:bg-[#323232] transition-colors"
-                  >
-                    Ver todas las notificaciones
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {onSettingsClick && (
             <button className="text-[#A8A8AA] hover:text-white transition-colors" onClick={onSettingsClick}>
