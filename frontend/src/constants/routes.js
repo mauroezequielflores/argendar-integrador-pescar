@@ -1,6 +1,6 @@
 /**
- * Rutas de la aplicación Argendar.
- * Centralizar todas las rutas aquí para facilitar el mantenimiento.
+ * Rutas de la aplicacion Argendar.
+ * Centralizar todas las rutas aqui para facilitar el mantenimiento.
  */
 export const ROUTES = {
   // Auth
@@ -8,6 +8,8 @@ export const ROUTES = {
   ROLE_SELECTION: "/role",
   REGISTER_CLIENT: "/register/client",
   REGISTER_PROFESSIONAL: "/register/professional",
+  RESET_PASSWORD: "/reset-password",
+  RESET_PASSWORD_CONFIRM: "/reset-password/confirm",
 
   // Cliente
   CLIENT_HOME: "/client/home",
@@ -38,6 +40,8 @@ export const ROUTES = {
   ADMIN_INBOX: "/admin/inbox",
   ADMIN_PROFESSIONALS: "/admin/professionals",
   ADMIN_CLIENTS: "/admin/clients",
+  ADMIN_TRANSACTIONS: "/admin/transactions",
+  ADMIN_MODERATION: "/admin/moderation",
   ADMIN_REPORTS: "/admin/reports",
   ADMIN_SETTINGS: "/admin/settings",
 };
