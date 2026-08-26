@@ -12,6 +12,7 @@ import {
 import { ROUTES } from "../../constants/routes";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
+import ChatbotWidget from "../../components/ui/ChatbotWidget";
 
 export default function ClientLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar state
@@ -106,6 +107,7 @@ export default function ClientLayout() {
           <Outlet />
         </main>
       </div>
+      <ChatbotWidget role="client" />
     </div>
   );
 }
