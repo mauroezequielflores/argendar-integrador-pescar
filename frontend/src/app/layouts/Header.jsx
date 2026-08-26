@@ -129,8 +129,14 @@ export default function Header({
                       </div>
                     ))}
                     {notifications.length === 0 && (
-                      <div className="p-4 text-center text-sm text-[#A8A8AA]">
-                        No hay notificaciones.
+                      <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+                        <BellIcon className="h-12 w-12 text-[#727272] mb-4" strokeWidth={1.5} />
+                        <h4 className="text-white font-bold text-base mb-1">
+                          No tenés notificaciones
+                        </h4>
+                        <p className="text-[#A8A8AA] text-sm">
+                          Te avisaremos cuando ocurra algo importante.
+                        </p>
                       </div>
                     )}
                   </div>

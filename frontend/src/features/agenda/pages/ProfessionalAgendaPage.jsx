@@ -21,8 +21,8 @@ import {
 // Feature Components
 import TurnoCard from "../components/TurnoCard";
 import TurnoDetalleModal from "../components/TurnoDetalleModal";
-import ConfirmacionFinalizarModal from "../components/ConfirmacionFinalizarModal";
-import RespuestaFinalizarModal from "../components/RespuestaFinalizarModal";
+import RechazoFinalizarModal from "../components/RechazoFinalizarModal";
+import ExitoFinalizarModal from "../components/ExitoFinalizarModal";
 import OfertaCard from "../components/OfertaCard";
 import SolicitudDetalleModal from "../components/SolicitudDetalleModal";
 
@@ -221,9 +221,8 @@ export default function ProfessionalAgendaPage() {
   
   // Modal states
   const [isDetalleOpen, setIsDetalleOpen] = useState(false);
-  const [isConfirmFinalizarOpen, setIsConfirmFinalizarOpen] = useState(false);
-  const [isRespuestaOpen, setIsRespuestaOpen] = useState(false);
-  const [respuestaExito, setRespuestaExito] = useState(true);
+  const [isRechazoOpen, setIsRechazoOpen] = useState(false);
+  const [isExitoOpen, setIsExitoOpen] = useState(false);
   
   // States para Ofertas
   const [isSolicitudDetalleOpen, setIsSolicitudDetalleOpen] = useState(false);
@@ -272,16 +271,15 @@ export default function ProfessionalAgendaPage() {
   };
 
   const handleFinalizarClick = () => {
-    setIsConfirmFinalizarOpen(true);
-  };
-
-  const handleConfirmarFinalizar = () => {
-    setIsConfirmFinalizarOpen(false);
-    setIsDetalleOpen(false);
+    if (selectedTurno?.pago?.estado === "PENDIENTE") {
+      setIsDetalleOpen(false);
+      setIsRechazoOpen(true);
+      return;
+    }
     
     // Simulate backend response (success)
-    setRespuestaExito(true);
-    setIsRespuestaOpen(true);
+    setIsDetalleOpen(false);
+    setIsExitoOpen(true);
     
     // Move to history in a real app, here we might just change status or filter it out
     if (selectedTurno) {
@@ -290,7 +288,8 @@ export default function ProfessionalAgendaPage() {
   };
 
   const handleCloseRespuesta = () => {
-    setIsRespuestaOpen(false);
+    setIsExitoOpen(false);
+    setIsRechazoOpen(false);
     setSelectedTurno(null);
   };
 
@@ -358,15 +357,13 @@ export default function ProfessionalAgendaPage() {
         onFinalizar={handleFinalizarClick}
       />
 
-      <ConfirmacionFinalizarModal 
-        isOpen={isConfirmFinalizarOpen}
-        onClose={() => setIsConfirmFinalizarOpen(false)}
-        onConfirm={handleConfirmarFinalizar}
+      <RechazoFinalizarModal 
+        isOpen={isRechazoOpen}
+        onClose={handleCloseRespuesta}
       />
 
-      <RespuestaFinalizarModal 
-        isOpen={isRespuestaOpen}
-        isSuccess={respuestaExito}
+      <ExitoFinalizarModal 
+        isOpen={isExitoOpen}
         onClose={handleCloseRespuesta}
       />
       
