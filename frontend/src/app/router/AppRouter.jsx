@@ -41,6 +41,11 @@ import ProfessionalMarketplacePage from "../../features/marketplace/pages/Profes
 import ProfessionalHelpPage from "../../features/help/pages/ProfessionalHelpPage";
 import ProfessionalProfilePage from "../../features/profile/pages/ProfessionalProfilePage";
 import EditProfessionalProfilePage from "../../features/profile/pages/EditProfessionalProfilePage";
+import ProfessionalProfileSettingsPage from "../../features/profile/pages/ProfessionalProfileSettingsPage";
+import EditProfileSettingsPage from "../../features/profile/pages/EditProfileSettingsPage";
+import ProfessionalProfilePrivacyPage from "../../features/profile/pages/ProfessionalProfilePrivacyPage";
+import ManagePrivacyPage from "../../features/profile/pages/ManagePrivacyPage";
+import CookieSettingsPage from "../../features/profile/pages/CookieSettingsPage";
 import NotificationsPage from "../../features/notifications/pages/NotificationsPage";
 import MarketplacePage from "../../features/marketplace/pages/MarketplacePage";
 import ProfilePage from "../../features/profile/pages/ProfilePage";
@@ -135,8 +140,11 @@ export default function AppRouter() {
         <Route path="marketplace" element={<ProfessionalMarketplacePage />} />
         <Route path="profile" element={<ProfessionalProfilePage />} />
         <Route path="profile/edit-profile" element={<EditProfessionalProfilePage />} />
-        <Route path="profile/profile-settings" element={<ProfileSettingsPage />} />
-        <Route path="profile/profile-privacy" element={<ProfilePrivacyPage />} />
+        <Route path="profile/profile-settings" element={<ProfessionalProfileSettingsPage />} />
+        <Route path="profile/profile-settings/edit-profile-settings" element={<EditProfileSettingsPage />} />
+        <Route path="profile/profile-privacy" element={<ProfessionalProfilePrivacyPage />} />
+        <Route path="profile/profile-privacy/manage-privacy" element={<ManagePrivacyPage />} />
+        <Route path="profile/profile-privacy/cookie-settings" element={<CookieSettingsPage />} />
         <Route path="profile/payment-methods" element={<PaymentMethodsPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="help" element={<ProfessionalHelpPage />} />

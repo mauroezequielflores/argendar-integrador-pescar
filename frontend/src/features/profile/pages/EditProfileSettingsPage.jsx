@@ -1,203 +1,394 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { 
-  ArrowLeftIcon,
+import { useState, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import {
   PencilSquareIcon,
-  MapPinIcon
+  MapPinIcon,
+  ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
-
-import Card from "../../../components/ui/Card";
-import Breadcrumbs from "../../../components/ui/Breadcrumbs";
-import EditField from "../components/EditField";
-import ToggleSwitch from "../../../components/ui/ToggleSwitch";
+import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import InfoAlert from "../../../components/ui/InfoAlert";
-import Loader from "../../../components/ui/Loader";
+import { mockProfessionalProfile } from "../data/mockProfessionalProfile";
 
-export default function EditProfileSettingsPage() {
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
+const PROFESIONES = ["Plomería", "Electricidad", "Frigorista"];
 
-  // Simulación de carga
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
+/** Mock de datos de edición. Reemplazar con datos reales del backend. */
+const initialData = {
+  nombre: mockProfessionalProfile.firstName,
+  apellido: mockProfessionalProfile.lastName,
+  dni: "",
+  ubicacion: "",
+  matricula: "",
+  profesion: PROFESIONES[0],
+  email: "carlos.martinez@email.com",
+  emailPermiso: true,
+  telefono: "",
+  telefonoPermiso: true,
+};
 
-  const handleBack = () => {
-    navigate("/client/profile/profile-settings");
-  };
+/* ── Toggle switch ──────────────────────────────────────────────── */
+function Toggle({ checked, onChange }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F78736] ${
+        checked ? "bg-[#F78736]" : "bg-[#3a3a3a]"
+      }`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ${
+          checked ? "translate-x-4" : "translate-x-0"
+        }`}
+      />
+    </button>
+  );
+}
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-1 items-center justify-center min-h-[500px]">
-        <Loader size="lg" />
-      </div>
-    );
-  }
+/* ── Campo editable — siempre activo, lápiz enfoca el input ─────── */
+function EditableField({ label, value, onChange, placeholder, required, prefix, hasCheck }) {
+  const inputRef = useRef(null);
 
   return (
-    <div className="flex-1 w-full max-w-[1200px] mx-auto p-4 md:p-6 lg:p-8">
-      {/* ─── Navegación Breadcrumbs ─── */}
-      <div className="mb-6">
-        <Breadcrumbs 
-          items={[
-            { label: "Mi perfil", href: "/client/profile" },
-            { label: "Configurar perfil", href: "/client/profile/profile-settings" },
-            { label: "Editar configuraciones de perfil" }
-          ]} 
-        />
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-1.5">
+        <label className="text-xs font-medium text-[#A8A8AA]">
+          {label}
+          {required && <span className="ml-0.5 text-red-500"> *</span>}
+        </label>
+        {hasCheck && value && <CheckCircleSolid className="h-4 w-4 text-green-500" />}
       </div>
+      <div className="flex items-center gap-2">
+        <div className="flex flex-1 items-center overflow-hidden rounded-[6px] border border-[#3a3a3a] bg-[#323232] focus-within:border-[#F78736] transition-colors">
+          {prefix && (
+            <span className="border-r border-[#3a3a3a] px-3 py-2.5 text-xs font-medium text-[#A8A8AA]">
+              {prefix}
+            </span>
+          )}
+          <input
+            ref={inputRef}
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            className="flex-1 bg-transparent px-3 py-2.5 text-sm text-white placeholder-[#A8A8AA] focus:outline-none"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => inputRef.current?.focus()}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] border border-[#3a3a3a] bg-[#323232] text-[#A8A8AA] transition-colors hover:border-[#F78736] hover:text-white"
+        >
+          <PencilSquareIcon className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
-      {/* ─── Contenedor Principal ─── */}
-      <Card className="border border-[#3a3a3a] bg-[#202020]">
-        
-        {/* Cabecera */}
-        <div className="p-6 md:p-8 border-b border-[#3a3a3a]">
-          <h1 className="text-[32px] font-bold text-white leading-none">Editar configuraciones de perfil</h1>
-          <p className="text-sm text-[#A8A8AA] mt-2">
-            Podés agregar, modificar o corregir tu información personal y los datos de la cuenta.
+/* ── Encabezado de sección ──────────────────────────────────────── */
+function SectionHeader({ title, description, action }) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <h2 className="text-xl font-semibold text-white">{title}</h2>
+        {description && (
+          <p className="mt-0.5 text-sm text-[#A8A8AA]">{description}</p>
+        )}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+/* ── Tarjeta de ítem (Ubicación / Matrícula) ────────────────────── */
+function InfoCard({ label, value, extra }) {
+  return (
+    <div className="flex items-start gap-3 rounded-[6px] border border-[#3a3a3a] bg-[#323232] p-4">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#3a3a3a]">
+        <MapPinIcon className="h-5 w-5 text-[#A8A8AA]" />
+      </div>
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wider text-[#A8A8AA]">
+          {label}
+        </p>
+        <p className="mt-0.5 text-sm text-[#A8A8AA]">{value || "-"}</p>
+        {extra && <p className="text-sm text-[#A8A8AA]">{extra}</p>}
+      </div>
+    </div>
+  );
+}
+
+/* ── Pantalla principal ─────────────────────────────────────────── */
+export default function EditProfileSettingsPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const match = location.pathname.match(/^\/(professional|client)/);
+  const prefix = match ? `/${match[1]}` : "";
+  const fileInputRef = useRef(null);
+  const [form, setForm] = useState(initialData);
+
+  const set = (field) => (value) =>
+    setForm((prev) => ({ ...prev, [field]: value }));
+
+  const handleBack = () => navigate(`${prefix}/profile/profile-settings`);
+  const handleSave = () => navigate(`${prefix}/profile`);
+
+  return (
+    <div className="flex w-full flex-col gap-4 p-6">
+      {/* CA01 — Breadcrumb */}
+      <nav className="flex items-center gap-2 text-xs text-[#A8A8AA]">
+        <span
+          className="cursor-pointer transition-colors hover:text-white"
+          onClick={() => navigate(`${prefix}/profile`)}
+        >
+          Mi perfil
+        </span>
+        <span>›</span>
+        <span
+          className="cursor-pointer transition-colors hover:text-white"
+          onClick={handleBack}
+        >
+          Configurar perfil
+        </span>
+        <span>›</span>
+        <span className="text-white">Editar configuraciones de perfil</span>
+      </nav>
+
+      {/* Contenedor principal */}
+      <div className="rounded-lg border border-[#262626] bg-[#212121]">
+        {/* Título */}
+        <div className="border-b border-[#2e2e2e] p-6 pb-5">
+          <h1 className="text-xl font-semibold text-white">
+            Editar configuraciones de perfil
+          </h1>
+          <p className="mt-1 text-xs text-[#8e8e93]">
+            Podés agregar, modificar o corregir tu información personal y los
+            datos de la cuenta.
           </p>
         </div>
 
-        {/* Contenido (Bloques) */}
-        <div className="p-6 md:p-8 flex flex-col gap-10">
-          
-          {/* Bloque 1: Información personal */}
-          <section>
-            <h2 className="text-[20px] font-semibold text-white mb-2">Información personal</h2>
-            <p className="text-sm text-[#A8A8AA] mb-6">
-              Ahora podés modificar tus datos. Estos cambios se verán reflejados en tu perfil profesional.
-            </p>
-            
-            <div className="flex flex-col gap-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <EditField 
-                  label="Nombre"
-                  value="Hernán"
-                  verified={true}
-                />
-                <EditField 
-                  label="Apellido"
-                  value="Gómez"
-                  verified={true}
-                />
-              </div>
+        <div className="flex flex-col gap-8 p-6">
+        <hr className="border-[#2e2e2e]" />
 
-              <InfoAlert>
-                Asegurate de que el nombre coincida con tu documento de identidad para evitar problemas en futuras validaciones de pagos o servicios.
-              </InfoAlert>
-
-              <div className="w-full">
-                <EditField 
-                  label="Número de documento"
-                  value="Ingresa tu número de documento"
-                  prefix="DNI"
-                  required={true}
-                />
-              </div>
-
-              <InfoAlert>
-                Tu número de documento nos ayuda a verificar tu identidad.
-              </InfoAlert>
-            </div>
-          </section>
-
-          {/* Bloque 2: Ubicación */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-[20px] font-semibold text-white mb-1">Ubicación</h2>
-                <p className="text-sm text-[#A8A8AA]">Seleccionar una ubicación en nuestro mapa:</p>
-              </div>
-              <button className="flex-shrink-0 flex items-center justify-center h-[38px] w-[38px] rounded-md border border-[#3a3a3a] bg-[#2e2e2e] hover:bg-[#3a3a3a] transition-colors">
-                <PencilSquareIcon className="h-4 w-4 text-white" />
-              </button>
-            </div>
-
-            <Card className="bg-[#292929] border border-[#3a3a3a] p-4 flex items-center gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[#3a3a3a] flex-shrink-0">
-                <MapPinIcon className="h-5 w-5 text-white" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-bold text-white uppercase tracking-wider mb-1">Ubicación Profesional Principal</span>
-                <span className="text-sm font-semibold text-white">Av. Santa Fe 2534, Piso 4, Dpto B</span>
-                <span className="text-xs text-[#A8A8AA]">Palermo, Ciudad Autónoma de Buenos Aires</span>
-              </div>
-            </Card>
-          </section>
-
-          {/* Bloque 3: Datos de la cuenta */}
-          <section>
-            <h2 className="text-[20px] font-semibold text-white mb-6">Datos de la cuenta</h2>
-            
-            <div className="flex flex-col gap-6">
-              <div className="w-full">
-                <EditField 
-                  label="Correo electrónico"
-                  value="correodeejemplo@hotmail.com"
-                  verified={true}
-                />
-              </div>
-
-              <div className="w-full flex items-center justify-between bg-[#292929] border border-[#3a3a3a] rounded-md p-4">
-                <div className="flex flex-col pr-4">
-                  <span className="text-sm font-medium text-white">Permisos de comunicaciones</span>
-                  <span className="text-xs text-[#A8A8AA] mt-1">Nos permiten enviarte comunicaciones de soporte o actualizaciones de la plataforma a tu correo electrónico.</span>
-                </div>
-                <ToggleSwitch initialEnabled={true} />
-              </div>
-
-              <div className="w-full">
-                <EditField 
-                  label="Número de teléfono"
-                  value="+5411908272675"
-                  required={true}
-                />
-              </div>
-
-              <div className="w-full flex items-center justify-between bg-[#292929] border border-[#3a3a3a] rounded-md p-4">
-                <div className="flex flex-col pr-4">
-                  <span className="text-sm font-medium text-white">Permisos de comunicaciones o verificación</span>
-                  <span className="text-xs text-[#A8A8AA] mt-1">Nos permiten enviarte códigos de verificación y comunicaciones de tu cuenta a tu número de teléfono.</span>
-                </div>
-                <ToggleSwitch initialEnabled={true} />
-              </div>
-
-              <div className="w-full">
-                <EditField 
-                  label="Contraseña"
-                  value="Cambiar contraseña"
-                  type="text" // Usamos text para que se lea literal "Cambiar contraseña" bloqueado como en la maqueta
-                  required={true}
-                />
-              </div>
-
-              <InfoAlert>
-                En caso de cambiar contraseña deberá realizar la verificación de dos pasos.
-              </InfoAlert>
-            </div>
-          </section>
-
+        {/* CA02 — Información personal */}
+        <div className="flex flex-col gap-4">
+          <SectionHeader
+            title="Información personal"
+            description="Ahora podés modificar tus datos. Estos cambios se verán reflejados en tu perfil profesional."
+          />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <EditableField
+              label="Nombre"
+              value={form.nombre}
+              onChange={set("nombre")}
+              placeholder="Ingresá tu nombre"
+              hasCheck
+            />
+            <EditableField
+              label="Apellido"
+              value={form.apellido}
+              onChange={set("apellido")}
+              placeholder="Ingresá tu apellido"
+              hasCheck
+            />
+          </div>
+          <InfoAlert>
+            Asegurate de que el nombre coincida con tu documento de identidad
+            para evitar problemas en futuras validaciones de pagos o servicios.
+          </InfoAlert>
+          <EditableField
+            label="Número de documento"
+            value={form.dni}
+            onChange={set("dni")}
+            placeholder="Ingresa tu número de documento"
+            required
+            prefix="DNI"
+          />
+          <InfoAlert>
+            Tu número de documento nos ayuda a verificar tu identidad.
+          </InfoAlert>
         </div>
 
-        {/* Footer (Botones de acción) */}
-        <div className="p-6 md:p-8 flex items-center justify-between border-t border-[#3a3a3a]">
-          <button 
-            onClick={handleBack} 
-            className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-[#A8A8AA] hover:text-[#FFFFFF] hover:bg-[#3a3a3a] transition-colors bg-transparent border border-transparent"
-          >
-            <ArrowLeftIcon className="h-4 w-4" />
-            Volver
-          </button>
-          <button 
-            onClick={handleBack} 
-            className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-[#A8A8AA] hover:text-[#FFFFFF] hover:border-[#FD7B03] transition-colors bg-transparent border border-[#3a3a3a]"
+        <hr className="border-[#3a3a3a]" />
+
+        {/* CA03 — Ubicación */}
+        <div className="flex flex-col gap-4">
+          <SectionHeader
+            title="Ubicación"
+            description="Seleccionar una ubicación en nuestro mapa:"
+            action={
+              <button
+                type="button"
+                title="Editar ubicación (futura integración Google Maps)"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] border border-[#3a3a3a] bg-[#323232] text-[#A8A8AA] transition-colors hover:border-[#F78736] hover:text-white"
+              >
+                <PencilSquareIcon className="h-4 w-4" />
+              </button>
+            }
+          />
+          <InfoCard label="Ubicación profesional principal" value={form.ubicacion} />
+        </div>
+
+        <hr className="border-[#3a3a3a]" />
+
+        {/* CA04 — Información profesional */}
+        <div className="flex flex-col gap-4">
+          <SectionHeader
+            title="Información profesional"
+            description="Completá nuestro formulario para que verificar tu matrícula."
+            action={
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  className="hidden"
+                  onChange={() => {}}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center gap-2 rounded-[6px] border border-[#3a3a3a] bg-[#323232] px-3 py-2 text-xs font-medium text-[#A8A8AA] transition-colors hover:border-[#F78736] hover:text-white"
+                >
+                  <PencilSquareIcon className="h-4 w-4" />
+                  Subir matrícula
+                </button>
+              </>
+            }
+          />
+          <InfoCard label="Matriculado en" value={form.matricula} extra="-" />
+
+          {/* Dropdown profesión */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-[#A8A8AA]">
+              Profesión seleccionada
+            </label>
+            <div className="flex items-center gap-2">
+              <select
+                value={form.profesion}
+                onChange={(e) => set("profesion")(e.target.value)}
+                className="flex-1 appearance-none rounded-[6px] border border-[#3a3a3a] bg-[#323232] px-3 py-2.5 text-sm text-white focus:border-[#F78736] focus:outline-none"
+              >
+                {PROFESIONES.map((p) => (
+                  <option key={p} value={p} className="bg-[#292929]">
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <hr className="border-[#3a3a3a]" />
+
+        {/* CA05 — Datos de la cuenta */}
+        <div className="flex flex-col gap-4">
+          <SectionHeader title="Datos de la cuenta" />
+
+          {/* Correo electrónico */}
+          <EditableField
+            label="Correo electrónico"
+            value={form.email}
+            onChange={set("email")}
+            placeholder="tu@email.com"
+            hasCheck
+          />
+          <div className="flex items-start justify-between gap-4 rounded-[6px] border border-[#3a3a3a] bg-[#323232] px-4 py-3">
+            <div>
+              <p className="text-sm font-medium text-white">
+                Permisos de comunicaciones
+              </p>
+              <p className="mt-0.5 text-xs text-[#A8A8AA]">
+                Nos permiten enviarte comunicaciones de soporte o
+                actualizaciones de la plataforma a tu correo electrónico.
+              </p>
+            </div>
+            <Toggle checked={form.emailPermiso} onChange={set("emailPermiso")} />
+          </div>
+
+          {/* Teléfono */}
+          <EditableField
+            label="Número de teléfono"
+            value={form.telefono}
+            onChange={set("telefono")}
+            placeholder="Ej: +54 11 1234-5678"
+            required
+          />
+          <div className="flex items-start justify-between gap-4 rounded-[6px] border border-[#3a3a3a] bg-[#323232] px-4 py-3">
+            <div>
+              <p className="text-sm font-medium text-white">
+                Permisos de comunicaciones o verificación
+              </p>
+              <p className="mt-0.5 text-xs text-[#A8A8AA]">
+                Nos permiten enviarte códigos de verificación y comunicaciones
+                de tu cuenta a tu número de teléfono.
+              </p>
+            </div>
+            <Toggle
+              checked={form.telefonoPermiso}
+              onChange={set("telefonoPermiso")}
+            />
+          </div>
+
+          {/* Contraseña (solo lectura) */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-[#A8A8AA]">
+              Contraseña<span className="ml-0.5 text-red-500"> *</span>
+            </label>
+            <div className="flex items-center gap-2">
+              <div className="flex flex-1 items-center rounded-[6px] border border-[#3a3a3a] bg-[#323232]">
+                <input
+                  type="text"
+                  value="Cambiar contraseña"
+                  readOnly
+                  className="flex-1 cursor-default bg-transparent px-3 py-2.5 text-sm text-[#A8A8AA] focus:outline-none"
+                />
+              </div>
+              <button
+                type="button"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] border border-[#3a3a3a] bg-[#323232] text-[#A8A8AA] transition-colors hover:border-[#F78736] hover:text-white"
+              >
+                <PencilSquareIcon className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          <InfoAlert>
+            En caso de cambiar contraseña deberá realizar la verificación de
+            dos pasos.
+          </InfoAlert>
+        </div>
+        </div>{/* cierre flex flex-col gap-8 p-6 */}
+      </div>
+
+      {/* CA06 — Botones footer */}
+      <div className="flex items-center justify-between gap-4">
+        <button
+          type="button"
+          onClick={handleBack}
+          className="inline-flex items-center gap-2 rounded-[6px] border border-[#3a3a3a] bg-transparent px-4 py-2.5 text-xs font-medium text-[#A8A8AA] transition-colors hover:border-[#F78736] hover:text-white"
+        >
+          <ArrowLeftIcon className="h-4 w-4" />
+          Volver
+        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleBack}
+            className="inline-flex items-center gap-2 rounded-[6px] border border-[#3a3a3a] bg-transparent px-4 py-2.5 text-xs font-medium text-[#A8A8AA] transition-colors hover:border-[#F78736] hover:text-white"
           >
             Cancelar
           </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            className="inline-flex items-center gap-2 rounded-[6px] bg-[#F78736] px-4 py-2.5 text-xs font-medium text-white transition-colors hover:bg-[#e06d00] active:scale-[0.98]"
+          >
+            Guardar cambios
+          </button>
         </div>
-
-      </Card>
+      </div>
     </div>
   );
 }
