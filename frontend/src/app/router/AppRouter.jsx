@@ -16,8 +16,6 @@ import ResetPasswordConfirmPage from "../../features/auth/pages/ResetPasswordCon
 // Home pages por rol
 import ClientHomePage from "../../features/home/pages/ClientHomePage";
 import ProfessionalHomePage from "../../features/home/pages/ProfessionalHomePage";
-import AdminHomePage from "../../features/home/pages/AdminHomePage";
-import AdminDashboardPage from "../../features/home/pages/AdminDashboardPage";
 
 // Layouts
 import ClientLayout from "../layouts/ClientLayout";
