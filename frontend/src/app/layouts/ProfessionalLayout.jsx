@@ -13,6 +13,7 @@ import { ROUTES } from "../../constants/routes";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import { mockNotificaciones } from "../../features/notifications/data/mockProfessionalNotifications";
+import ChatbotWidget from "../../components/ui/ChatbotWidget";
 
 export default function ProfessionalLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -107,6 +108,7 @@ export default function ProfessionalLayout() {
           <Outlet />
         </main>
       </div>
+      <ChatbotWidget role="professional" />
     </div>
   );
 }
