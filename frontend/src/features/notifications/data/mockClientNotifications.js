@@ -16,6 +16,25 @@ import {
  */
 
 export const mockClientNotificaciones = [
+  {
+    id: "cn-reminder-1",
+    tipo: "reminder",
+    titulo: "Recordatorio",
+    descripcion: "Tenés un turno programado para mañana.",
+    fecha: "AYER",
+    timestamp: 1713900000000,
+    icon: CalendarDaysIcon,
+    iconBgColor: "bg-white",
+    iconColor: "text-[#F78736]",
+    isNew: false,
+    href: "/client/agenda",
+    professionalName: "Ricardo Gómez",
+    professionalInitials: "RG",
+    serviceName: "Instalación eléctrica",
+    status: "PENDIENTE",
+    date: "28/07/2026 15:30 hs",
+    timeAgo: "hace 2 días",
+  },
   // Dejar vacío por defecto para visualizar el Empty State: "No tenés notificaciones"
   // Ejemplo de estructura para cuando existan notificaciones activas:
   /*
