@@ -9,6 +9,7 @@ import FilterBar from "../../../components/ui/FilterBar";
 import SortSelect from "../../../components/ui/SortSelect";
 import EmptyState from "../../../components/ui/EmptyState";
 import NotificationCard from "../../../components/ui/NotificationCard";
+import OfferSummary from "../components/OfferSummary";
 
 import {
   mockClientNotificaciones,
@@ -44,6 +45,7 @@ export default function NotificationsPage() {
   const [activeTab, setActiveTab] = useState("todas");
   const [sortBy, setSortBy] = useState("todo");
   const [activeFilterId, setActiveFilterId] = useState("todo");
+  const [selectedOffer, setSelectedOffer] = useState(null);
 
   // Breadcrumbs items
   const breadcrumbItems = [
@@ -124,7 +126,7 @@ export default function NotificationsPage() {
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <p className="text-sm font-medium text-white">
-            Tenes <span className="font-semibold">{processedItems.length}</span> turnos encontradas
+            Tenés <span className="font-semibold">{processedItems.length}</span> notificaciones encontradas
           </p>
           <SortSelect
             label="Ordenar por:"
@@ -165,12 +167,30 @@ export default function NotificationsPage() {
                 iconBgColor={notification.iconBgColor}
                 iconColor={notification.iconColor}
                 isNew={notification.isNew}
-                onClick={() => navigate(notification.href || "#")}
+                onClick={() => {
+                  if (notification.tipo === "new_offer") {
+                    setSelectedOffer(notification);
+                    return;
+                  }
+                  navigate(notification.href || "#");
+                }}
               />
             ))}
           </div>
         )}
       </div>
+
+      {selectedOffer && (
+        <OfferSummary
+          offer={selectedOffer}
+          onClose={() => setSelectedOffer(null)}
+          onViewProfile={() => navigate("/client/marketplace")}
+          onAccept={() => {
+            setSelectedOffer(null);
+            navigate(ROUTES.CLIENT_AGENDA);
+          }}
+        />
+      )}
     </div>
   );
 }
