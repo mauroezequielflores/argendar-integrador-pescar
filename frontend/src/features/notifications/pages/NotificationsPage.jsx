@@ -9,6 +9,7 @@ import FilterBar from "../../../components/ui/FilterBar";
 import SortSelect from "../../../components/ui/SortSelect";
 import EmptyState from "../../../components/ui/EmptyState";
 import NotificationCard from "../../../components/ui/NotificationCard";
+import ReminderSummary from "../components/ReminderSummary";
 
 import {
   mockClientNotificaciones,
@@ -44,6 +45,7 @@ export default function NotificationsPage() {
   const [activeTab, setActiveTab] = useState("todas");
   const [sortBy, setSortBy] = useState("todo");
   const [activeFilterId, setActiveFilterId] = useState("todo");
+  const [selectedReminder, setSelectedReminder] = useState(null);
 
   // Breadcrumbs items
   const breadcrumbItems = [
@@ -124,7 +126,7 @@ export default function NotificationsPage() {
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <p className="text-sm font-medium text-white">
-            Tenes <span className="font-semibold">{processedItems.length}</span> turnos encontradas
+            Tenés <span className="font-semibold">{processedItems.length}</span> notificaciones encontradas
           </p>
           <SortSelect
             label="Ordenar por:"
@@ -165,12 +167,26 @@ export default function NotificationsPage() {
                 iconBgColor={notification.iconBgColor}
                 iconColor={notification.iconColor}
                 isNew={notification.isNew}
-                onClick={() => navigate(notification.href || "#")}
+                onClick={() => {
+                  if (notification.tipo === "reminder") {
+                    setSelectedReminder(notification);
+                    return;
+                  }
+                  navigate(notification.href || "#");
+                }}
               />
             ))}
           </div>
         )}
       </div>
+
+      {selectedReminder && (
+        <ReminderSummary
+          reminder={selectedReminder}
+          onClose={() => setSelectedReminder(null)}
+          onViewDetails={() => navigate(selectedReminder.href || ROUTES.CLIENT_AGENDA)}
+        />
+      )}
     </div>
   );
 }
