@@ -48,6 +48,8 @@ export default function NotificationsPage() {
   const [activeFilterId, setActiveFilterId] = useState("todo");
   const [selectedReminder, setSelectedReminder] = useState(null);
   const [selectedOffer, setSelectedOffer] = useState(null);
+  const [notifications, setNotifications] = useState(mockClientNotificaciones);
+  const [history, setHistory] = useState(mockClientHistorial);
 
   // Breadcrumbs items
   const breadcrumbItems = [
@@ -56,7 +58,7 @@ export default function NotificationsPage() {
   ];
 
   // Lista base según pestaña activa
-  const rawItems = activeTab === "todas" ? mockClientNotificaciones : mockClientHistorial;
+  const rawItems = activeTab === "todas" ? notifications : history;
 
   // Filtrado y ordenamiento de items
   const processedItems = useMemo(() => {
@@ -83,6 +85,30 @@ export default function NotificationsPage() {
   const handleRemoveFilter = () => {
     setActiveFilterId(null);
     setSortBy("todo");
+  };
+
+  const handleNotificationClick = (notification) => {
+    const readNotification = { ...notification, isNew: false };
+    setNotifications((currentNotifications) =>
+      currentNotifications.map((item) =>
+        item.id === notification.id ? readNotification : item,
+      ),
+    );
+    setHistory((currentHistory) => [
+      readNotification,
+      ...currentHistory.filter((item) => item.id !== notification.id),
+    ]);
+
+    if (notification.tipo === "reminder") {
+      setSelectedReminder(notification);
+      return;
+    }
+    if (notification.tipo === "new_offer") {
+      setSelectedOffer(notification);
+      return;
+    }
+
+    navigate(notification.href || ROUTES.CLIENT_AGENDA);
   };
 
   // Filtros activos a mostrar en FilterBar
@@ -169,17 +195,7 @@ export default function NotificationsPage() {
                 iconBgColor={notification.iconBgColor}
                 iconColor={notification.iconColor}
                 isNew={notification.isNew}
-                onClick={() => {
-                  if (notification.tipo === "reminder") {
-                    setSelectedReminder(notification);
-                    return;
-                  }
-                  if (notification.tipo === "new_offer") {
-                    setSelectedOffer(notification);
-                    return;
-                  }
-                  navigate(notification.href || "#");
-                }}
+                onClick={() => handleNotificationClick(notification)}
               />
             ))}
           </div>
