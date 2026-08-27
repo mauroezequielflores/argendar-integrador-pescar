@@ -44,6 +44,8 @@ export default function NotificationsPage() {
   const [activeTab, setActiveTab] = useState("todas");
   const [sortBy, setSortBy] = useState("todo");
   const [activeFilterId, setActiveFilterId] = useState("todo");
+  const [notifications, setNotifications] = useState(mockClientNotificaciones);
+  const [history, setHistory] = useState(mockClientHistorial);
 
   // Breadcrumbs items
   const breadcrumbItems = [
@@ -52,7 +54,7 @@ export default function NotificationsPage() {
   ];
 
   // Lista base según pestaña activa
-  const rawItems = activeTab === "todas" ? mockClientNotificaciones : mockClientHistorial;
+  const rawItems = activeTab === "todas" ? notifications : history;
 
   // Filtrado y ordenamiento de items
   const processedItems = useMemo(() => {
@@ -79,6 +81,20 @@ export default function NotificationsPage() {
   const handleRemoveFilter = () => {
     setActiveFilterId(null);
     setSortBy("todo");
+  };
+
+  const handleNotificationClick = (notification) => {
+    const readNotification = { ...notification, isNew: false };
+    setNotifications((currentNotifications) =>
+      currentNotifications.map((item) =>
+        item.id === notification.id ? readNotification : item,
+      ),
+    );
+    setHistory((currentHistory) => [
+      readNotification,
+      ...currentHistory.filter((item) => item.id !== notification.id),
+    ]);
+    navigate(notification.href || ROUTES.CLIENT_AGENDA);
   };
 
   // Filtros activos a mostrar en FilterBar
@@ -124,7 +140,7 @@ export default function NotificationsPage() {
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <p className="text-sm font-medium text-white">
-            Tenes <span className="font-semibold">{processedItems.length}</span> turnos encontradas
+            Tenés <span className="font-semibold">{processedItems.length}</span> notificaciones encontradas
           </p>
           <SortSelect
             label="Ordenar por:"
@@ -165,7 +181,7 @@ export default function NotificationsPage() {
                 iconBgColor={notification.iconBgColor}
                 iconColor={notification.iconColor}
                 isNew={notification.isNew}
-                onClick={() => navigate(notification.href || "#")}
+                onClick={() => handleNotificationClick(notification)}
               />
             ))}
           </div>

@@ -1,11 +1,9 @@
 import {
-  BellIcon,
   CalendarDaysIcon,
   CheckCircleIcon,
   CreditCardIcon,
   ExclamationTriangleIcon,
   StarIcon,
-  XCircleIcon,
 } from "@heroicons/react/24/solid";
 
 /**
@@ -16,27 +14,39 @@ import {
  */
 
 export const mockClientNotificaciones = [
-  // Dejar vacío por defecto para visualizar el Empty State: "No tenés notificaciones"
-  // Ejemplo de estructura para cuando existan notificaciones activas:
-  /*
   {
-    id: "cn-1",
-    titulo: "¡Turno confirmado!",
-    descripcion: "El profesional aceptó tu solicitud de servicio.",
-    fecha: "HACE 10 MIN",
+    id: "cn-offer-1",
+    tipo: "offer",
+    titulo: "¡Tenés una oferta nueva!",
+    descripcion: "Un profesional publicó una nueva oferta a tu solicitud.",
+    fecha: "HACE 5 MIN",
     timestamp: 1714000000000,
     icon: CheckCircleIcon,
     iconBgColor: "bg-white",
-    iconColor: "text-[#4CAF50]",
+    iconColor: "text-[#4A8F3A]",
     isNew: true,
     href: "/client/agenda",
   },
   {
-    id: "cn-2",
-    titulo: "Recordatorio de turno",
-    descripcion: "Tenés un turno programado para mañana a las 14:00 hs.",
-    fecha: "AYER",
+    id: "cn-payment-1",
+    tipo: "payment",
+    titulo: "Pago confirmado",
+    descripcion: "Se acreditó correctamente el pago.",
+    fecha: "HACE 1 HORA",
     timestamp: 1713900000000,
+    icon: CreditCardIcon,
+    iconBgColor: "bg-white",
+    iconColor: "text-[#3B82F6]",
+    isNew: false,
+    href: "/client/agenda",
+  },
+  {
+    id: "cn-reminder-1",
+    tipo: "reminder",
+    titulo: "Recordatorio",
+    descripcion: "Tenés un turno programado para mañana.",
+    fecha: "AYER",
+    timestamp: 1713800000000,
     icon: CalendarDaysIcon,
     iconBgColor: "bg-white",
     iconColor: "text-[#F78736]",
@@ -44,18 +54,31 @@ export const mockClientNotificaciones = [
     href: "/client/agenda",
   },
   {
-    id: "cn-3",
-    titulo: "Pago procesado",
-    descripcion: "Se acreditó correctamente el pago de tu servicio.",
+    id: "cn-cancelled-1",
+    tipo: "cancellation",
+    titulo: "Turno cancelado",
+    descripcion: "El profesional canceló tu turno programado.",
     fecha: "HACE 2 DÍAS",
     timestamp: 1713800000000,
-    icon: CreditCardIcon,
+    icon: ExclamationTriangleIcon,
     iconBgColor: "bg-white",
-    iconColor: "text-[#3B82F6]",
+    iconColor: "text-[#EF4444]",
     isNew: false,
-    href: "/client/profile/payment-methods",
+    href: "/client/agenda",
   },
-  */
+  {
+    id: "cn-rating-1",
+    tipo: "rating",
+    titulo: "Calificá tu turno",
+    descripcion: "El servicio finalizó, contanos cómo fue tu experiencia.",
+    fecha: "HACE 3 DÍAS",
+    timestamp: 1713700000000,
+    icon: StarIcon,
+    iconBgColor: "bg-white",
+    iconColor: "text-[#EAB308]",
+    isNew: true,
+    href: "/client/agenda",
+  },
 ];
 
 export const mockClientHistorial = [
