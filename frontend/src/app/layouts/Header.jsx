@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Bars3Icon, MagnifyingGlassIcon, BellIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import Avatar from "../../components/ui/Avatar";
-import NotificationCard from "../../components/ui/NotificationCard";
+import NotificationDropdown from "../../features/notifications/components/NotificationDropdown";
 
 export default function Header({
   logoLink = "/",
@@ -14,6 +14,7 @@ export default function Header({
   userInitials = "A",
   userName = "Apellido Nombre",
   notifications = [], // Nuevo prop para las notificaciones
+  onNotificationRead,
   showNotifications = true, // Permite ocultar el ícono de campana (ej. layout admin)
 }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -32,16 +33,12 @@ export default function Header({
   }, []);
 
   const handleNotificationIconClick = () => {
-    if (notifications.length > 0) {
-      setIsDropdownOpen(!isDropdownOpen);
-    } else if (onNotificationClick) {
-      onNotificationClick();
-    }
+    setIsDropdownOpen((isOpen) => !isOpen);
   };
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-[#292929] bg-[#202020] w-full z-40 relative">
-      
+
       {/* Lado izquierdo */}
       <div className="flex items-center gap-4 w-auto lg:w-64 shrink-0 px-4 lg:px-8">
         {onMobileMenuClick && (
@@ -77,7 +74,7 @@ export default function Header({
 
       {/* Lado derecho */}
       <div className="flex items-center gap-6 px-4 lg:px-8 shrink-0">
-        
+
         {/* Nombre y Avatar */}
         <div className="flex items-center gap-3">
           <span className="hidden text-sm font-medium lg:block text-white">
@@ -90,7 +87,7 @@ export default function Header({
 
         {/* Notificaciones y Configuración */}
         <div className="flex items-center gap-4">
-          
+
           {/* Dropdown de notificaciones — se oculta cuando showNotifications=false */}
           {showNotifications && (
             <div className="relative" ref={dropdownRef}>
@@ -107,52 +104,15 @@ export default function Header({
 
               {/* Menu del Dropdown */}
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-lg bg-[#292929] shadow-lg border border-[#323232] z-50 overflow-hidden">
-                  <div className="p-4 border-b border-[#323232] flex justify-between items-center">
-                    <h3 className="text-base font-bold text-white">Notificaciones</h3>
-                    <span className="text-xs text-[#A8A8AA] bg-[#323232] px-2 py-1 rounded-md">{notifications.length} nuevas</span>
-                  </div>
-                  
-                  <div className="max-h-96 overflow-y-auto p-2 flex flex-col gap-2">
-                    {notifications.slice(0, 5).map((n) => (
-                      <div key={n.id} onClick={() => setIsDropdownOpen(false)}>
-                        <NotificationCard
-                          title={n.titulo}
-                          description={n.descripcion}
-                          time={n.fecha}
-                          icon={n.icon}
-                          iconBgColor={n.iconBgColor}
-                          iconColor={n.iconColor}
-                          isNew={n.isNew}
-                          onClick={() => navigate(n.href || "#")}
-                        />
-                      </div>
-                    ))}
-                    {notifications.length === 0 && (
-                      <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-                        <BellIcon className="h-12 w-12 text-[#727272] mb-4" strokeWidth={1.5} />
-                        <h4 className="text-white font-bold text-base mb-1">
-                          No tenés notificaciones
-                        </h4>
-                        <p className="text-[#A8A8AA] text-sm">
-                          Te avisaremos cuando ocurra algo importante.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="border-t border-[#323232]">
-                    <button
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        if (onNotificationClick) onNotificationClick();
-                      }}
-                      className="w-full text-center p-3 text-sm font-bold text-[#F78736] hover:bg-[#323232] transition-colors"
-                    >
-                      Ver todas las notificaciones
-                    </button>
-                  </div>
-                </div>
+                <NotificationDropdown
+                  notifications={notifications}
+                  onClose={() => setIsDropdownOpen(false)}
+                  onRead={onNotificationRead}
+                  onViewAll={() => {
+                    setIsDropdownOpen(false);
+                    onNotificationClick?.();
+                  }}
+                />
               )}
             </div>
           )}
