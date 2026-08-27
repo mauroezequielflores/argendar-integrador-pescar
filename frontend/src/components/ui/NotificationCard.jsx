@@ -30,7 +30,7 @@ export default function NotificationCard({
             <h3 className="text-[14px] font-medium text-white">{title}</h3>
             {isNew && (
               <span className="rounded-[4px] border border-[#323232] bg-transparent px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-white uppercase">
-                Nuevo
+                NUEVO
               </span>
             )}
           </div>

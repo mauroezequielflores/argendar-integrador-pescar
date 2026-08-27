@@ -10,6 +10,7 @@ import SortSelect from "../../../components/ui/SortSelect";
 import EmptyState from "../../../components/ui/EmptyState";
 import NotificationCard from "../../../components/ui/NotificationCard";
 import ReminderSummary from "../components/ReminderSummary";
+import OfferSummary from "../components/OfferSummary";
 
 import {
   mockClientNotificaciones,
@@ -46,6 +47,7 @@ export default function NotificationsPage() {
   const [sortBy, setSortBy] = useState("todo");
   const [activeFilterId, setActiveFilterId] = useState("todo");
   const [selectedReminder, setSelectedReminder] = useState(null);
+  const [selectedOffer, setSelectedOffer] = useState(null);
 
   // Breadcrumbs items
   const breadcrumbItems = [
@@ -172,6 +174,10 @@ export default function NotificationsPage() {
                     setSelectedReminder(notification);
                     return;
                   }
+                  if (notification.tipo === "new_offer") {
+                    setSelectedOffer(notification);
+                    return;
+                  }
                   navigate(notification.href || "#");
                 }}
               />
@@ -185,6 +191,18 @@ export default function NotificationsPage() {
           reminder={selectedReminder}
           onClose={() => setSelectedReminder(null)}
           onViewDetails={() => navigate(selectedReminder.href || ROUTES.CLIENT_AGENDA)}
+        />
+      )}
+
+      {selectedOffer && (
+        <OfferSummary
+          offer={selectedOffer}
+          onClose={() => setSelectedOffer(null)}
+          onViewProfile={() => navigate("/client/marketplace")}
+          onAccept={() => {
+            setSelectedOffer(null);
+            navigate(ROUTES.CLIENT_AGENDA);
+          }}
         />
       )}
     </div>
