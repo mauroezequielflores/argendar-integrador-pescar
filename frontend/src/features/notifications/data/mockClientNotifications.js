@@ -58,6 +58,64 @@ export const mockClientNotificaciones = [
   */
 ];
 
+export const mockClientHeaderNotifications = [
+  {
+    id: "header-1",
+    titulo: "¡Tenés una oferta nueva!",
+    descripcion: "Un profesional publicó una nueva oferta a tu solicitud.",
+    fecha: "HACE 5 MIN",
+    icon: CheckCircleIcon,
+    iconBgColor: "bg-white",
+    iconColor: "text-[#4CAF50]",
+    isNew: true,
+    href: "/client/agenda",
+  },
+  {
+    id: "header-2",
+    titulo: "Pago confirmado",
+    descripcion: "Se acreditó correctamente el pago.",
+    fecha: "HACE 1 HORA",
+    icon: CreditCardIcon,
+    iconBgColor: "bg-white",
+    iconColor: "text-[#3B82F6]",
+    isNew: false,
+    href: "/client/agenda",
+  },
+  {
+    id: "header-3",
+    titulo: "Recordatorio",
+    descripcion: "Tenés un turno programado para mañana.",
+    fecha: "AYER",
+    icon: CalendarDaysIcon,
+    iconBgColor: "bg-white",
+    iconColor: "text-[#F78736]",
+    isNew: false,
+    href: "/client/agenda",
+  },
+  {
+    id: "header-4",
+    titulo: "Turno cancelado",
+    descripcion: "El profesional canceló tu turno programado para...",
+    fecha: "HACE 2 DÍAS",
+    icon: ExclamationTriangleIcon,
+    iconBgColor: "bg-white",
+    iconColor: "text-[#F78736]",
+    isNew: false,
+    href: "/client/agenda",
+  },
+  {
+    id: "header-5",
+    titulo: "¡Ya podés calificar tu turno “Repara...”!",
+    descripcion: "Calificá el turno y contanos un poco sobre tu experiencia.",
+    fecha: "HACE 5 MIN",
+    icon: StarIcon,
+    iconBgColor: "bg-white",
+    iconColor: "text-[#EAB308]",
+    isNew: true,
+    href: "/client/agenda",
+  },
+];
+
 export const mockClientHistorial = [
   // Dejar vacío por defecto para visualizar el Empty State: "No tenés notificaciones leidas"
   /*
