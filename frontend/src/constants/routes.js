@@ -3,6 +3,10 @@
  * Centralizar todas las rutas aqui para facilitar el mantenimiento.
  */
 export const ROUTES = {
+  // Landing (público)
+  LANDING_CLIENT: "/landing-page/client",
+  LANDING_PROFESSIONAL: "/landing-page/professional",
+
   // Auth
   LOGIN: "/login",
   ROLE_SELECTION: "/role",

@@ -75,9 +75,7 @@ import NotificationCard from "../../../components/ui/NotificationCard";
 
 // ─── Paneles ─────────────────────────────────────────────────────────────────
 
-function PanelTodas({ items }) {
-  const navigate = useNavigate();
-
+function PanelTodas({ items, onNotificationClick }) {
   return (
     <div className="flex flex-col gap-3">
       <FilterBar count={items.length} />
@@ -100,7 +98,7 @@ function PanelTodas({ items }) {
               iconBgColor={n.iconBgColor}
               iconColor={n.iconColor}
               isNew={n.isNew}
-              onClick={() => navigate(n.href || "#")}
+              onClick={() => onNotificationClick ? onNotificationClick(n) : null}
             />
           ))
         )}
@@ -109,9 +107,7 @@ function PanelTodas({ items }) {
   );
 }
 
-function PanelHistorial({ items }) {
-  const navigate = useNavigate();
-
+function PanelHistorial({ items, onNotificationClick }) {
   return (
     <div className="flex flex-col gap-3">
       <FilterBar count={items.length} />
@@ -134,7 +130,7 @@ function PanelHistorial({ items }) {
               iconBgColor={n.iconBgColor}
               iconColor={n.iconColor}
               isNew={n.isNew}
-              onClick={() => navigate(n.href || "#")}
+              onClick={() => onNotificationClick ? onNotificationClick(n) : null}
             />
           ))
         )}
@@ -144,13 +140,23 @@ function PanelHistorial({ items }) {
 }
 
 // ─── Página principal ─────────────────────────────────────────────────────────
+import ReminderSummary from "../components/ReminderSummary";
 
 export default function ProfessionalNotificationsPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("todas");
+  const [selectedReminder, setSelectedReminder] = useState(null);
+
+  const handleNotificationClick = (n) => {
+    if (n.titulo === "Recordatorio") {
+      setSelectedReminder(n);
+    } else {
+      navigate(n.href || "#");
+    }
+  };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 relative">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-xs text-[#A8A8AA]">
         <span
@@ -175,9 +181,17 @@ export default function ProfessionalNotificationsPage() {
       <TabNav active={activeTab} onChange={setActiveTab} />
 
       {/* Contenido del tab activo */}
-      {activeTab === "todas" && <PanelTodas items={mockNotificaciones} />}
+      {activeTab === "todas" && <PanelTodas items={mockNotificaciones} onNotificationClick={handleNotificationClick} />}
       {activeTab === "historial" && (
-        <PanelHistorial items={mockHistorialNotificaciones} />
+        <PanelHistorial items={mockHistorialNotificaciones} onNotificationClick={handleNotificationClick} />
+      )}
+
+      {selectedReminder && (
+        <ReminderSummary
+          reminder={selectedReminder}
+          onClose={() => setSelectedReminder(null)}
+          onViewDetails={() => navigate(selectedReminder.href || ROUTES.PROFESSIONAL_AGENDA)}
+        />
       )}
     </div>
   );

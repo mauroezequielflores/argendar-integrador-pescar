@@ -13,6 +13,9 @@ import RegisterPage from "../../features/auth/pages/RegisterPage";
 import ResetPasswordPage from "../../features/auth/pages/ResetPasswordPage";
 import ResetPasswordConfirmPage from "../../features/auth/pages/ResetPasswordConfirmPage";
 
+// Landing pages (públicas)
+import ClientLandingPage from "../../features/landing/pages/ClientLandingPage";
+
 // Home pages por rol
 import ClientHomePage from "../../features/home/pages/ClientHomePage";
 import ProfessionalHomePage from "../../features/home/pages/ProfessionalHomePage";
@@ -75,6 +78,10 @@ export default function AppRouter() {
     <Routes>
       {/* Redirect raiz */}
       <Route path="/" element={<Navigate to={ROUTES.LOGIN} replace />} />
+
+      {/* Landing pages (públicas — CA01) */}
+      <Route path={ROUTES.LANDING_CLIENT} element={<ClientLandingPage />} />
+      <Route path={ROUTES.LANDING_PROFESSIONAL} element={<ClientLandingPage />} />
 
       {/* Auth (publicas) */}
       <Route path={ROUTES.LOGIN} element={<LoginPage />} />

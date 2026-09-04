@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="100%" height="100%">
+  <rect width="300" height="300" fill="#2b2b2b"/>
+
+  <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+
+    <!-- Floor line -->
+    <line x1="45" y1="262" x2="265" y2="262" stroke="#ffffff" stroke-width="4"/>
+
+    <!-- Valve handle stem -->
+    <rect x="131" y="45" width="14" height="15" fill="none" stroke="#ffffff" stroke-width="4"/>
+
+    <!-- Valve handle (orange) -->
+    <rect x="98" y="21" width="80" height="24" rx="12" fill="none" stroke="#ff6b00" stroke-width="5"/>
+
+    <!-- Left Flange (Rim) -->
+    <rect x="40" y="80" width="18" height="71" rx="5" stroke="#ffffff" stroke-width="4"/>
+
+    <!-- Horizontal Pipe Section Left -->
+    <path d="M 58,92 L 95,92 L 95,139 L 58,139" stroke="#ffffff" stroke-width="4"/>
+
+    <!-- Center Valve Body -->
+    <path d="M 95,92 C 95,78 106,66 120,66 L 156,66 C 170,66 181,78 181,92 L 181,139 C 181,153 170,165 156,165 L 120,165 C 106,165 95,153 95,139 Z" stroke="#ffffff" stroke-width="4"/>
+
+    <!-- Middle Flange / Ring -->
+    <rect x="146" y="83" width="28" height="68" rx="6" stroke="#ffffff" stroke-width="4"/>
+
+    <!-- Curved Elbow Section -->
+    <path d="M 174,92 C 215,92 235,110 235,150 L 235,172" stroke="#ffffff" stroke-width="4"/>
+    <path d="M 174,139 C 188,139 188,150 188,172" stroke="#ffffff" stroke-width="4"/>
+
+    <!-- Upper Vertical Joint (Flange) -->
+    <rect x="180" y="172" width="60" height="18" rx="5" stroke="#ffffff" stroke-width="4"/>
+
+    <!-- Vertical Pipe Body -->
+    <rect x="188" y="190" width="44" height="52" stroke="#ffffff" stroke-width="4"/>
+
+    <!-- Bottom Vertical Joint (Base Flange) -->
+    <rect x="180" y="242" width="60" height="16" rx="4" stroke="#ffffff" stroke-width="4"/>
+
+    <!-- Water Drop (Orange) -->
+    <path d="M 252,201 C 252,201 239,223 239,232 C 239,239 245,245 252,245 C 259,245 265,239 265,232 C 265,223 252,201 252,201 Z" stroke="#ff6b00" stroke-width="4.5"/>
+
+  </g>
+</svg>

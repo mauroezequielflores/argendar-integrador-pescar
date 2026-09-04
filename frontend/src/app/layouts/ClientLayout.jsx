@@ -13,10 +13,12 @@ import { ROUTES } from "../../constants/routes";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import ChatbotWidget from "../../components/ui/ChatbotWidget";
+import { mockClientHeaderNotifications } from "../../features/notifications/data/mockClientNotifications";
 
 export default function ClientLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // Desktop collapse state
+  const [headerNotifications, setHeaderNotifications] = useState(mockClientHeaderNotifications);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -66,6 +68,14 @@ export default function ClientLayout() {
         onMobileMenuClick={() => setIsSidebarOpen(true)}
         onNotificationClick={() => navigate("/client/notifications")}
         onSettingsClick={() => navigate("/client/settings")}
+        notifications={headerNotifications}
+        onNotificationRead={(notificationId) => {
+          setHeaderNotifications((currentNotifications) =>
+            currentNotifications.map((notification) =>
+              notification.id === notificationId ? { ...notification, isNew: false } : notification,
+            ),
+          );
+        }}
         userInitials="A"
         userName="Apellido Nombre"
       />
@@ -74,17 +84,15 @@ export default function ClientLayout() {
       <div className="flex flex-1 overflow-hidden relative">
         {/* Overlay Mobile */}
         <div
-          className={`fixed inset-0 z-40 bg-black/50 transition-opacity lg:hidden ${
-            isSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-          }`}
+          className={`fixed inset-0 z-40 bg-black/50 transition-opacity lg:hidden ${isSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+            }`}
           onClick={closeSidebarMobile}
         />
 
         {/* Contenedor del Sidebar */}
         <div
-          className={`absolute lg:relative inset-y-0 left-0 z-50 transition-transform duration-300 ${
-            isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-          }`}
+          className={`absolute lg:relative inset-y-0 left-0 z-50 transition-transform duration-300 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+            }`}
         >
           {/* Botón cerrar mobile dentro del contenedor del sidebar pero arriba */}
           <div className="flex h-12 items-center justify-end px-4 lg:hidden bg-[#202020] border-r border-[#292929]">
@@ -92,7 +100,7 @@ export default function ClientLayout() {
               <XMarkIcon className="h-6 w-6" />
             </button>
           </div>
-          
+
           <Sidebar
             isCollapsed={isSidebarCollapsed}
             setIsCollapsed={setIsSidebarCollapsed}
