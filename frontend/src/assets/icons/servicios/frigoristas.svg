@@ -1,0 +1,20 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <g fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- AC unit body -->
+    <rect x="18" y="30" width="64" height="22" rx="6"/>
+
+    <!-- Vent slats -->
+    <line x1="26" y1="40" x2="58" y2="40"/>
+    <line x1="26" y1="46" x2="58" y2="46"/>
+
+    <!-- Power indicator light -->
+    <circle cx="70" cy="40" r="3" fill="#F78736" stroke="none"/>
+  </g>
+
+  <!-- Cold air waves -->
+  <g fill="none" stroke="#F78736" stroke-width="3.5" stroke-linecap="round">
+    <path d="M32 58 C32 62 36 62 36 66 C36 70 32 70 32 74"/>
+    <path d="M46 58 C46 62 50 62 50 66 C50 70 46 70 46 74"/>
+    <path d="M60 58 C60 62 64 62 64 66 C64 70 60 70 60 74"/>
+  </g>
+</svg>

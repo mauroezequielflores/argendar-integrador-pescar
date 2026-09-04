@@ -13,11 +13,12 @@ import { ROUTES } from "../../constants/routes";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import ChatbotWidget from "../../components/ui/ChatbotWidget";
-import { mockClientNotificaciones } from "../../features/notifications/data/mockClientNotifications";
+import { mockClientHeaderNotifications } from "../../features/notifications/data/mockClientNotifications";
 
 export default function ClientLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // Desktop collapse state
+  const [headerNotifications, setHeaderNotifications] = useState(mockClientHeaderNotifications);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -67,7 +68,14 @@ export default function ClientLayout() {
         onMobileMenuClick={() => setIsSidebarOpen(true)}
         onNotificationClick={() => navigate("/client/notifications")}
         onSettingsClick={() => navigate("/client/settings")}
-        notifications={mockClientNotificaciones}
+        notifications={headerNotifications}
+        onNotificationRead={(notificationId) => {
+          setHeaderNotifications((currentNotifications) =>
+            currentNotifications.map((notification) =>
+              notification.id === notificationId ? { ...notification, isNew: false } : notification,
+            ),
+          );
+        }}
         userInitials="A"
         userName="Apellido Nombre"
       />

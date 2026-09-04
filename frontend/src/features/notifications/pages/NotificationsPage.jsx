@@ -9,6 +9,8 @@ import FilterBar from "../../../components/ui/FilterBar";
 import SortSelect from "../../../components/ui/SortSelect";
 import EmptyState from "../../../components/ui/EmptyState";
 import NotificationCard from "../../../components/ui/NotificationCard";
+import ReminderSummary from "../components/ReminderSummary";
+import OfferSummary from "../components/OfferSummary";
 
 import {
   mockClientNotificaciones,
@@ -44,6 +46,8 @@ export default function NotificationsPage() {
   const [activeTab, setActiveTab] = useState("todas");
   const [sortBy, setSortBy] = useState("todo");
   const [activeFilterId, setActiveFilterId] = useState("todo");
+  const [selectedReminder, setSelectedReminder] = useState(null);
+  const [selectedOffer, setSelectedOffer] = useState(null);
   const [notifications, setNotifications] = useState(mockClientNotificaciones);
   const [history, setHistory] = useState(mockClientHistorial);
 
@@ -94,6 +98,16 @@ export default function NotificationsPage() {
       readNotification,
       ...currentHistory.filter((item) => item.id !== notification.id),
     ]);
+
+    if (notification.tipo === "reminder") {
+      setSelectedReminder(notification);
+      return;
+    }
+    if (notification.tipo === "new_offer") {
+      setSelectedOffer(notification);
+      return;
+    }
+
     navigate(notification.href || ROUTES.CLIENT_AGENDA);
   };
 
@@ -187,6 +201,26 @@ export default function NotificationsPage() {
           </div>
         )}
       </div>
+
+      {selectedReminder && (
+        <ReminderSummary
+          reminder={selectedReminder}
+          onClose={() => setSelectedReminder(null)}
+          onViewDetails={() => navigate(selectedReminder.href || ROUTES.CLIENT_AGENDA)}
+        />
+      )}
+
+      {selectedOffer && (
+        <OfferSummary
+          offer={selectedOffer}
+          onClose={() => setSelectedOffer(null)}
+          onViewProfile={() => navigate("/client/marketplace")}
+          onAccept={() => {
+            setSelectedOffer(null);
+            navigate(ROUTES.CLIENT_AGENDA);
+          }}
+        />
+      )}
     </div>
   );
 }
