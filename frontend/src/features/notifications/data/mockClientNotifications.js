@@ -16,6 +16,7 @@ import {
 export const mockClientNotificaciones = [
   {
     id: "cn-offer-1",
+    tipo: "offer",
     tipo: "new_offer",
     titulo: "¡Tenés una oferta nueva!",
     descripcion: "Un profesional publicó una nueva oferta a tu solicitud.",
@@ -115,11 +116,17 @@ export const mockClientHeaderNotifications = [
     fecha: "HACE 1 HORA",
     icon: CreditCardIcon,
     iconBgColor: "bg-white",
-    iconColor: "text-[#3B82F6]",
+    iconColor: "text-[#EF4444]",
     isNew: false,
     href: "/client/agenda",
   },
   {
+    id: "cn-rating-1",
+    tipo: "rating",
+    titulo: "Calificá tu turno",
+    descripcion: "El servicio finalizó, contanos cómo fue tu experiencia.",
+    fecha: "HACE 3 DÍAS",
+    timestamp: 1713700000000,
     id: "header-3",
     titulo: "Recordatorio",
     descripcion: "Tenés un turno programado para mañana.",
