@@ -9,6 +9,7 @@ import FilterBar from "../../../components/ui/FilterBar";
 import SortSelect from "../../../components/ui/SortSelect";
 import EmptyState from "../../../components/ui/EmptyState";
 import NotificationCard from "../../../components/ui/NotificationCard";
+
 import ReminderSummary from "../components/ReminderSummary";
 import OfferSummary from "../components/OfferSummary";
 
@@ -195,6 +196,13 @@ export default function NotificationsPage() {
                 iconBgColor={notification.iconBgColor}
                 iconColor={notification.iconColor}
                 isNew={notification.isNew}
+         /*       onClick={() => {
+                  if (notification.tipo === "new_offer") {
+                    setSelectedOffer(notification);
+                    return;
+                  }
+                  navigate(notification.href || "#");
+                }}*/
                 onClick={() => handleNotificationClick(notification)}
               />
             ))}
