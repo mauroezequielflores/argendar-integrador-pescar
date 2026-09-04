@@ -9,33 +9,7 @@ import { ROLES } from "../constants/roles";
  * Cambiar el rol del usuario para probar diferentes flujos.
  */
 
-// Usuarios demo por rol — cambiar `currentDemoRole` para simular roles
-const DEMO_USERS = {
-  [ROLES.CLIENTE]: {
-    id: 1,
-    name: "Lucía",
-    lastName: "González",
-    email: "lucia@demo.argendar.com",
-    role: ROLES.CLIENTE,
-    avatar: null,
-  },
-  [ROLES.PROFESIONAL]: {
-    id: 2,
-    name: "Carlos",
-    lastName: "Martínez",
-    email: "carlos@demo.argendar.com",
-    role: ROLES.PROFESIONAL,
-    avatar: null,
-  },
-  [ROLES.ADMINISTRADOR]: {
-    id: 3,
-    name: "Nombre",
-    lastName: "Apellido",
-    email: "admin@argendar.com",
-    role: ROLES.ADMINISTRADOR,
-    avatar: null,
-  },
-};
+import { DEMO_USERS } from "../features/auth/data/mockAuth";
 
 const AuthContext = createContext(null);
 

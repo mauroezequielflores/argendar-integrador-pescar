@@ -56,6 +56,13 @@ export const mockNotificaciones = [
     iconColor: "text-[#F78736]", // Calendario naranja
     isNew: false,
     href: "/professional/reminders/4/details",
+    // Nuevos campos para ReminderSummary
+    clientName: "Juan Pérez",
+    clientInitials: "JP",
+    serviceName: "Instalación eléctrica",
+    status: "PENDIENTE",
+    date: "28/07/2026 15:30 hs",
+    timeAgo: "hace 2 días",
   },
   {
     id: "n5",

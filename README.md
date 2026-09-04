@@ -5,16 +5,12 @@ El sistema permite automatizar reservas, enviar recordatorios y centralizar la g
 
 ---
 ## 🙏🙌Integrantes
-
-(Agregar los nombres de cada uno)
    - Mauro 
    - Grego
    - Diego
    - Rocio
    - Nancy
    - Nicole
-   - 
-   - 
    - Santi
 
 ---
