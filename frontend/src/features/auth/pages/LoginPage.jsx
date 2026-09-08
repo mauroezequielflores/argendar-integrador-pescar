@@ -25,13 +25,6 @@ import authBg from "../../../assets/images/auth-bg.png";
  * Cambiar `demoRole` para probar diferentes roles.
  */
 
-// ─── Demo role selector ────────────────────────────────────────────────────
-// Cambiá este valor para simular diferentes roles en el login demo:
-const DEMO_LOGIN_ROLE = ROLES.CLIENTE;
-// const DEMO_LOGIN_ROLE = ROLES.PROFESIONAL;
-// const DEMO_LOGIN_ROLE = ROLES.ADMINISTRADOR;
-// ──────────────────────────────────────────────────────────────────────────
-
 const ROLE_REDIRECT = {
   [ROLES.CLIENTE]: ROUTES.CLIENT_HOME,
   [ROLES.PROFESIONAL]: ROUTES.PROFESSIONAL_HOME,
@@ -52,17 +45,18 @@ export default function LoginPage() {
     defaultValues: { email: "", password: "", remember: false },
   });
 
+
   const onSubmit = async (data) => {
     setServerError("");
     try {
-      // DEMO: ignora las credenciales, autentica con usuario demo
-      const user = await login(DEMO_LOGIN_ROLE);
+      // Le pasamos el objeto con email y password
+      const user = await login({ email: data.email, password: data.password });
 
-      const redirectTo = ROLE_REDIRECT[user.role] || ROUTES.CLIENT_HOME;
-      //const redirectTo = ROUTES.PROFESSIONAL_HOME;
+      const redirectTo = ROLE_REDIRECT[user.role];
       navigate(redirectTo, { replace: true });
-    } catch {
-      setServerError(MESSAGES.LOGIN_ERROR);
+    } catch (error) {
+      // mensaje que nos devuelva el backend
+      setServerError(error.message || MESSAGES.LOGIN_ERROR);
     }
   };
 

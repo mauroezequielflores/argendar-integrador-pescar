@@ -1,15 +1,6 @@
+
 import { createContext, useContext, useState } from "react";
-import { ROLES } from "../constants/roles";
-
-/**
- * AuthContext — Contexto de autenticación de Argendar.
- *
- * DEMO: No implementa JWT, localStorage ni backend.
- * El usuario demo representa los diferentes roles de la plataforma.
- * Cambiar el rol del usuario para probar diferentes flujos.
- */
-
-import { DEMO_USERS } from "../features/auth/data/mockAuth";
+import { api } from "../libs/axios"; //instancia de Axios 
 
 const AuthContext = createContext(null);
 
@@ -20,36 +11,49 @@ export function AuthProvider({ children }) {
   const isAuthenticated = !!user;
 
   /**
-   * Simula el login. En producción reemplazar con llamada a Supabase/API.
-   * Acepta un rol para seleccionar el usuario demo correcto.
+   * Login Real con el Backend
    */
-  const login = async (role = ROLES.CLIENTE) => {
+  const login = async ({ email, password }) => {
     setIsLoading(true);
-    // Simular delay de red
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    const demoUser = DEMO_USERS[role] || DEMO_USERS[ROLES.CLIENTE];
-    setUser(demoUser);
-    setIsLoading(false);
-    return demoUser;
+    try {
+      const response = await api.post('/auth/login', { email, password });
+
+      // Guardamos la info del usuario. Nota: Guardar el token (response.data.session.access_token) 
+      // en un localStorage se implementará más adelante.
+      setUser(response.data.user);
+      setIsLoading(false);
+      return response.data.user;
+    } catch (error) {
+      setIsLoading(false);
+      // El backend devuelve { error: { code, message } }
+      const errorMessage = error.response?.data?.error?.message || "Ocurrió un error al iniciar sesión";
+      throw new Error(errorMessage);
+    }
   };
 
   /**
-   * Simula el registro. Redirige al rol correcto.
+   * Registro Real con el Backend
    */
   const register = async (data, role) => {
     setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    const newUser = {
-      id: Date.now(),
-      name: data.nombre,
-      lastName: data.apellido,
-      email: data.email,
-      role: role,
-      avatar: null,
-    };
-    setUser(newUser);
-    setIsLoading(false);
-    return newUser;
+    try {
+      const response = await api.post('/auth/register', {
+        nombre: data.nombre,
+        apellido: data.apellido,
+        email: data.email,
+        password: data.password,
+        role: role
+      });
+
+      // El registro es exitoso. Opcionalmente podrías forzar un login automático aquí.
+      setUser(response.data);
+      setIsLoading(false);
+      return response.data;
+    } catch (error) {
+      setIsLoading(false);
+      const errorMessage = error.response?.data?.error?.message || "Ocurrió un error al registrarse";
+      throw new Error(errorMessage);
+    }
   };
 
   const logout = () => {
@@ -68,10 +72,6 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-/**
- * Hook para consumir el AuthContext.
- * Usar en cualquier componente que necesite información del usuario.
- */
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
@@ -79,3 +79,5 @@ export function useAuth() {
   }
   return context;
 }
+
+
