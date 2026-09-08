@@ -10,7 +10,7 @@ import axios from "axios";
  * agregar Authorization headers y manejar errores globales.
  */
 export const api = axios.create({
-  baseURL: "",
+  baseURL: "http://localhost:3000/api/v1", // Ruta del backend local
   headers: {
     "Content-Type": "application/json",
   },
