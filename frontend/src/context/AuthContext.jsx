@@ -37,7 +37,7 @@ export function AuthProvider({ children }) {
   const register = async (data, role) => {
     setIsLoading(true);
     try {
-      const response = await api.post('/auth/register', {
+      await api.post('/auth/register', {
         nombre: data.nombre,
         apellido: data.apellido,
         email: data.email,
@@ -45,13 +45,12 @@ export function AuthProvider({ children }) {
         role: role
       });
 
-      // El registro es exitoso. Opcionalmente podrías forzar un login automático aquí.
-      setUser(response.data);
-      setIsLoading(false);
-      return response.data;
+      // El registro es exitoso. Forzamos un login automático.
+      const loggedUser = await login({ email: data.email, password: data.password });
+      return loggedUser;
     } catch (error) {
       setIsLoading(false);
-      const errorMessage = error.response?.data?.error?.message || "Ocurrió un error al registrarse";
+      const errorMessage = error.response?.data?.error?.message || error.message || "Ocurrió un error al registrarse";
       throw new Error(errorMessage);
     }
   };
