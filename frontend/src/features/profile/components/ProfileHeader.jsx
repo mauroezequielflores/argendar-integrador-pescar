@@ -19,7 +19,7 @@ export default function ProfileHeader({ profile }) {
 
         {/* Info */}
         <div>
-          <h1 className="text-2xl font-bold text-[#FFFFFF]">
+          <h1 className="text-2xl font-bold text-white">
             {profile.firstName} {profile.lastName}
           </h1>
           <p className="text-sm text-[#A8A8AA]">

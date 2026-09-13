@@ -156,13 +156,13 @@ export default function MarketplacePage() {
   const breadcrumbs =
     activeTab === "profesionales"
       ? [
-          { label: "Descubrir", href: "/client/marketplace" },
-          { label: "Marketplace" },
-        ]
+        { label: "Descubrir", href: "/client/marketplace" },
+        { label: "Marketplace" },
+      ]
       : [
-          { label: "Solicitud", href: "/client/marketplace" },
-          { label: "Categoría" },
-        ];
+        { label: "Solicitud", href: "/client/marketplace" },
+        { label: "Categoría" },
+      ];
 
   return (
     <div className="flex flex-col gap-6 text-white font-sans">
@@ -171,7 +171,7 @@ export default function MarketplacePage() {
 
       {/* ── Encabezado (CA01) ──────────────────────────────────────────────── */}
       <div>
-        <h1 className="text-3xl font-bold leading-tight text-white">Marketplace</h1>
+        <h1 className="text-2xl font-bold text-white">Marketplace</h1>
         <p className="mt-1 text-xs sm:text-sm text-[#A8A8AA]">
           {activeTab === "profesionales"
             ? "Encontrá profesionales técnicos compatibles con tu problema o necesidad."
@@ -184,11 +184,10 @@ export default function MarketplacePage() {
         <button
           type="button"
           onClick={() => setActiveTab("profesionales")}
-          className={`flex items-center gap-2 pb-3 text-sm font-medium transition-colors cursor-pointer ${
-            activeTab === "profesionales"
+          className={`flex items-center gap-2 pb-3 text-sm font-medium transition-colors cursor-pointer ${activeTab === "profesionales"
               ? "border-b-2 border-[#F78736] text-white"
               : "border-b-2 border-transparent text-[#A8A8AA] hover:text-white"
-          }`}
+            }`}
         >
           <AcademicCapIcon className="h-4 w-4" />
           <span>Profesionales</span>
@@ -197,11 +196,10 @@ export default function MarketplacePage() {
         <button
           type="button"
           onClick={() => setActiveTab("solicitudes")}
-          className={`ml-6 flex items-center gap-2 pb-3 text-sm font-medium transition-colors cursor-pointer ${
-            activeTab === "solicitudes"
+          className={`ml-6 flex items-center gap-2 pb-3 text-sm font-medium transition-colors cursor-pointer ${activeTab === "solicitudes"
               ? "border-b-2 border-[#F78736] text-white"
               : "border-b-2 border-transparent text-[#A8A8AA] hover:text-white"
-          }`}
+            }`}
         >
           <BuildingStorefrontIcon className="h-4 w-4" />
           <span>Solicitudes publicadas</span>
@@ -229,7 +227,7 @@ export default function MarketplacePage() {
           location={UBICACION_CLIENTE_DEFAULT}
           onApply={handleApplyFilters}
           onClear={handleClearFilters}
-          onOpenMap={() => {}}
+          onOpenMap={() => { }}
         />
 
         {/* ── Área de Resultados ────────────────────────────────────────── */}
