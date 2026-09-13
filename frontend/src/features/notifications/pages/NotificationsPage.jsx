@@ -129,13 +129,13 @@ export default function NotificationsPage() {
       : "No tenés notificaciones leidas";
 
   return (
-    <div className="flex flex-col gap-6 text-white max-w-7xl mx-auto w-full">
+    <div className="flex flex-col gap-6 text-white w-full">
       {/* ─── Breadcrumb de navegación (CA01) ─── */}
       <Breadcrumbs items={breadcrumbItems} separator="/" />
 
       {/* ─── Encabezado principal (CA01) ─── */}
       <div>
-        <h1 className="text-3xl lg:text-[32px] font-bold text-white tracking-tight">
+        <h1 className="text-2xl font-bold text-white">
           Mis notificaciones
         </h1>
         <p className="mt-1 text-sm text-[#A8A8AA]">

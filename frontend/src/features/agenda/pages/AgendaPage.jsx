@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  DocumentTextIcon, 
-  CalendarIcon, 
+import {
+  DocumentTextIcon,
+  CalendarIcon,
   ClockIcon,
   CalendarDaysIcon,
   PlusIcon
@@ -28,7 +28,7 @@ export default function AgendaPage() {
   const [activeTab, setActiveTab] = useState("solicitudes");
   const [sortOrder, setSortOrder] = useState("newest");
   const navigate = useNavigate();
-  
+
   // Fake user name as there's no real backend yet
   const userName = "Nombre";
 
@@ -91,11 +91,11 @@ export default function AgendaPage() {
   return (
     <div className="flex flex-col text-white">
       {/* Top area */}
-      <div className="mb-4">
+      <div className="mb-6">
         <Breadcrumbs items={breadcrumbItems} />
       </div>
 
-      <div className="mb-8 border-b border-[#3f3f3f]">
+      <div className="mb-6 border-b border-[#3f3f3f]">
         <PageHeader
           title={`Buenos días, ${userName}`}
           subtitle="Gestioná tus solicitudes, turnos e historial."
@@ -106,11 +106,11 @@ export default function AgendaPage() {
           }
           className="mb-8"
         />
-        
-        <Tabs 
-          tabs={TABS} 
-          activeTab={activeTab} 
-          onChange={setActiveTab} 
+
+        <Tabs
+          tabs={TABS}
+          activeTab={activeTab}
+          onChange={setActiveTab}
         />
       </div>
 
@@ -131,10 +131,10 @@ export default function AgendaPage() {
             </div>
           </div>
         </div>
-        
-        <FilterBar 
-          filters={activeFilters} 
-          onRemoveFilter={(id) => console.log('Remove filter', id)} 
+
+        <FilterBar
+          filters={activeFilters}
+          onRemoveFilter={(id) => console.log('Remove filter', id)}
         />
       </div>
 

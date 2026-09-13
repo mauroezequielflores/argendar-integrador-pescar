@@ -8,9 +8,9 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("public"); // "public" or "info"
 
   return (
-    <div className="flex-1 w-full max-w-[1200px] mx-auto p-4 md:p-8">
+    <div className="flex flex-col gap-6 text-white w-full">
       {/* Opcional: una card oscura de fondo si queremos seguir un layout exacto. Según el diseño, parece el propio background del main area, así que lo pondremos sobre él */}
-      
+
       {/* Header */}
       <ProfileHeader profile={mockProfile} />
 
@@ -18,11 +18,10 @@ export default function ProfilePage() {
       <div className="mt-8 border-b border-[#3a3a3a] flex items-center gap-8">
         <button
           onClick={() => setActiveTab("public")}
-          className={`pb-3 text-sm font-medium transition-colors border-b-2 ${
-            activeTab === "public"
-              ? "border-[#F78736] text-[#FFFFFF]"
-              : "border-transparent text-[#A8A8AA] hover:text-[#FFFFFF]"
-          }`}
+          className={`pb-3 text-sm font-medium transition-colors border-b-2 ${activeTab === "public"
+            ? "border-[#F78736] text-[#FFFFFF]"
+            : "border-transparent text-[#A8A8AA] hover:text-[#FFFFFF]"
+            }`}
         >
           <div className="flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -34,11 +33,10 @@ export default function ProfilePage() {
 
         <button
           onClick={() => setActiveTab("info")}
-          className={`pb-3 text-sm font-medium transition-colors border-b-2 ${
-            activeTab === "info"
-              ? "border-[#F78736] text-[#FFFFFF]"
-              : "border-transparent text-[#A8A8AA] hover:text-[#FFFFFF]"
-          }`}
+          className={`pb-3 text-sm font-medium transition-colors border-b-2 ${activeTab === "info"
+            ? "border-[#F78736] text-[#FFFFFF]"
+            : "border-transparent text-[#A8A8AA] hover:text-[#FFFFFF]"
+            }`}
         >
           <div className="flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
