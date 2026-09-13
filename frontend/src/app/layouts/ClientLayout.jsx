@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import {
   CalendarIcon,
@@ -10,21 +10,29 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { ROUTES } from "../../constants/routes";
+import { useAuth } from "../../context/AuthContext";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import ChatbotWidget from "../../components/ui/ChatbotWidget";
+import LogoutModal from "../../components/ui/LogoutModal";
 import { mockClientHeaderNotifications } from "../../features/notifications/data/mockClientNotifications";
 
 export default function ClientLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // Desktop collapse state
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [headerNotifications, setHeaderNotifications] = useState(mockClientHeaderNotifications);
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    if (window.confirm("¿Estás seguro de que deseas cerrar sesión?")) {
-      navigate(ROUTES.LOGIN);
-    }
+    setIsLogoutModalOpen(true);
+  };
+
+  const handleConfirmLogout = () => {
+    setIsLogoutModalOpen(false);
+    if (logout) logout();
+    navigate(ROUTES.LOGIN);
   };
 
   const closeSidebarMobile = () => setIsSidebarOpen(false);
@@ -84,15 +92,17 @@ export default function ClientLayout() {
       <div className="flex flex-1 overflow-hidden relative">
         {/* Overlay Mobile */}
         <div
-          className={`fixed inset-0 z-40 bg-black/50 transition-opacity lg:hidden ${isSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-            }`}
+          className={`fixed inset-0 z-40 bg-black/50 transition-opacity lg:hidden ${
+            isSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
           onClick={closeSidebarMobile}
         />
 
         {/* Contenedor del Sidebar */}
         <div
-          className={`absolute lg:relative inset-y-0 left-0 z-50 transition-transform duration-300 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-            }`}
+          className={`absolute lg:relative inset-y-0 left-0 z-50 transition-transform duration-300 ${
+            isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          }`}
         >
           {/* Botón cerrar mobile dentro del contenedor del sidebar pero arriba */}
           <div className="flex h-12 items-center justify-end px-4 lg:hidden bg-[#202020] border-r border-[#292929]">
@@ -115,7 +125,15 @@ export default function ClientLayout() {
           <Outlet />
         </main>
       </div>
+
       <ChatbotWidget role="client" />
+
+      {/* ── Modal de Confirmación de Cierre de Sesión ─────────────── */}
+      <LogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleConfirmLogout}
+      />
     </div>
   );
 }
