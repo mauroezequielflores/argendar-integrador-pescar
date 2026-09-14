@@ -40,7 +40,7 @@ export default function MarketplaceFilterSidebar({
                 ? "Buscar por nombre o apellido"
                 : "Ej. Reparación de caños"
             }
-            className="w-full rounded-[6px] border border-[#323232] bg-[#202020] py-2 pl-9 pr-3 text-xs text-white placeholder-[#A8A8AA] transition-colors focus:border-[#F78736] focus:outline-none"
+            className="w-full rounded-[20px] border border-[#323232] bg-[#202020] py-2 pl-9 pr-3 text-xs text-white placeholder-[#A8A8AA] transition-colors focus:border-[#F78736] focus:outline-none"
           />
         </div>
       </div>
