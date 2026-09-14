@@ -1,31 +1,32 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { XMarkIcon, PaperAirplaneIcon, SparklesIcon, ClockIcon } from "@heroicons/react/24/outline";
-import { ChatBubbleLeftEllipsisIcon } from "@heroicons/react/24/solid";
 
+import mascotChatbot from "../../assets/brand/mascot-chatbot.svg";
 import {
   CHATBOT_EXCLUDED_ROUTES,
   CHATBOT_EXCLUDED_PATTERNS,
   getChatbotResponse,
 } from "../../constants/chatbotFaq";
 
-// Icono del robot (SVG simplificado basado en el diseño)
-const RobotIcon = () => (
-  <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-4">
-    {/* Antena base */}
-    <rect x="57" y="24" width="6" height="10" fill="#F78736" />
-    <circle cx="60" cy="20" r="5" fill="#F78736" />
-    {/* Cuerpo principal (perspectiva 3D) */}
-    <path d="M72 34 L102 38 L98 84 L68 88 Z" fill="#D3691A" />
-    <path d="M22 34 L72 34 L68 88 L18 88 Z" fill="#F78736" />
-    <path d="M22 34 L72 34 L102 38 L52 38 Z" fill="#FF9D55" />
-    {/* Oreja */}
-    <rect x="14" y="52" width="6" height="16" rx="3" fill="#F78736" />
-    {/* Pantalla */}
-    <rect x="28" y="44" width="32" height="24" rx="4" fill="#202020" />
-    {/* Ojos */}
-    <rect x="34" y="50" width="4" height="12" rx="2" fill="#FFFFFF" />
-    <rect x="46" y="50" width="4" height="12" rx="2" fill="#FFFFFF" />
+// Icono SVG de Chispas / Asistente para el botón flotante
+const SparkleBotIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className="h-7 w-7"
+  >
+    {/* Estrella grande de 4 puntas */}
+    <path
+      d="M10 3C10 6.866 6.866 10 3 10C6.866 10 10 13.134 10 17C10 13.134 13.134 10 17 10C13.134 10 10 6.866 10 3Z"
+      fill="#F78736"
+    />
+    {/* Estrella pequeña de 4 puntas */}
+    <path
+      d="M17 14C17 16.209 15.209 18 13 18C15.209 18 17 19.791 17 22C17 19.791 18.791 18 21 18C18.791 18 17 16.209 17 14Z"
+      fill="#F78736"
+    />
   </svg>
 );
 
@@ -33,7 +34,7 @@ export default function ChatbotWidget({ role = "client" }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [showQuestions, setShowQuestions] = useState(true);
-  
+
   const location = useLocation();
   const chatEndRef = useRef(null);
 
@@ -55,6 +56,13 @@ export default function ChatbotWidget({ role = "client" }) {
     setMessages([]);
     setShowQuestions(true);
   }, [location.pathname]);
+
+  // Listener para abrir desde otras partes de la app (ej: HelpPage)
+  useEffect(() => {
+    const handleOpenExternal = () => setIsOpen(true);
+    window.addEventListener("open-chatbot", handleOpenExternal);
+    return () => window.removeEventListener("open-chatbot", handleOpenExternal);
+  }, []);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -81,31 +89,31 @@ export default function ChatbotWidget({ role = "client" }) {
 
   return (
     <>
-      {/* Botón flotante */}
+      {/* ── 1. Botón Flotante con Icono SVG ────────────────────────── */}
       {!isOpen && (
         <button
           onClick={handleOpen}
-          className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#F78736] text-white shadow-lg hover:bg-[#e06d00] transition-colors"
+          className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#292929] border-2 border-[#3B82F6] text-white shadow-md shadow-[#3B82F6] hover:bg-[#66330E] hover:border-[#F78736] transition-all cursor-pointer"
           aria-label="Abrir asistente de IA"
         >
-          <ChatBubbleLeftEllipsisIcon className="h-7 w-7" />
+          <SparkleBotIcon />
         </button>
       )}
 
-      {/* Ventana del Chatbot */}
+      {/* ── 2. Ventana del Chatbot Responsive + Borde Azul 1px (#3B82F6) ── */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 flex h-[600px] w-[360px] flex-col overflow-hidden rounded-xl bg-[#292929] shadow-2xl border border-[#323232] sm:right-6 sm:w-[400px]">
+        <div className="fixed inset-0 z-50 flex h-screen w-screen flex-col overflow-hidden rounded-none bg-[#292929] shadow-2xl border-1 border-[#235BB7] md:inset-auto md:bottom-5 md:right-5 md:h-[80vh] md:max-h-[600px] md:w-[360px] md:rounded-[12px] lg:w-[400px]">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-[#323232] bg-[#292929] px-4 py-4">
+          <div className="flex items-center justify-between border-b border-[#3B82F6] bg-[#292929] px-4 py-4">
             <div className="flex items-center gap-2">
               <SparklesIcon className="h-5 w-5 text-[#F78736]" />
               <span className="font-semibold text-white">Asistente de IA</span>
             </div>
             <div className="flex gap-3">
-              <button className="text-[#A8A8AA] hover:text-white transition-colors">
+              <button className="text-[#A8A8AA] hover:text-white transition-colors cursor-pointer">
                 <ClockIcon className="h-5 w-5" />
               </button>
-              <button onClick={handleClose} className="text-[#A8A8AA] hover:text-white transition-colors">
+              <button onClick={handleClose} className="text-[#A8A8AA] hover:text-white transition-colors cursor-pointer">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
@@ -115,9 +123,13 @@ export default function ChatbotWidget({ role = "client" }) {
           <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center pt-8 pb-4 text-center">
-                <RobotIcon />
+                <img
+                  src={mascotChatbot}
+                  alt="Mascota Chatbot"
+                  className="mx-auto mb-4 h-28 w-28 object-contain"
+                />
                 <h3 className="mt-4 text-xl font-bold text-white">
-                  Hola, ¿en qué te puedo<br/>ayudar hoy?
+                  Hola, ¿en qué te puedo<br />ayudar hoy?
                 </h3>
               </div>
             ) : (
@@ -125,16 +137,14 @@ export default function ChatbotWidget({ role = "client" }) {
                 {messages.map((msg, idx) => (
                   <div
                     key={idx}
-                    className={`flex ${
-                      msg.type === "user" ? "justify-end" : "justify-start"
-                    }`}
+                    className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"
+                      }`}
                   >
                     <div
-                      className={`max-w-[85%] rounded-lg p-3 text-sm ${
-                        msg.type === "user"
-                          ? "bg-[#323232] text-white rounded-br-none"
-                          : "bg-transparent text-white"
-                      }`}
+                      className={`max-w-[85%] rounded-lg p-3 text-sm ${msg.type === "user"
+                        ? "bg-[#323232] text-white rounded-br-none"
+                        : "bg-transparent text-white"
+                        }`}
                     >
                       {msg.type === "bot" && (
                         <div className="flex items-center gap-2 mb-1">
@@ -156,7 +166,7 @@ export default function ChatbotWidget({ role = "client" }) {
                   <button
                     key={idx}
                     onClick={() => handleQuestionClick(faq)}
-                    className="rounded-lg border border-[#323232] bg-[#323232] px-4 py-2.5 text-sm text-left text-white hover:bg-[#3f3f3f] transition-colors max-w-[85%]"
+                    className="rounded-lg border border-[#323232] bg-[#323232] px-4 py-2.5 text-sm text-left text-white hover:bg-[#3f3f3f] transition-colors max-w-[85%] cursor-pointer"
                   >
                     {faq.question}
                   </button>
@@ -169,7 +179,7 @@ export default function ChatbotWidget({ role = "client" }) {
               <div className="mt-6 text-center">
                 <button
                   onClick={() => setShowQuestions(true)}
-                  className="rounded-full border border-[#727272] px-4 py-1.5 text-sm text-[#A8A8AA] hover:text-white transition-colors"
+                  className="rounded-full border border-[#727272] px-4 py-1.5 text-sm text-[#A8A8AA] hover:text-white transition-colors cursor-pointer"
                 >
                   Ver más preguntas
                 </button>

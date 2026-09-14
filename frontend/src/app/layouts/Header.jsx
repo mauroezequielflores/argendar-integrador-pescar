@@ -40,17 +40,17 @@ export default function Header({
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-[#292929] bg-[#202020] w-full z-40 relative">
 
       {/* Lado izquierdo */}
-      <div className="flex items-center gap-4 w-auto lg:w-64 shrink-0 px-4 lg:px-8">
+      <div className="flex items-center gap-4 w-auto lg:w-67 shrink-0 px-3 lg:px-7">
         {onMobileMenuClick && (
           <button
             onClick={onMobileMenuClick}
             className="text-[#A8A8AA] hover:text-white lg:hidden"
           >
-            <Bars3Icon className="h-6 w-6" />
+            <Bars3Icon className="h-7 w-7" />
           </button>
         )}
         <Link to={logoLink} className="flex items-center gap-2">
-          <img src="/logo.png" alt="Logo" className="h-8 w-8 rounded-md object-contain" />
+          <img src="/logo.png" alt="Logo" className="h-6 w-6 rounded-md object-contain" />
           <span className="text-xl font-bold">
             <span className="text-[#F78736]">Argen</span>
             <span className="text-white">dar</span>
