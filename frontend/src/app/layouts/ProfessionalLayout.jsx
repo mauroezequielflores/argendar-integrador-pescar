@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import {
   CalendarIcon,
@@ -10,20 +10,28 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { ROUTES } from "../../constants/routes";
+import { useAuth } from "../../context/AuthContext";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
-import { mockNotificaciones } from "../../features/notifications/data/mockProfessionalNotifications";
 import ChatbotWidget from "../../components/ui/ChatbotWidget";
+import LogoutModal from "../../components/ui/LogoutModal";
+import { mockNotificaciones } from "../../features/notifications/data/mockProfessionalNotifications";
 
 export default function ProfessionalLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    if (window.confirm("¿Estás seguro de que deseas cerrar sesión?")) {
-      navigate(ROUTES.LOGIN);
-    }
+    setIsLogoutModalOpen(true);
+  };
+
+  const handleConfirmLogout = () => {
+    setIsLogoutModalOpen(false);
+    if (logout) logout();
+    navigate(ROUTES.LOGIN);
   };
 
   const closeSidebarMobile = () => setIsSidebarOpen(false);
@@ -108,7 +116,15 @@ export default function ProfessionalLayout() {
           <Outlet />
         </main>
       </div>
+
       <ChatbotWidget role="professional" />
+
+      {/* ── Modal de Confirmación de Cierre de Sesión ─────────────── */}
+      <LogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleConfirmLogout}
+      />
     </div>
   );
 }

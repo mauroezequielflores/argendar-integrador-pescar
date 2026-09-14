@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import {
   HomeIcon,
@@ -13,6 +13,7 @@ import { ROUTES } from "../../constants/routes";
 import { useAuth } from "../../context/AuthContext";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
+import LogoutModal from "../../components/ui/LogoutModal";
 
 /**
  * AdminLayout — Estructura visual compartida del rol Administrador.
@@ -24,14 +25,18 @@ import Sidebar from "./Sidebar";
 export default function AdminLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    if (window.confirm("¿Estás seguro de que deseas cerrar sesión?")) {
-      logout();
-      navigate(ROUTES.LOGIN);
-    }
+    setIsLogoutModalOpen(true);
+  };
+
+  const handleConfirmLogout = () => {
+    setIsLogoutModalOpen(false);
+    if (logout) logout();
+    navigate(ROUTES.LOGIN);
   };
 
   const closeSidebarMobile = () => setIsSidebarOpen(false);
@@ -114,6 +119,13 @@ export default function AdminLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* ── Modal de Confirmación de Cierre de Sesión ─────────────── */}
+      <LogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleConfirmLogout}
+      />
     </div>
   );
 }

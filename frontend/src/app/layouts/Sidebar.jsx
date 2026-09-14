@@ -10,14 +10,13 @@ export default function Sidebar({
 }) {
   return (
     <aside
-      className={`flex h-full flex-col border-r border-[#292929] bg-[#202020] transition-all duration-300 relative ${
-        isCollapsed ? "w-16" : "w-64"
-      }`}
+      className={`flex h-full flex-col border-r border-[#404040] bg-[#202020] transition-all duration-300 relative ${isCollapsed ? "w-18" : "w-64"
+        }`}
     >
       {/* Desktop Expand/Collapse Button floating on the right border */}
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="hidden lg:flex absolute right-0 translate-x-1/2 top-3 z-50 p-1 rounded-full bg-[#202020] border border-[#292929] text-[#A8A8AA] hover:bg-[#292929] hover:text-white transition-colors"
+        className="hidden lg:flex absolute right-0 translate-x-1/2 top-3 z-100 p-1 rounded-full bg-[#202020] border border-[#737373] text-[#A8A8AA] hover:bg-[#292929] hover:text-white transition-colors"
         title={isCollapsed ? "Expandir" : "Colapsar"}
       >
         <Bars3BottomLeftIcon className={`h-4 w-4 transition-transform ${isCollapsed ? "rotate-180" : ""}`} />

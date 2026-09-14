@@ -13,14 +13,12 @@ function Toggle({ checked, onChange }) {
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F78736] ${
-        checked ? "bg-[#F78736]" : "bg-[#323232]"
-      }`}
+      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F78736] ${checked ? "bg-[#F78736]" : "bg-[#323232]"
+        }`}
     >
       <span
-        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200 ${
-          checked ? "translate-x-5" : "translate-x-0"
-        }`}
+        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200 ${checked ? "translate-x-5" : "translate-x-0"
+          }`}
       />
     </button>
   );
@@ -69,7 +67,7 @@ export default function SettingsPage() {
   const [darkMode, setDarkMode] = useState(true);
 
   return (
-    <div className="flex w-full flex-col gap-4 p-6">
+    <div className="flex flex-col gap-6 text-white w-full">
       {/* CA01 — Breadcrumb */}
       <nav className="flex items-center gap-2 text-xs text-[#A8A8AA]">
         <span
@@ -85,7 +83,7 @@ export default function SettingsPage() {
       {/* Título y descripción */}
       <div>
         <h1 className="text-2xl font-bold text-white">Configuración</h1>
-        <p className="mt-1 text-xs text-[#A8A8AA]">
+        <p className="mt-1 text-xs sm:text-sm text-[#A8A8AA]">
           Administrá tus configuraciones de cuenta.
         </p>
       </div>
