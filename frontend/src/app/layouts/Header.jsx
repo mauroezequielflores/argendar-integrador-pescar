@@ -37,7 +37,7 @@ export default function Header({
   };
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b border-[#292929] bg-[#202020] w-full z-40 relative">
+    <header className="flex h-16 shrink-0 items-center justify-between border-b border-[#404040] bg-[#202020] w-full z-40 relative">
 
       {/* Lado izquierdo */}
       <div className="flex items-center gap-4 w-auto lg:w-67 shrink-0 px-3 lg:px-7">
@@ -62,12 +62,12 @@ export default function Header({
       <div className="flex flex-1 items-center px-4 lg:px-0">
         <div className="relative hidden w-full max-w-md sm:block lg:ml-4">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            <MagnifyingGlassIcon className="h-5 w-5 text-[#A8A8AA]" />
+            <MagnifyingGlassIcon className="h-4 w-4 text-[#A8A8AA]" />
           </div>
           <input
             type="text"
             placeholder={searchPlaceholder}
-            className="w-full rounded-[6px] border border-[#292929] bg-[#292929] py-1.5 pl-10 pr-3 text-sm text-[#FFFFFF] placeholder-[#A8A8AA] focus:border-[#F78736] focus:outline-none focus:ring-1 focus:ring-[#F78736]"
+            className="w-full rounded-[20px] border border-[#404040] py-1.5 pl-10 pr-3 text-xs text-[#FFFFFF] placeholder-[#A8A8AA] bg-[#292929] focus:border-[#F78736] focus:outline-none focus:ring-1 focus:ring-[#F78736]"
           />
         </div>
       </div>
@@ -77,7 +77,7 @@ export default function Header({
 
         {/* Nombre y Avatar */}
         <div className="flex items-center gap-3">
-          <span className="hidden text-sm font-medium lg:block text-white">
+          <span className="hidden text-xs font-medium lg:block text-white">
             {userName}
           </span>
           <Avatar initials={userInitials} size="sm" />
