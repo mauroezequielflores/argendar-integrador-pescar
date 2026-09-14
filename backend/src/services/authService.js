@@ -1,9 +1,13 @@
-import { supabase } from '../config/supabase.js';
+import { supabase, createThrowawayClient } from '../config/supabase.js';
 import { AppError, ConflictError, UnauthorizedError } from '../utils/errors.js';
 import { ERROR_CODES } from '../utils/constants.js';
 
 export const registerUser = async ({ nombre, apellido, email, password, role }) => {
-  const { data, error } = await supabase.auth.signUp({
+  // We MUST create a throwaway client here because signUp mutates the client's internal auth state,
+  // which poisons the global singleton for all future requests (causing RLS to apply instead of SERVICE_ROLE).
+  const tempSupabase = createThrowawayClient();
+
+  const { data, error } = await tempSupabase.auth.signUp({
     email,
     password,
     options: {
@@ -29,7 +33,11 @@ export const registerUser = async ({ nombre, apellido, email, password, role }) 
 };
 
 export const loginUser = async ({ email, password }) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
+  // We MUST create a throwaway client here because signInWithPassword mutates the client's internal auth state,
+  // which poisons the global singleton for all future requests (causing RLS to apply instead of SERVICE_ROLE).
+  const tempSupabase = createThrowawayClient();
+
+  const { data, error } = await tempSupabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -53,4 +61,19 @@ export const loginUser = async ({ email, password }) => {
       expires_at: data.session.expires_at,
     },
   };
+};
+
+export const changePassword = async ({ userId, password }) => {
+  // Utilizamos el cliente con SERVICE_ROLE_KEY para poder actualizar 
+  // la contraseña del usuario sin necesidad de tener su sesión activa.
+  const { data, error } = await supabase.auth.admin.updateUserById(
+    userId,
+    { password }
+  );
+
+  if (error) {
+    throw new AppError(error.message, error.status || 500, ERROR_CODES.INTERNAL_SERVER_ERROR);
+  }
+
+  return { success: true };
 };

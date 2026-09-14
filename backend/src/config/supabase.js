@@ -14,7 +14,24 @@ if (!supabaseUrl || !supabaseKey) {
 
 // Crear una única instancia de Supabase para reutilizar en todos los servicios
 export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false
+  },
   realtime: {
     transport: ws,
   },
 });
+
+/**
+ * Crea un cliente temporal de Supabase.
+ * Útil EXCLUSIVAMENTE para métodos de Auth (signUp, signInWithPassword, getUser)
+ * que mutan el estado interno de sesión del cliente, evitando contaminar el singleton global.
+ */
+export const createThrowawayClient = () => {
+  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    realtime: { transport: ws }
+  });
+};

@@ -10,8 +10,9 @@ import {
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 
+import Loader from "../../../components/ui/Loader";
 import { ROUTES } from "../../../constants/routes";
-import { mockProfessionalProfile } from "../data/mockProfessionalProfile";
+import { api } from "../../../libs/axios";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -225,37 +226,80 @@ function ModalDisponibilidad({ disponibilidad, onClose, onSave }) {
 
 export default function EditProfessionalProfilePage() {
   const navigate = useNavigate();
-  const profile = mockProfessionalProfile;
+  const [profile, setProfile] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Imágenes
   const coverInputRef = useRef(null);
   const avatarInputRef = useRef(null);
   const [coverPreview, setCoverPreview] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
+  const [avatarBase64, setAvatarBase64] = useState(null);
+  const [coverBase64, setCoverBase64] = useState(null);
 
   // Biografía
-  const [bio, setBio] = useState(
-    "Biografia. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis."
-  );
+  const [bio, setBio] = useState("");
 
   // Habilidades
-  const [habilidades, setHabilidades] = useState(HABILIDADES_INICIALES);
+  const [habilidades, setHabilidades] = useState([]);
   const [mostrandoInput, setMostrandoInput] = useState(false);
   const [nuevaHabilidad, setNuevaHabilidad] = useState("");
 
   // Disponibilidad
-  const [disponibilidad, setDisponibilidad] = useState(DISPONIBILIDAD_INICIAL);
+  const [disponibilidad, setDisponibilidad] = useState([]);
   const [modalAbierto, setModalAbierto] = useState(false);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await api.get('/professional/profile');
+        const data = response.data;
+        setProfile(data);
+        setBio(data.description || "");
+        setHabilidades(data.skills || []);
+        
+        // Mapear disponibilidad del backend a la estructura del frontend
+        const schedule = data.availability?.schedule || [];
+        const loadedDisp = DIAS_SEMANA.map(dia => {
+          const entry = schedule.find(s => s.day === dia);
+          if (entry) {
+            // El backend guarda time_range como string "09:00 - 18:00"
+            const [inicio, fin] = entry.timeRange.split(' - ');
+            return { dia, activo: true, franjas: [{ inicio: inicio || "09:00", fin: fin || "18:00" }] };
+          }
+          return { dia, activo: false, franjas: [] };
+        });
+        setDisponibilidad(loadedDisp);
+        setAvatarPreview(data.avatarUrl);
+        setCoverPreview(data.coverUrl);
+      } catch (error) {
+        console.error("Error fetching professional profile", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   // ── Handlers ──
 
-  const handleImageChange = (e, setter) => {
+  const toBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+  });
+
+  const handleImageChange = async (e, setPreview, setBase64) => {
     const file = e.target.files?.[0];
     if (file) {
-      setter((prev) => {
+      setPreview((prev) => {
         if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
         return URL.createObjectURL(file);
       });
+      const base64 = await toBase64(file);
+      setBase64(base64);
     }
   };
 
@@ -274,7 +318,89 @@ export default function EditProfessionalProfilePage() {
     setModalAbierto(false);
   };
 
+  const handleSaveAndReturn = async () => {
+    setIsSaving(true);
+    try {
+      // Map availability back to backend format
+      const schedule = [];
+      disponibilidad.forEach(d => {
+        if (d.activo && d.franjas.length > 0) {
+          schedule.push({
+            day: d.dia,
+            timeRange: `${d.franjas[0].inicio} - ${d.franjas[0].fin}` // Taking first range for now to match backend simple string
+          });
+        }
+      });
+
+      const payload = { 
+        description: bio,
+        skills: habilidades,
+        availability: { schedule }
+      };
+
+      if (avatarBase64) payload.avatarUrl = avatarBase64;
+      if (coverBase64) payload.coverUrl = coverBase64;
+
+      await api.patch('/professional/profile', payload);
+      navigate("/professional/profile");
+    } catch (error) {
+      console.error("Error saving profile", error);
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveBio = async () => {
+    setIsSaving(true);
+    try {
+      await api.patch('/professional/profile', { description: bio });
+      // show success if needed
+    } catch (error) {
+      console.error("Error saving bio", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveSkills = async () => {
+    setIsSaving(true);
+    try {
+      await api.patch('/professional/profile', { skills: habilidades });
+    } catch (error) {
+      console.error("Error saving skills", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveAvailability = async () => {
+    setIsSaving(true);
+    try {
+      const schedule = [];
+      disponibilidad.forEach(d => {
+        if (d.activo && d.franjas.length > 0) {
+          schedule.push({
+            day: d.dia,
+            timeRange: `${d.franjas[0].inicio} - ${d.franjas[0].fin}`
+          });
+        }
+      });
+      await api.patch('/professional/profile', { availability: { schedule } });
+    } catch (error) {
+      console.error("Error saving availability", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const resumen = calcularResumen(disponibilidad);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center min-h-[500px]">
+        <Loader size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -295,7 +421,7 @@ export default function EditProfessionalProfilePage() {
             type="file"
             accept="image/*"
             className="hidden"
-            onChange={(e) => handleImageChange(e, setCoverPreview)}
+            onChange={(e) => handleImageChange(e, setCoverPreview, setCoverBase64)}
           />
         </div>
 
@@ -319,22 +445,23 @@ export default function EditProfessionalProfilePage() {
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={(e) => handleImageChange(e, setAvatarPreview)}
+                onChange={(e) => handleImageChange(e, setAvatarPreview, setAvatarBase64)}
               />
             </div>
             <div className="pb-1">
               <h1 className="text-xl font-bold text-white">
                 {profile.firstName} {profile.lastName}
               </h1>
-              <p className="text-sm text-[#A8A8AA]">{profile.titulo}</p>
+              <p className="text-sm text-[#A8A8AA]">{profile.title}</p>
             </div>
           </div>
 
           <button
-            onClick={() => navigate(ROUTES.PROFESSIONAL_PROFILE)}
-            className="flex shrink-0 items-center gap-2 self-start rounded-[6px] border border-[#323232] bg-transparent px-4 py-2 text-xs font-medium text-white hover:bg-[#323232] transition-colors sm:self-auto"
+            onClick={handleSaveAndReturn}
+            disabled={isSaving}
+            className="flex shrink-0 items-center gap-2 self-start rounded-[6px] border border-[#323232] bg-transparent px-4 py-2 text-xs font-medium text-white hover:bg-[#323232] transition-colors sm:self-auto disabled:opacity-50"
           >
-            Guardar y volver a Mi perfil
+            {isSaving ? "Guardando..." : "Guardar y volver a Mi perfil"}
           </button>
         </div>
 
@@ -365,7 +492,11 @@ export default function EditProfessionalProfilePage() {
           </div>
         </div>
         <div className="flex justify-end">
-          <button className="rounded-[6px] bg-[#F78736] px-4 py-2.5 text-xs font-medium text-white hover:bg-[#e06d00] transition-colors">
+          <button 
+            onClick={handleSaveBio}
+            disabled={isSaving}
+            className="rounded-[6px] bg-[#F78736] px-4 py-2.5 text-xs font-medium text-white hover:bg-[#e06d00] transition-colors disabled:opacity-50"
+          >
             Guardar cambios
           </button>
         </div>
@@ -418,7 +549,11 @@ export default function EditProfessionalProfilePage() {
         </div>
 
         <div className="flex justify-end">
-          <button className="rounded-[6px] bg-[#F78736] px-4 py-2.5 text-xs font-medium text-white hover:bg-[#e06d00] transition-colors">
+          <button 
+            onClick={handleSaveSkills}
+            disabled={isSaving}
+            className="rounded-[6px] bg-[#F78736] px-4 py-2.5 text-xs font-medium text-white hover:bg-[#e06d00] transition-colors disabled:opacity-50"
+          >
             Guardar cambios
           </button>
         </div>
@@ -450,12 +585,19 @@ export default function EditProfessionalProfilePage() {
           ))}
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-3">
           <button
             onClick={() => setModalAbierto(true)}
-            className="rounded-[6px] bg-[#F78736] px-4 py-2.5 text-xs font-medium text-white hover:bg-[#e06d00] transition-colors"
+            className="rounded-[6px] border border-[#323232] bg-transparent px-4 py-2.5 text-xs font-medium text-white hover:bg-[#323232] transition-colors"
           >
             Modificar horarios
+          </button>
+          <button
+            onClick={handleSaveAvailability}
+            disabled={isSaving}
+            className="rounded-[6px] bg-[#F78736] px-4 py-2.5 text-xs font-medium text-white hover:bg-[#e06d00] transition-colors disabled:opacity-50"
+          >
+            Guardar cambios
           </button>
         </div>
       </div>
@@ -490,7 +632,7 @@ export default function EditProfessionalProfilePage() {
           <h2 className="text-base font-semibold text-white">Resumen de Calificaciones</h2>
           <div className="flex flex-col items-center gap-2">
             <span className="text-5xl font-bold text-white">
-              {profile.rating.toFixed(1)}
+              {profile.ratingAvg?.toFixed(1) || "0.0"}
             </span>
             <div className="flex gap-1">
               {[1, 2, 3, 4, 5].map((s) => (

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   UserIcon,
@@ -15,23 +15,8 @@ import {
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import Button from "../../../components/ui/Button";
 import ProgressBar from "../../../components/ui/ProgressBar";
-import { mockProfessionalProfile } from "../data/mockProfessionalProfile";
-
-/**
- * Mock de datos de configuración de perfil.
- * Reemplazar con datos reales del backend cuando estén disponibles.
- */
-const mockSettings = {
-  nombre: `${mockProfessionalProfile.firstName} ${mockProfessionalProfile.lastName}`,
-  dni: null,           // null → pendiente
-  ubicacion: null,     // null → pendiente
-  matricula: null,     // null → pendiente (no obligatorio per CA08)
-  profesion: null,     // null → pendiente (obligatorio)
-  email: "carlos.martinez@email.com",
-  emailVerificado: true,
-  telefono: null,
-  telefonoVerificado: false,
-};
+import Loader from "../../../components/ui/Loader";
+import { api } from "../../../libs/axios";
 
 /* ── Sub-componentes ──────────────────────────────────────────── */
 
@@ -71,11 +56,32 @@ function Section({ title, children }) {
 
 export default function ProfessionalProfileSettingsPage() {
   const navigate = useNavigate();
+  const [settings, setSettings] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const {
-    nombre, dni, ubicacion, matricula, profesion,
-    email, emailVerificado, telefono, telefonoVerificado,
-  } = mockSettings;
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await api.get('/professional/profile/settings');
+        setSettings(response.data);
+      } catch (error) {
+        console.error("Error al obtener configuraciones:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const nombre = settings?.personalInfo?.firstName ? `${settings.personalInfo.firstName} ${settings.personalInfo.lastName || ""}`.trim() : null;
+  const dni = settings?.personalInfo?.dni;
+  const ubicacion = settings?.location?.address;
+  const profesion = "Profesional"; // This can be mapped from category if returned in settings, else it's implicitly true
+  const matricula = null; // Currently backend doesn't return license_number in settings, placeholder for now
+  const email = settings?.accountData?.email;
+  const emailVerificado = settings?.accountData?.emailVerified;
+  const telefono = settings?.accountData?.phone;
+  const telefonoVerificado = settings?.accountData?.phoneVerified;
 
   /**
    * Cálculo de completitud.
@@ -96,6 +102,14 @@ export default function ProfessionalProfileSettingsPage() {
   const progress = Math.round((completedCount / completableItems.length) * 100);
 
   const handleBack = () => navigate("/professional/profile");
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center min-h-[500px]">
+        <Loader size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex w-full flex-col gap-4 p-6">

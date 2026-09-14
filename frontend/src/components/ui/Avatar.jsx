@@ -1,4 +1,4 @@
-export default function Avatar({ initials, isVerified, size = "md", className = "" }) {
+export default function Avatar({ initials, avatarUrl, isVerified, size = "md", className = "" }) {
   const sizeClasses = {
     sm: "h-8 w-8 text-sm",
     md: "h-10 w-10 text-base",
@@ -13,9 +13,17 @@ export default function Avatar({ initials, isVerified, size = "md", className = 
 
   return (
     <div className={`relative ${className}`}>
-      <div className={`flex items-center justify-center rounded-full bg-[#F78736] font-bold text-white ${sizeClasses[size]}`}>
-        {initials || "U"}
-      </div>
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt={initials || "Avatar"}
+          className={`rounded-full object-cover bg-[#E5E7EB] ${sizeClasses[size]}`}
+        />
+      ) : (
+        <div className={`flex items-center justify-center rounded-full bg-[#F78736] font-bold text-white ${sizeClasses[size]}`}>
+          {initials || "U"}
+        </div>
+      )}
       {isVerified && (
         <div className={`absolute bottom-0 right-0 rounded-full border-[#202020] bg-green-500 ${indicatorSizes[size]}`}></div>
       )}

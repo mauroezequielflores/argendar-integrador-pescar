@@ -15,15 +15,25 @@ import Button from "../../../components/ui/Button";
 import Loader from "../../../components/ui/Loader";
 import Breadcrumbs from "../../../components/ui/Breadcrumbs";
 import InfoRow from "../components/InfoRow";
+import { api } from "../../../libs/axios";
 
 export default function ProfileSettingsPage() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [settings, setSettings] = useState(null);
 
-  // Simulación de carga
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 600);
-    return () => clearTimeout(timer);
+    const fetchSettings = async () => {
+      try {
+        const response = await api.get('/client/profile/settings');
+        setSettings(response.data);
+      } catch (error) {
+        console.error("Error al obtener configuraciones:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSettings();
   }, []);
 
   const handleBack = () => {
@@ -81,16 +91,16 @@ export default function ProfileSettingsPage() {
             <div className="flex flex-col">
               <InfoRow 
                 icon={IdentificationIcon}
-                title="Hernan Castro"
+                title={`${settings?.personalInfo?.firstName || ""} ${settings?.personalInfo?.lastName || ""}`.trim() || "No especificado"}
                 subtitle="Nombre y apellido."
-                verified={true}
+                verified={settings?.personalInfo?.personalVerified}
                 className="px-6 py-5"
               />
               <InfoRow 
                 icon={IdentificationIcon}
-                title="00000000"
+                title={settings?.personalInfo?.dni || "No especificado"}
                 subtitle="Número de DNI."
-                verified={false}
+                verified={settings?.personalInfo?.dniVerified}
                 className="px-6 py-5"
               />
             </div>
@@ -104,9 +114,9 @@ export default function ProfileSettingsPage() {
             <div className="flex flex-col">
               <InfoRow 
                 icon={MapPinIcon}
-                title="Ubicación principal"
+                title={settings?.location?.address || "No especificada"}
                 subtitle="Condición verificada."
-                verified={false}
+                verified={settings?.location?.locationVerified}
                 className="px-6 py-5"
               />
             </div>
@@ -120,23 +130,23 @@ export default function ProfileSettingsPage() {
             <div className="flex flex-col">
               <InfoRow 
                 icon={EnvelopeIcon}
-                title="correoejemplo@gmail.com"
+                title={settings?.accountData?.email || "No especificado"}
                 subtitle="E-mail donde recibís comunicaciones."
-                verified={true}
+                verified={settings?.accountData?.emailVerified}
                 className="px-6 py-5"
               />
               <InfoRow 
                 icon={PhoneIcon}
-                title="+5411908272675"
+                title={settings?.accountData?.phone || "No especificado"}
                 subtitle="Número donde recibís códigos de verificación y comunicaciones."
-                verified={true}
+                verified={settings?.accountData?.phoneVerified}
                 className="px-6 py-5"
               />
               <InfoRow 
                 icon={UserCircleIcon}
                 title="Cambiar contraseña"
                 subtitle="Contraseña guardada."
-                verified={true}
+                verified={settings?.accountData?.hasPassword}
                 className="px-6 py-5"
               />
             </div>

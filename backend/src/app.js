@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import { supabase } from './config/supabase.js';
 import authRoutes from './routes/authRoutes.js';
+import clientRoutes from './routes/clientRoutes.js';
+import professionalRoutes from './routes/professionalRoutes.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 
 const app = express();
@@ -12,6 +14,8 @@ app.use(express.json({ limit: '1mb' }));
 
 // --- Rutas de la API ---
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/client', clientRoutes);
+app.use('/api/v1/professional', professionalRoutes);
 
 // --- Rutas de Diagnóstico (Pruebas iniciales) ---
 // NOTA: Más adelante, las rutas de la aplicación se separarán en la carpeta src/routes/

@@ -24,3 +24,18 @@ export const login = async (req, res, next) => {
     next(error);
   }
 };
+
+export const changePassword = async (req, res, next) => {
+  try {
+    const { password } = req.body;
+    
+    // El authMiddleware valida el token y setea req.user
+    const userId = req.user.id;
+
+    const result = await authService.changePassword({ userId, password });
+
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};

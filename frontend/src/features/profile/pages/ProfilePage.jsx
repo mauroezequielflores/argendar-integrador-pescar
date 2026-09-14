@@ -1,18 +1,47 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ProfileHeader from "../components/ProfileHeader";
 import PublicProfileTab from "../components/PublicProfileTab";
 import ProfileInfoTab from "../components/ProfileInfoTab";
-import { mockProfile } from "../data/mockProfile";
+import Loader from "../../../components/ui/Loader";
+import { api } from "../../../libs/axios";
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("public"); // "public" or "info"
+  const [profile, setProfile] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await api.get('/client/profile');
+        setProfile(response.data);
+      } catch (error) {
+        console.error("Error al cargar el perfil:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center min-h-[500px]">
+        <Loader size="lg" />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return <div className="text-white text-center mt-10">Error al cargar perfil.</div>;
+  }
 
   return (
     <div className="flex flex-col gap-6 text-white w-full">
       {/* Opcional: una card oscura de fondo si queremos seguir un layout exacto. Según el diseño, parece el propio background del main area, así que lo pondremos sobre él */}
 
       {/* Header */}
-      <ProfileHeader profile={mockProfile} />
+      <ProfileHeader profile={profile} />
 
       {/* Tabs */}
       <div className="mt-8 border-b border-[#3a3a3a] flex items-center gap-8">
@@ -50,7 +79,7 @@ export default function ProfilePage() {
       {/* Tab Content */}
       <div className="pb-16">
         {activeTab === "public" ? (
-          <PublicProfileTab profile={mockProfile} />
+          <PublicProfileTab profile={profile} />
         ) : (
           <ProfileInfoTab />
         )}

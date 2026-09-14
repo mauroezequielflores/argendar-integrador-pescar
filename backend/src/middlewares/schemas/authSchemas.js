@@ -36,3 +36,13 @@ export const loginSchema = z.object({
       .min(1, 'La contraseña no puede estar vacía.'),
   }),
 });
+
+export const changePasswordSchema = z.object({
+  body: z.object({
+    password: z
+      .string({ required_error: 'La contraseña es obligatoria.' })
+      .min(8, 'La contraseña debe tener al menos 8 caracteres.')
+      .regex(/[A-Z]/, 'La contraseña debe contener al menos una letra mayúscula.')
+      .regex(/[0-9]/, 'La contraseña debe contener al menos un número.'),
+  }),
+});

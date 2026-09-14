@@ -18,9 +18,9 @@ export function AuthProvider({ children }) {
     try {
       const response = await api.post('/auth/login', { email, password });
 
-      // Guardamos la info del usuario. Nota: Guardar el token (response.data.session.access_token) 
-      // en un localStorage se implementará más adelante.
+      // Guardamos la info del usuario y el token
       setUser(response.data.user);
+      localStorage.setItem('access_token', response.data.session.access_token);
       setIsLoading(false);
       return response.data.user;
     } catch (error) {
@@ -57,6 +57,7 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem('access_token');
   };
 
   const value = {

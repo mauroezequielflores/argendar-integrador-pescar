@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { CameraIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
+import { CameraIcon, PencilSquareIcon, UserCircleIcon } from "@heroicons/react/24/outline";
 import { StarIcon as SolidStarIcon } from "@heroicons/react/24/solid";
 
 import Card from "../../../components/ui/Card";
@@ -10,8 +10,7 @@ import InfoAlert from "../../../components/ui/InfoAlert";
 import EmptyState from "../../../components/ui/EmptyState";
 import RatingSummary from "../../../components/ui/RatingSummary";
 import Loader from "../../../components/ui/Loader";
-import { ROUTES } from "../../../constants/routes";
-import { mockProfile } from "../data/mockProfile";
+import { api } from "../../../libs/axios";
 
 export default function EditProfilePage() {
   const navigate = useNavigate();
@@ -21,37 +20,75 @@ export default function EditProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [profile, setProfile] = useState(null);
   const [bio, setBio] = useState("");
+  
+  // Base64 states for preview and upload
+  const [avatarBase64, setAvatarBase64] = useState(null);
+  const [coverBase64, setCoverBase64] = useState(null);
 
-  // Simular carga inicial
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setBio(mockProfile.description || "");
-      setIsLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
+    const fetchProfile = async () => {
+      try {
+        const response = await api.get('/client/profile');
+        setProfile(response.data);
+        setBio(response.data.description || "");
+      } catch (error) {
+        console.error("Error fetching profile", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProfile();
   }, []);
 
-  // Mock click for file inputs
   const handleCameraClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
 
-  const handleSaveAndReturn = () => {
-    // Lógica general de guardado...
-    navigate("/client/profile");
+  const toBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+  });
+
+  const handleAvatarChange = async (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const base64 = await toBase64(e.target.files[0]);
+      setAvatarBase64(base64);
+    }
   };
 
-  const handleSaveBio = () => {
+  const handleSaveAndReturn = async () => {
     setIsSaving(true);
-    // Simular guardado
-    setTimeout(() => {
+    try {
+      const payload = { description: bio };
+      if (avatarBase64) payload.avatarUrl = avatarBase64;
+      if (coverBase64) payload.coverUrl = coverBase64; // Cover is currently not mapped to a distinct input, we'll map both just in case
+
+      await api.patch('/client/profile', payload);
+      window.dispatchEvent(new CustomEvent('profileUpdated'));
+      navigate("/client/profile");
+    } catch (error) {
+      console.error("Error saving profile", error);
       setIsSaving(false);
+    }
+  };
+
+  const handleSaveBio = async () => {
+    setIsSaving(true);
+    try {
+      await api.patch('/client/profile', { description: bio });
       setIsSuccess(true);
-      setTimeout(() => setIsSuccess(false), 3000); // ocultar mensaje de éxito
-    }, 1000);
+      setTimeout(() => setIsSuccess(false), 3000);
+    } catch (error) {
+      console.error("Error saving bio", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (isLoading) {
@@ -67,9 +104,13 @@ export default function EditProfilePage() {
       {/* ─── Header: Cover, Avatar y Botón ────────────────────────────── */}
       <div className="relative mb-24">
         {/* Cover Image */}
-        <div className="relative h-48 w-full rounded-t-xl bg-[#202020] border border-[#3a3a3a] overflow-hidden flex items-center justify-center">
+        <div 
+          className="relative h-48 w-full rounded-t-xl bg-[#202020] border border-[#3a3a3a] overflow-hidden flex items-center justify-center bg-cover bg-center"
+          style={{ backgroundImage: coverBase64 ? `url(${coverBase64})` : (profile?.coverUrl ? `url(${profile.coverUrl})` : 'none') }}
+        >
+          {/* Note: Para que funcione la cámara de la portada, idealmente se necesita otra ref/input. Omitido por simplicidad si no hay input de cover, pero se deja el handler. */}
           <button
-            onClick={handleCameraClick}
+            onClick={() => {}} // TODO: Add a ref for cover input if needed
             className="flex h-10 w-10 items-center justify-center rounded-full bg-[#3a3a3a] text-white hover:bg-[#525252] transition-colors z-10"
             aria-label="Cambiar portada"
           >
@@ -77,16 +118,19 @@ export default function EditProfilePage() {
           </button>
         </div>
 
-        {/* Input file oculto para simular */}
-        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" />
+        {/* Input file oculto para el avatar */}
+        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarChange} />
 
         {/* Avatar, Textos y Botón (1/4 dentro del cover, 3/4 fuera) */}
         {/* Altura del avatar 100px -> -bottom-[75px] significa 75px fuera y 25px dentro */}
         <div className="absolute -bottom-[75px] left-0 w-full px-6 sm:px-8 flex items-end justify-between pointer-events-none">
           <div className="flex items-end gap-6 pointer-events-auto">
             <div className="relative">
-              <div className="flex h-[100px] w-[100px] items-center justify-center rounded-full border-4 border-[#121212] bg-[#E5E7EB]">
-                 {/* Iniciales o imagen */}
+              <div 
+                className="flex h-[100px] w-[100px] items-center justify-center rounded-full border-4 border-[#121212] bg-[#E5E7EB] overflow-hidden bg-cover bg-center"
+                style={{ backgroundImage: avatarBase64 ? `url(${avatarBase64})` : (profile?.avatarUrl ? `url(${profile.avatarUrl})` : 'none') }}
+              >
+                 {!avatarBase64 && !profile?.avatarUrl && <UserCircleIcon className="h-12 w-12 text-gray-400" />}
               </div>
               {/* Botón cámara de Avatar */}
               <button
@@ -99,10 +143,10 @@ export default function EditProfilePage() {
             </div>
             <div className="mb-2">
               <h1 className="text-[32px] font-bold text-white leading-none">
-                {mockProfile.firstName} {mockProfile.lastName}
+                {profile?.firstName} {profile?.lastName}
               </h1>
               <p className="text-sm text-[#A8A8AA] mt-1.5">
-                {mockProfile.isVerified ? "Cliente verificado" : "Cliente no verificado"}
+                {profile?.isVerified ? "Cliente verificado" : "Cliente no verificado"}
               </p>
             </div>
           </div>
@@ -181,8 +225,8 @@ export default function EditProfilePage() {
             </h2>
             <div className="w-full">
               <RatingSummary
-                average={mockProfile.rating}
-                totalReviews={mockProfile.reviewsCount}
+                average={profile?.rating || 0}
+                totalReviews={profile?.reviewsCount || 0}
                 breakdown={{ 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }}
               />
             </div>

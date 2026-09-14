@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import {
   CalendarIcon,
@@ -14,12 +14,38 @@ import Header from "./Header";
 import Sidebar from "./Sidebar";
 import ChatbotWidget from "../../components/ui/ChatbotWidget";
 import { mockClientHeaderNotifications } from "../../features/notifications/data/mockClientNotifications";
+import { api } from "../../libs/axios";
 
 export default function ClientLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // Desktop collapse state
   const [headerNotifications, setHeaderNotifications] = useState(mockClientHeaderNotifications);
+  const [userProfile, setUserProfile] = useState({ firstName: "", lastName: "", avatarUrl: null });
   const navigate = useNavigate();
+
+  const fetchProfile = async () => {
+    try {
+      const response = await api.get('/client/profile');
+      setUserProfile({
+        firstName: response.data.firstName || "",
+        lastName: response.data.lastName || "",
+        avatarUrl: response.data.avatarUrl || null
+      });
+    } catch (error) {
+      console.error("Error fetching client profile for header:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfile();
+
+    const handleProfileUpdate = () => {
+      fetchProfile();
+    };
+
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+    return () => window.removeEventListener('profileUpdated', handleProfileUpdate);
+  }, []);
 
   const handleLogout = () => {
     if (window.confirm("¿Estás seguro de que deseas cerrar sesión?")) {
@@ -59,6 +85,9 @@ export default function ClientLayout() {
     },
   ];
 
+  const userName = userProfile.firstName ? `${userProfile.firstName} ${userProfile.lastName}`.trim() : "Cargando...";
+  const userInitials = userProfile.firstName ? userProfile.firstName[0].toUpperCase() : "U";
+
   return (
     <div className="flex flex-col h-screen bg-[#202020] text-[#FFFFFF] font-sans overflow-hidden">
       {/* ── Header 100% Width ────────────────────────────────────── */}
@@ -76,8 +105,9 @@ export default function ClientLayout() {
             ),
           );
         }}
-        userInitials="A"
-        userName="Apellido Nombre"
+        userInitials={userInitials}
+        userName={userName}
+        avatarUrl={userProfile.avatarUrl}
       />
 
       {/* ── Cuerpo Inferior (Sidebar + Contenido) ────────────────── */}

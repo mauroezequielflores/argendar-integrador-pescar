@@ -10,7 +10,7 @@ import axios from "axios";
  * agregar Authorization headers y manejar errores globales.
  */
 export const api = axios.create({
-  baseURL: "http://localhost:3000/api/v1", // Ruta del backend local
+  baseURL: "/api/v1", // Ruta del backend local (proxy)
   headers: {
     "Content-Type": "application/json",
   },
@@ -20,8 +20,8 @@ export const api = axios.create({
 // Interceptor de request — agregar token cuando exista backend
 api.interceptors.request.use(
   (config) => {
-    // const token = getToken(); // implementar cuando haya auth real
-    // if (token) config.headers.Authorization = `Bearer ${token}`;
+    const token = localStorage.getItem('access_token');
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
   (error) => Promise.reject(error)

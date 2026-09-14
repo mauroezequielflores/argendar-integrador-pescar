@@ -15,7 +15,8 @@ import {
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 
 import { ROUTES } from "../../../constants/routes";
-import { mockProfessionalProfile } from "../data/mockProfessionalProfile";
+import { api } from "../../../libs/axios";
+import Loader from "../../../components/ui/Loader";
 
 // ─── Header ──────────────────────────────────────────────────────────────────
 
@@ -32,7 +33,12 @@ function ProfessionalProfileHeader({ profile }) {
         <div className="flex items-end gap-4 -mt-10">
           {/* Avatar */}
           <div className="relative shrink-0">
-            <div className="h-20 w-20 rounded-full bg-[#E5E7EB]" />
+            <div 
+              className="h-20 w-20 rounded-full bg-[#E5E7EB] bg-cover bg-center"
+              style={profile.avatarUrl ? { backgroundImage: `url(${profile.avatarUrl})` } : {}}
+            >
+              {!profile.avatarUrl && <UserCircleIcon className="h-12 w-12 text-gray-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />}
+            </div>
             {profile.isOnline && (
               <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-[#292929] bg-green-500" />
             )}
@@ -123,28 +129,30 @@ function InfoProfesionalCard({ profile }) {
       <div className="flex flex-col gap-3 text-sm">
         <div className="flex items-center justify-between">
           <span className="text-[#A8A8AA]">Ubicación base</span>
-          <span className="text-white">{profile.ubicacionBase}</span>
+          <span className="text-white">{profile.baseLocation || "No especificada"}</span>
         </div>
         <div className="h-px bg-[#323232]" />
         <div className="flex items-center justify-between">
           <span className="text-[#A8A8AA]">Radio de cobertura</span>
-          <span className="text-white">{profile.radioCobertura}</span>
+          <span className="text-white">{profile.coverageRadiusKm ? `${profile.coverageRadiusKm} km` : "No especificado"}</span>
         </div>
         <div className="h-px bg-[#323232]" />
         <div className="flex items-center justify-between">
           <span className="text-[#A8A8AA]">Miembro desde</span>
-          <span className="font-medium text-white">{profile.memberSince}</span>
+          <span className="font-medium text-white">
+            {profile.memberSince ? new Date(profile.memberSince).toLocaleDateString() : "-"}
+          </span>
         </div>
       </div>
-      {profile.certificaciones.length > 0 && (
+      {profile.certifications?.length > 0 && (
         <div className="flex flex-col gap-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-[#A8A8AA]">
             Certificaciones
           </p>
-          {profile.certificaciones.map((cert) => (
-            <div key={cert.nombre} className="flex items-center gap-2">
+          {profile.certifications.map((cert) => (
+            <div key={cert.name} className="flex items-center gap-2">
               <AcademicCapIcon className="h-4 w-4 text-[#A8A8AA]" />
-              <span className="text-sm text-white">{cert.nombre}</span>
+              <span className="text-sm text-white">{cert.name}</span>
             </div>
           ))}
         </div>
@@ -157,16 +165,16 @@ function DisponibilidadCard({ disponibilidad }) {
   return (
     <div className="flex flex-col gap-3 rounded-[6px] border border-[#323232] bg-[#292929] p-5">
       <h2 className="text-base font-semibold text-white">Disponibilidad</h2>
-      {disponibilidad.horarios.length === 0 ? (
+      {!disponibilidad.schedule || disponibilidad.schedule.length === 0 ? (
         <div className="rounded-[6px] bg-[#323232] p-4 text-sm text-[#A8A8AA]">
           Sin horarios disponibles.
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {disponibilidad.horarios.map((h, i) => (
+          {disponibilidad.schedule.map((h, i) => (
             <div key={i} className="flex items-center justify-between text-sm">
-              <span className="text-[#A8A8AA]">{h.dia}</span>
-              <span className="text-white">{h.rango}</span>
+              <span className="text-[#A8A8AA]">{h.day}</span>
+              <span className="text-white">{h.timeRange}</span>
             </div>
           ))}
         </div>
@@ -233,14 +241,14 @@ function PublicProfileTab({ profile }) {
       {/* Fila 1: Sobre mí (izq) + Info profesional + Disponibilidad (der) */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
         <SobreMiCard
-          descripcion={profile.descripcion}
-          habilidades={profile.habilidades}
+          descripcion={profile.description || "No especificado"}
+          habilidades={profile.skills || []}
         />
         <div className="flex flex-col gap-4">
           <InfoProfesionalCard profile={profile} />
           {/* CA06: solo renderizar si disponibilidad no es null */}
-          {profile.disponibilidad !== null && (
-            <DisponibilidadCard disponibilidad={profile.disponibilidad} />
+          {profile.availability !== null && (
+            <DisponibilidadCard disponibilidad={profile.availability || {schedule: []}} />
           )}
         </div>
       </div>
@@ -248,8 +256,8 @@ function PublicProfileTab({ profile }) {
       {/* Fila 2: Calificaciones (izq) + Opiniones (der) */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr]">
         <CalificacionesCard
-          rating={profile.rating}
-          reviewsCount={profile.reviewsCount}
+          rating={profile.ratingAvg || 0}
+          reviewsCount={profile.reviewsCount || 0}
         />
         <OpinionesCard />
       </div>
@@ -344,9 +352,41 @@ function InfoProfileTab({ completitud }) {
 
 // ─── Página principal ─────────────────────────────────────────────────────────
 
+import { useEffect } from "react";
+
 export default function ProfessionalProfilePage() {
   const [activeTab, setActiveTab] = useState("public");
-  const profile = mockProfessionalProfile;
+  const [profile, setProfile] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await api.get('/professional/profile');
+        setProfile(response.data);
+      } catch (error) {
+        console.error("Error al cargar el perfil profesional:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center min-h-[500px]">
+        <Loader size="lg" />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return <div className="text-white text-center mt-10">Error al cargar perfil.</div>;
+  }
+
+  // Calculate completeness temporarily (replace with real logic if needed)
+  const completitudPerfil = 70;
 
   return (
     <div className="flex flex-col gap-6">
@@ -355,7 +395,7 @@ export default function ProfessionalProfilePage() {
       {activeTab === "public" ? (
         <PublicProfileTab profile={profile} />
       ) : (
-        <InfoProfileTab completitud={profile.completitudPerfil} />
+        <InfoProfileTab completitud={completitudPerfil} />
       )}
     </div>
   );

@@ -13,6 +13,7 @@ export default function Header({
   onSettingsClick,
   userInitials = "A",
   userName = "Apellido Nombre",
+  avatarUrl = null,
   notifications = [], // Nuevo prop para las notificaciones
   onNotificationRead,
   showNotifications = true, // Permite ocultar el ícono de campana (ej. layout admin)
@@ -80,7 +81,7 @@ export default function Header({
           <span className="hidden text-sm font-medium lg:block text-white">
             {userName}
           </span>
-          <Avatar initials={userInitials} size="sm" />
+          <Avatar initials={userInitials} avatarUrl={avatarUrl} size="sm" />
         </div>
 
         <div className="h-8 w-px bg-[#292929]" />
