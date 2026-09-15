@@ -62,11 +62,10 @@ function TabNav({ active, onChange }) {
           <button
             key={id}
             onClick={() => onChange(id)}
-            className={`flex items-center gap-2 pb-3 text-sm font-medium transition-colors ${
-              isActive
+            className={`flex items-center gap-2 pb-3 text-sm font-medium transition-colors ${isActive
                 ? "border-b-2 border-[#F78736] text-white"
                 : "text-[#A8A8AA] hover:text-white"
-            }`}
+              }`}
           >
             <Icon className="h-4 w-4" />
             {label}
@@ -166,9 +165,9 @@ function PanelOfertas({ items, onVerDetalle, onVerMiOferta }) {
       ) : (
         <div className="flex flex-col gap-3">
           {items.map((oferta) => (
-            <OfertaCard 
-              key={oferta.id} 
-              oferta={oferta} 
+            <OfertaCard
+              key={oferta.id}
+              oferta={oferta}
               onVerDetalle={() => onVerDetalle(oferta)}
               onVerMiOferta={() => onVerMiOferta(oferta)}
             />
@@ -214,16 +213,16 @@ export default function ProfessionalAgendaPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("turnos");
-  
+
   // States for Agenda data
   const [turnos, setTurnos] = useState(mockAgenda);
   const [selectedTurno, setSelectedTurno] = useState(null);
-  
+
   // Modal states
   const [isDetalleOpen, setIsDetalleOpen] = useState(false);
   const [isRechazoOpen, setIsRechazoOpen] = useState(false);
   const [isExitoOpen, setIsExitoOpen] = useState(false);
-  
+
   // States para Ofertas
   const [isSolicitudDetalleOpen, setIsSolicitudDetalleOpen] = useState(false);
   const [selectedOferta, setSelectedOferta] = useState(null);
@@ -250,7 +249,7 @@ export default function ProfessionalAgendaPage() {
 
   const handleConfirmarPago = () => {
     if (!selectedTurno) return;
-    
+
     // Update the selected turno locally
     const updatedTurno = {
       ...selectedTurno,
@@ -260,7 +259,7 @@ export default function ProfessionalAgendaPage() {
       }
     };
     setSelectedTurno(updatedTurno);
-    
+
     // Update the main list
     setTurnos(turnos.map(t => t.id === updatedTurno.id ? updatedTurno : t));
   };
@@ -276,14 +275,14 @@ export default function ProfessionalAgendaPage() {
       setIsRechazoOpen(true);
       return;
     }
-    
+
     // Simulate backend response (success)
     setIsDetalleOpen(false);
     setIsExitoOpen(true);
-    
+
     // Move to history in a real app, here we might just change status or filter it out
     if (selectedTurno) {
-       setTurnos(turnos.map(t => t.id === selectedTurno.id ? {...t, estado: "FINALIZADO"} : t));
+      setTurnos(turnos.map(t => t.id === selectedTurno.id ? { ...t, estado: "FINALIZADO" } : t));
     }
   };
 
@@ -310,7 +309,7 @@ export default function ProfessionalAgendaPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">
+          <h1 className="text-2xl font-bold text-white">
             {greeting}, {firstName}
           </h1>
           <p className="mt-1 text-sm text-[#A8A8AA]">
@@ -318,7 +317,7 @@ export default function ProfessionalAgendaPage() {
           </p>
         </div>
         <button
-          onClick={() => {}}
+          onClick={() => { }}
           className="flex shrink-0 items-center gap-2 rounded-[6px] bg-[#F78736] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#e06d00] transition-colors"
         >
           <PlusIcon className="h-4 w-4" />
@@ -331,14 +330,14 @@ export default function ProfessionalAgendaPage() {
 
       {/* Contenido del tab activo */}
       {activeTab === "turnos" && (
-        <PanelProximosTurnos 
-          items={turnos.filter(t => t.estado !== "FINALIZADO")} 
-          onVerDetalle={handleVerDetalle} 
+        <PanelProximosTurnos
+          items={turnos.filter(t => t.estado !== "FINALIZADO")}
+          onVerDetalle={handleVerDetalle}
         />
       )}
       {activeTab === "ofertas" && (
-        <PanelOfertas 
-          items={mockOfertasPendientes} 
+        <PanelOfertas
+          items={mockOfertasPendientes}
           onVerDetalle={handleVerDetalleOferta}
           onVerMiOferta={handleVerMiOferta}
         />
@@ -348,8 +347,8 @@ export default function ProfessionalAgendaPage() {
       )}
 
       {/* Modals */}
-      <TurnoDetalleModal 
-        isOpen={isDetalleOpen} 
+      <TurnoDetalleModal
+        isOpen={isDetalleOpen}
         turno={selectedTurno}
         onClose={() => setIsDetalleOpen(false)}
         onConfirmarPago={handleConfirmarPago}
@@ -357,16 +356,16 @@ export default function ProfessionalAgendaPage() {
         onFinalizar={handleFinalizarClick}
       />
 
-      <RechazoFinalizarModal 
+      <RechazoFinalizarModal
         isOpen={isRechazoOpen}
         onClose={handleCloseRespuesta}
       />
 
-      <ExitoFinalizarModal 
+      <ExitoFinalizarModal
         isOpen={isExitoOpen}
         onClose={handleCloseRespuesta}
       />
-      
+
       <SolicitudDetalleModal
         isOpen={isSolicitudDetalleOpen}
         onClose={() => setIsSolicitudDetalleOpen(false)}

@@ -83,7 +83,7 @@ export default function SettingsPage() {
       {/* Título y descripción */}
       <div>
         <h1 className="text-2xl font-bold text-white">Configuración</h1>
-        <p className="mt-1 text-xs sm:text-sm text-[#A8A8AA]">
+        <p className="mt-1 text-sm sm:text-sm text-[#A8A8AA]">
           Administrá tus configuraciones de cuenta.
         </p>
       </div>

@@ -356,7 +356,7 @@ export default function ProfessionalHelpPage() {
       {/* Hero */}
       <div className="flex flex-col items-center gap-4 text-center">
         <div>
-          <h1 className="text-3xl font-bold text-white">
+          <h1 className="text-2xl font-bold text-white">
             Hola, {firstName} ¿Con qué te ayudamos?
           </h1>
           <p className="mt-2 text-sm text-[#A8A8AA]">
@@ -368,7 +368,7 @@ export default function ProfessionalHelpPage() {
           <input
             type="text"
             placeholder="¿Cómo puedo cancelar una oferta..."
-            className="w-full rounded-[6px] border border-[#323232] bg-[#292929] py-3 pl-10 pr-4 text-sm text-white placeholder-[#A8A8AA] focus:border-[#F78736] focus:outline-none"
+            className="w-full rounded-[20px] border border-[#323232] bg-[#292929] py-3 pl-10 pr-4 text-xs text-white placeholder-[#A8A8AA] focus:border-[#F78736] focus:outline-none"
           />
         </div>
       </div>

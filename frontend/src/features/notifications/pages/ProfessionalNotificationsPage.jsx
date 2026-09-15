@@ -27,11 +27,10 @@ function TabNav({ active, onChange }) {
           <button
             key={id}
             onClick={() => onChange(id)}
-            className={`flex items-center gap-2 pb-3 text-sm font-medium transition-colors ${
-              isActive
+            className={`flex items-center gap-2 pb-3 text-sm font-medium transition-colors ${isActive
                 ? "border-b-2 border-[#F78736] text-white"
                 : "text-[#A8A8AA] hover:text-white"
-            }`}
+              }`}
           >
             <Icon className="h-4 w-4" />
             {label}
@@ -171,7 +170,7 @@ export default function ProfessionalNotificationsPage() {
 
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white">Mis notificaciones</h1>
+        <h1 className="text-2xl font-bold text-white">Mis notificaciones</h1>
         <p className="mt-1 text-sm text-[#A8A8AA]">
           Gestioná tus notificaciones de pagos, turnos y servicios.
         </p>
