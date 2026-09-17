@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { 
   MapPinIcon, 
   WrenchScrewdriverIcon, 
@@ -17,9 +18,12 @@ import Button from "../../../components/ui/Button";
 
 // Context
 import { useCreateRequest } from "../context/CreateRequestContext";
+import { api } from "../../../libs/axios";
 export default function CreateRequestRevisionPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { requestData, clearRequestData } = useCreateRequest();
+  const [isPublishing, setIsPublishing] = useState(false);
 
   const handleEdit = (stepPath) => {
     navigate(`/client/agenda/create-request${stepPath}`);
@@ -34,10 +38,36 @@ export default function CreateRequestRevisionPage() {
     navigate("/client/agenda");
   };
 
-  const handlePublish = () => {
-    alert("¡Solicitud publicada exitosamente en el Marketplace!");
-    clearRequestData();
-    navigate("/client/agenda");
+  const handlePublish = async () => {
+    try {
+      setIsPublishing(true);
+      const payload = {
+        categoryId: Number(requestData.categoryId || 1),
+        title: requestData.title || "Nueva Solicitud",
+        description: requestData.description + (requestData.additionalDetails ? `\n\nDetalles: ${requestData.additionalDetails}` : ''),
+        datePreference: "flexible",
+        isEmergency: requestData.isEmergency === "Sí",
+        hasMaterials: requestData.hasMaterials === "Sí",
+        address: requestData.address || "Sin especificar",
+        neighborhood: requestData.zipCode || "Centro",
+        city: "Capital",
+        photos: requestData.photos || []
+      };
+
+      await api.post("/job-requests", payload);
+      
+      // Invalidar la caché para que AgendaPage vuelva a pedir los datos
+      queryClient.invalidateQueries({ queryKey: ["job-requests"] });
+      
+      alert("¡Solicitud publicada exitosamente en el Marketplace!");
+      clearRequestData();
+      navigate("/client/agenda");
+    } catch (error) {
+      console.error("Error al publicar la solicitud:", error);
+      alert("Ocurrió un error al intentar publicar la solicitud.");
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   return (
@@ -198,8 +228,8 @@ export default function CreateRequestRevisionPage() {
             <Button type="button" variant="secondary" onClick={handleCancel} className="w-full sm:w-auto px-10 bg-[#727272] border-[#727272] text-white hover:bg-[#5f5f5f]">
               Cancelar
             </Button>
-            <Button type="button" variant="primary" onClick={handlePublish} className="w-full sm:w-auto px-10 bg-[#F78736] border-[#F78736] hover:bg-[#e0752b]">
-              Publicar Solicitud
+            <Button type="button" variant="primary" onClick={handlePublish} disabled={isPublishing} className="w-full sm:w-auto px-10 bg-[#F78736] border-[#F78736] hover:bg-[#e0752b]">
+              {isPublishing ? "Publicando..." : "Publicar Solicitud"}
             </Button>
           </div>
         </div>

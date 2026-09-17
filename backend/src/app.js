@@ -4,6 +4,10 @@ import { supabase } from './config/supabase.js';
 import authRoutes from './routes/authRoutes.js';
 import clientRoutes from './routes/clientRoutes.js';
 import professionalRoutes from './routes/professionalRoutes.js';
+import jobRequestsRoutes from './routes/jobRequestsRoutes.js';
+import marketplaceRoutes from './routes/marketplaceRoutes.js';
+import offersRoutes from './routes/offersRoutes.js';
+import appointmentsRoutes from './routes/appointmentsRoutes.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 
 const app = express();
@@ -16,6 +20,10 @@ app.use(express.json({ limit: '1mb' }));
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/client', clientRoutes);
 app.use('/api/v1/professional', professionalRoutes);
+app.use('/api/v1/job-requests', jobRequestsRoutes);
+app.use('/api/v1/professional/marketplace', marketplaceRoutes);
+app.use('/api/v1/offers', offersRoutes);
+app.use('/api/v1/appointments', appointmentsRoutes);
 
 // --- Rutas de Diagnóstico (Pruebas iniciales) ---
 // NOTA: Más adelante, las rutas de la aplicación se separarán en la carpeta src/routes/
