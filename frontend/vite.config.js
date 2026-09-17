@@ -9,9 +9,9 @@ export default defineConfig({
     tailwindcss()
   ],
   server: {
-    host: '127.0.0.1',
+    host: '0.0.0.0', // '0.0.0.0' en lugar de '127.0.0.1' para que se exponga en el contenedor
     proxy: {
-      '/api': 'http://127.0.0.1:3000'
+      '/api': process.env.BACKEND_URL || 'http://127.0.0.1:3000'
     }
   },
 })

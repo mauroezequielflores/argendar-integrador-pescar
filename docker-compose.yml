@@ -10,7 +10,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: argendar_backend
     ports:
-      - "5000:5000"
+      - "3000:3000"
     volumes:
       - ./backend:/app
       - /app/node_modules # Volumen anónimo: protege los binarios de Linux de ser pisados
@@ -31,6 +31,8 @@ services:
       - /app/node_modules
     env_file:
       - ./frontend/.env
+    environment:
+      - BACKEND_URL=http://backend:3000
     networks:
       - argendar_net
     depends_on:
