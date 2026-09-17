@@ -31,7 +31,7 @@ export const QUICK_SHORTCUTS = [
   {
     id: "create-request",
     title: "Crear solicitud",
-    description: "Crea una solicitud que detalle tu problema.",
+    description: "Crea una solicitud que detalle tu problema y contactá a un profesional.",
     icon: PlusIcon,
     to: "/client/agenda",
   },
