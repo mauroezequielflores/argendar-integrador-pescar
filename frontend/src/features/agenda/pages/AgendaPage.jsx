@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   DocumentTextIcon,
@@ -7,7 +7,7 @@ import {
   CalendarDaysIcon,
   PlusIcon
 } from "@heroicons/react/24/outline";
-
+import { api } from "../../../libs/axios";
 // UI Components
 import PageHeader from "../../../components/ui/PageHeader";
 import Breadcrumbs from "../../../components/ui/Breadcrumbs";
@@ -30,7 +30,34 @@ export default function AgendaPage() {
   const navigate = useNavigate();
 
   // Fake user name as there's no real backend yet
-  const userName = "Nombre";
+
+  const [userProfile, setUserProfile] = useState({ firstName: "" });
+
+  const fetchProfile = async () => {
+    try {
+      const response = await api.get('/client/profile');
+      setUserProfile({
+        firstName: response.data.firstName || "",
+      });
+    } catch (error) {
+      console.error("Error fetching client profile for header:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfile();
+
+    const handleProfileUpdate = () => {
+      fetchProfile();
+    };
+
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+    return () => window.removeEventListener('profileUpdated', handleProfileUpdate);
+  }, []);
+
+
+  const userName = userProfile.firstName ? `${userProfile.firstName}` : "Cliente...";
+
 
   // Breadcrumbs items
   const breadcrumbItems = [
