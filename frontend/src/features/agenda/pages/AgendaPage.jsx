@@ -34,7 +34,7 @@ export default function AgendaPage() {
 
   // Breadcrumbs items
   const breadcrumbItems = [
-    { label: "Inicio", href: "/client/home" },
+    { label: "Actividad", href: "/client/home" },
     { label: "Mi Agenda" },
   ];
 

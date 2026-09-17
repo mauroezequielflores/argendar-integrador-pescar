@@ -74,7 +74,7 @@ export default function SettingsPage() {
           className="cursor-pointer transition-colors hover:text-white"
           onClick={() => navigate(homePath)}
         >
-          Inicio
+          Mi cuenta
         </span>
         <span>›</span>
         <span className="font-medium text-white">Configuración</span>
