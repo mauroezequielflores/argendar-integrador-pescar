@@ -18,19 +18,21 @@ export const getProfessionalProfile = async (userId) => {
         service_area,
         coverage_radius_km,
         rating_avg,
-        reviews_count
-      ),
-      certifications:professional_certifications (name),
-      availability:professional_availability (day, time_range)
+        reviews_count,
+        certifications:professional_certifications (name),
+        availability:professional_availability (day, time_range)
+      )
     `)
     .eq('id', userId)
     .single();
+
+
 
   if (error || !data) {
     throw new AppError('Perfil profesional no encontrado', 404);
   }
 
-  const profData = data.professional_profiles[0] || {};
+  const profData = data.professional_profiles || {};
   
   return {
     firstName: data.first_name,
@@ -44,9 +46,16 @@ export const getProfessionalProfile = async (userId) => {
     skills: profData.skills || [],
     baseLocation: profData.service_area,
     coverageRadiusKm: profData.coverage_radius_km,
-    certifications: data.certifications || [],
+    certifications: (profData.certifications || []).map(c => ({
+      name: c.name,
+      issuer: c.issuer,
+      filePath: c.file_path
+    })),
     availability: {
-      schedule: data.availability || []
+      schedule: (profData.availability || []).map(a => ({
+        day: a.day,
+        timeRange: a.time_range
+      }))
     },
     ratingAvg: Number(profData.rating_avg || 0),
     reviewsCount: profData.reviews_count || 0
@@ -150,7 +159,7 @@ export const getProfessionalSettings = async (userId, userEmail) => {
     throw new AppError('Usuario no encontrado', 404);
   }
 
-  const isVerified = user.professional_profiles?.[0]?.is_verified || false;
+  const isVerified = user.professional_profiles?.is_verified || false;
 
   return {
     personalInfo: {

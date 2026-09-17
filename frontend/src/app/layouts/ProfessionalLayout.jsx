@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import {
   CalendarIcon,
@@ -11,6 +11,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { ROUTES } from "../../constants/routes";
 import { useAuth } from "../../context/AuthContext";
+import { api } from "../../libs/axios";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import ChatbotWidget from "../../components/ui/ChatbotWidget";
@@ -23,6 +24,19 @@ export default function ProfessionalLayout() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const [profileData, setProfileData] = useState(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await api.get('/professional/profile');
+        setProfileData(response.data);
+      } catch (error) {
+        console.error("Error fetching profile for layout", error);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const handleLogout = () => {
     setIsLogoutModalOpen(true);
@@ -74,8 +88,9 @@ export default function ProfessionalLayout() {
         onMobileMenuClick={() => setIsSidebarOpen(true)}
         onNotificationClick={() => navigate(ROUTES.PROFESSIONAL_NOTIFICATIONS)}
         onSettingsClick={() => navigate(ROUTES.PROFESSIONAL_SETTINGS)}
-        userInitials="JD"
-        userName="Doe John"
+        userInitials={profileData ? `${profileData.firstName?.charAt(0) || ""}${profileData.lastName?.charAt(0) || ""}` : "JD"}
+        userName={profileData ? `${profileData.firstName} ${profileData.lastName}` : "Cargando..."}
+        avatarUrl={profileData?.avatarUrl || null}
         notifications={mockNotificaciones}
       />
 
