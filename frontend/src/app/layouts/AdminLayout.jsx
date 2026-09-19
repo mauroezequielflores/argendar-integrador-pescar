@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import {
   HomeIcon,
@@ -50,7 +50,7 @@ export default function AdminLayout() {
         { to: ROUTES.ADMIN_USERS, icon: UserGroupIcon, label: "Usuarios" },
         { to: ROUTES.ADMIN_TRANSACTIONS, icon: CreditCardIcon, label: "Transacciones" },
         { to: ROUTES.ADMIN_MODERATION, icon: ShieldCheckIcon, label: "Moderación" },
-        { to: ROUTES.ADMIN_INBOX, icon: InboxIcon, label: "Bandeja de consultas" },
+        { to: ROUTES.ADMIN_REPORTS, icon: InboxIcon, label: "Bandeja de consultas" },
       ],
     },
     {
