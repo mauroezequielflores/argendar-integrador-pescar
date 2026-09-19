@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+﻿import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { BellIcon, ClockIcon } from "@heroicons/react/24/outline";
 
@@ -11,6 +11,7 @@ import EmptyState from "../../../components/ui/EmptyState";
 import NotificationCard from "../../../components/ui/NotificationCard";
 import ReminderSummary from "../components/ReminderSummary";
 import OfferSummary from "../components/OfferSummary";
+import CancellationSummary from "../components/CancellationSummary";
 
 import {
   mockClientNotificaciones,
@@ -48,6 +49,7 @@ export default function NotificationsPage() {
   const [activeFilterId, setActiveFilterId] = useState("todo");
   const [selectedReminder, setSelectedReminder] = useState(null);
   const [selectedOffer, setSelectedOffer] = useState(null);
+  const [selectedCancellation, setSelectedCancellation] = useState(null);
   const [notifications, setNotifications] = useState(mockClientNotificaciones);
   const [history, setHistory] = useState(mockClientHistorial);
 
@@ -105,6 +107,10 @@ export default function NotificationsPage() {
     }
     if (notification.tipo === "new_offer") {
       setSelectedOffer(notification);
+      return;
+    }
+    if (notification.tipo === "cancellation") {
+      setSelectedCancellation(notification);
       return;
     }
 
@@ -207,6 +213,17 @@ export default function NotificationsPage() {
           reminder={selectedReminder}
           onClose={() => setSelectedReminder(null)}
           onViewDetails={() => navigate(selectedReminder.href || ROUTES.CLIENT_AGENDA)}
+        />
+      )}
+
+      {selectedCancellation && (
+        <CancellationSummary
+          cancellation={selectedCancellation}
+          onClose={() => setSelectedCancellation(null)}
+          onViewDetails={() => {
+            setSelectedCancellation(null);
+            navigate(selectedCancellation.href || ROUTES.CLIENT_AGENDA);
+          }}
         />
       )}
 

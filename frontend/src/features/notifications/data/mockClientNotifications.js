@@ -1,4 +1,4 @@
-import {
+﻿import {
   CalendarDaysIcon,
   CheckCircleIcon,
   CreditCardIcon,
@@ -72,7 +72,7 @@ export const mockClientNotificaciones = [
     id: "cn-cancelled-1",
     tipo: "cancellation",
     titulo: "Turno cancelado",
-    descripcion: "El profesional canceló tu turno programado.",
+    descripcion: "El profesional canceló tu turno programado para el 28/07/2026 a las 15:30 AM.",
     fecha: "HACE 2 DÍAS",
     timestamp: 1713800000000,
     icon: ExclamationTriangleIcon,
@@ -80,6 +80,14 @@ export const mockClientNotificaciones = [
     iconColor: "text-[#EF4444]",
     isNew: false,
     href: "/client/agenda",
+    professionalName: "Ricardo Gómez",
+    professionalInitials: "RG",
+    serviceName: "Instalación eléctrica",
+    status: "CANCELADO",
+    date: "28/07/2026",
+    time: "15:30 AM",
+    timeAgo: "hace 2 días",
+    cancellationReason: "\"Tuve complicaciones en estos días y no voy a poder realizar el servicio esta semana ni la otra. Mil disculpas, espero que encuentre solución a su problema.\"",
   },
   {
     id: "cn-rating-1",
