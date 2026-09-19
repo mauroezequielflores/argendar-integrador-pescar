@@ -11,3 +11,8 @@ Se implementó la arquitectura de 3 capas (`routes`, `controllers`, `services`) 
 - En el servicio de profesional, la actualización de disponibilidades y certificaciones funciona mediante un borrado y re-inserción atómica simplificada para evitar inconsistencias de datos, sin usar un ORM (como establece el prompt, usando `supabase.from()`).
 - Los PII settings (ej. DNI) comparten la misma lógica de negocio e inmutabilidad tras verificación tanto para clientes como para profesionales.
 - Se ha generado la documentación respectiva sobre la interrelación de APIs en `documentacion/information/api_architecture.md`.
+
+## [18/09/2026]
+**Hecho:** Implementación de endpoints de Listado y Gestión de Notificaciones del Cliente (HU Listado de Notificaciones). Se crearon el servicio (clientNotificationService.js), el controlador (clientNotificationController.js), el enrutador (clientNotificationRoutes.js) y las validaciones de schema Zod (notificationSchemas.js). Se montó la ruta en app.js bajo /api/v1/client/notifications.
+**Pendiente:** Agregar la funcionalidad de Calificación de Servicio Finalizado (Review).
+**Decisiones:** Se montaron las rutas de notificaciones del cliente en app.js importando `clientNotificationRoutes` bajo el prefijo general del cliente.
