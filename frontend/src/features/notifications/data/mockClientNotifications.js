@@ -105,15 +105,23 @@ export const mockClientNotificaciones = [
   {
     id: "cn-rating-1",
     tipo: "rating",
-    titulo: "Calificá tu turno",
-    descripcion: "El servicio finalizó, contanos cómo fue tu experiencia.",
-    fecha: "HACE 3 DÍAS",
+    titulo: "¡Ya podés calificar tu turno “Instalación eléctrica”!",
+    descripcion: "Calificá el turno y contanos un poco sobre tu experiencia.",
+    fecha: "HACE 5 MIN",
     timestamp: 1713700000000,
     icon: StarIcon,
     iconBgColor: "bg-white",
     iconColor: "text-[#EAB308]",
     isNew: true,
     href: "/client/agenda",
+    professionalName: "Ricardo Gómez",
+    professionalInitials: "RG",
+    avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256",
+    serviceName: "Instalación eléctrica",
+    status: "FINALIZADO",
+    date: "28/07/2026",
+    time: "15:30 hs",
+    timeAgo: "hace 2 días",
   }
 ];
 
@@ -164,7 +172,7 @@ export const mockClientHeaderNotifications = [
   },
   {
     id: "header-5",
-    titulo: "¡Ya podés calificar tu turno “Repara...”!",
+    titulo: "¡Ya podés calificar tu turno “Instalación eléctrica”!",
     descripcion: "Calificá el turno y contanos un poco sobre tu experiencia.",
     fecha: "HACE 5 MIN",
     icon: StarIcon,
