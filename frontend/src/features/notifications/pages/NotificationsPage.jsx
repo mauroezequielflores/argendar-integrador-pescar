@@ -1,8 +1,12 @@
 ﻿import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { BellIcon, ClockIcon } from "@heroicons/react/24/outline";
-
+import {
+  BellIcon,
+  ClockIcon,
+} from "@heroicons/react/24/outline";
 import { ROUTES } from "../../../constants/routes";
+
+// Componentes UI Reutilizables de Argendar
 import Breadcrumbs from "../../../components/ui/Breadcrumbs";
 import Tabs from "../../../components/ui/Tabs";
 import FilterBar from "../../../components/ui/FilterBar";
@@ -12,6 +16,7 @@ import NotificationCard from "../../../components/ui/NotificationCard";
 import ReminderSummary from "../components/ReminderSummary";
 import OfferSummary from "../components/OfferSummary";
 import CancellationSummary from "../components/CancellationSummary";
+import PaymentSummary from "../components/PaymentSummary";
 
 import {
   mockClientNotificaciones,
@@ -50,6 +55,7 @@ export default function NotificationsPage() {
   const [selectedReminder, setSelectedReminder] = useState(null);
   const [selectedOffer, setSelectedOffer] = useState(null);
   const [selectedCancellation, setSelectedCancellation] = useState(null);
+  const [selectedPayment, setSelectedPayment] = useState(null);
   const [notifications, setNotifications] = useState(mockClientNotificaciones);
   const [history, setHistory] = useState(mockClientHistorial);
 
@@ -111,6 +117,10 @@ export default function NotificationsPage() {
     }
     if (notification.tipo === "cancellation") {
       setSelectedCancellation(notification);
+      return;
+    }
+    if (notification.tipo === "payment") {
+      setSelectedPayment(notification);
       return;
     }
 
@@ -223,6 +233,17 @@ export default function NotificationsPage() {
           onViewDetails={() => {
             setSelectedCancellation(null);
             navigate(selectedCancellation.href || ROUTES.CLIENT_AGENDA);
+          }}
+        />
+      )}
+
+      {selectedPayment && (
+        <PaymentSummary
+          payment={selectedPayment}
+          onClose={() => setSelectedPayment(null)}
+          onViewDetails={() => {
+            setSelectedPayment(null);
+            navigate(selectedPayment.href || ROUTES.CLIENT_AGENDA);
           }}
         />
       )}
