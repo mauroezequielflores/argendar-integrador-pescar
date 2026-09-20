@@ -29,7 +29,7 @@ export default function AgendaPage() {
   const [sortOrder, setSortOrder] = useState("newest");
   const navigate = useNavigate();
 
-  // Fake user name as there's no real backend yet
+
 
   const [userProfile, setUserProfile] = useState({ firstName: "" });
 

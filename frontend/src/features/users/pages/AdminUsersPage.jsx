@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import Breadcrumbs from "../../../components/ui/Breadcrumbs";
 import UsersPanel from "../components/UsersPanel";
@@ -13,7 +13,7 @@ import { ROUTES } from "../../../constants/routes";
  * Criterios de Aceptación:
  * - CA01: Acceso a Usuarios, breadcrumb "Inicio / Dashboard", título "Usuarios Argendar" y descripción.
  * - CA02: Contador dinámico de usuarios.
- * - CA03: Pestañas alternables "Profesionales", "Clientes", "Administradores" con subrayado naranja.
+ * - CA03: Pestañas alternables "Profesionales", "Clientes", "Administradores" con ícono + label y subrayado naranja.
  * - CA04: Búsqueda independiente por número de orden en cada panel.
  * - CA05: Listado de usuarios con ID, Nombre, Rol, Fecha, Hora y Acciones.
  * - CA06: Estados de usuario (Activo, Suspendido, Eliminado) con mutación inmediata.
@@ -59,17 +59,19 @@ export default function AdminUsersPage() {
       <div className="flex items-center gap-6 border-b border-[#323232]">
         {USERS_TABS.map((tab) => {
           const isActive = activeTab === tab.id;
+          const Icon = tab.icon;
           return (
             <button
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`pb-3 pt-1 text-sm font-semibold transition-colors cursor-pointer ${isActive
+              className={`flex items-center gap-2 pb-3 pt-1 text-sm font-semibold transition-colors cursor-pointer ${isActive
                 ? "border-b-2 border-[#F78736] text-[#F78736]"
                 : "border-b-2 border-transparent text-[#A8A8AA] hover:text-white"
                 }`}
             >
-              {tab.label}
+              {Icon && <Icon className="h-4 w-4" />}
+              <span>{tab.label}</span>
             </button>
           );
         })}

@@ -11,7 +11,7 @@
  */
 export default function MarketplaceActivityCard({ data = [], isLoading = false }) {
   return (
-    <div className="flex flex-col gap-4 rounded-[6px] border border-[#323232] bg-[#292929] p-5 sm:p-6">
+    <div className="flex flex-col gap-1 rounded-[6px] border border-[#323232] bg-[#292929] p-5 sm:p-6">
       {/* Encabezado */}
       <div>
         <h2 className="text-sm sm:text-base font-bold text-white">

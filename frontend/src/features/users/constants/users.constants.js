@@ -1,11 +1,17 @@
+﻿import {
+  BriefcaseIcon,
+  UserIcon,
+  ShieldCheckIcon,
+} from "@heroicons/react/24/outline";
+
 /**
  * users.constants.js — Constantes de la feature de Gestión de Usuarios.
  */
 
 export const USERS_TABS = [
-  { id: "profesionales", label: "Profesionales" },
-  { id: "clientes", label: "Clientes" },
-  { id: "administradores", label: "Administradores" },
+  { id: "profesionales", label: "Profesionales", icon: BriefcaseIcon },
+  { id: "clientes", label: "Clientes", icon: UserIcon },
+  { id: "administradores", label: "Administradores", icon: ShieldCheckIcon },
 ];
 
 export const USER_STATES = {
