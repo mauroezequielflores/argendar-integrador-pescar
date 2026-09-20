@@ -41,7 +41,7 @@ export default function AdminReportsPage() {
   const hasSearch = searchTerm.trim().length > 0;
 
   return (
-    <div className="flex flex-col gap-6 max-w-7xl mx-auto">
+    <div className="flex flex-col gap-6">
       {/* ── Breadcrumbs (CA01) ── */}
       <Breadcrumbs items={breadcrumbItems} />
 

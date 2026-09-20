@@ -36,12 +36,12 @@ export default function AdminUsersPage() {
   } = useUsersData();
 
   const breadcrumbItems = [
-    { label: "Inicio", href: ROUTES.ADMIN_DASHBOARD },
+    { label: "Actividad", href: ROUTES.ADMIN_DASHBOARD },
     { label: "Dashboard", href: ROUTES.ADMIN_DASHBOARD },
   ];
 
   return (
-    <div className="flex flex-col gap-6 max-w-7xl mx-auto">
+    <div className="flex flex-col gap-6">
       {/* ── Breadcrumbs (CA01) ── */}
       <Breadcrumbs items={breadcrumbItems} />
 
@@ -64,11 +64,10 @@ export default function AdminUsersPage() {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`pb-3 pt-1 text-sm font-semibold transition-colors cursor-pointer ${
-                isActive
+              className={`pb-3 pt-1 text-sm font-semibold transition-colors cursor-pointer ${isActive
                   ? "border-b-2 border-[#F78736] text-[#F78736]"
                   : "border-b-2 border-transparent text-[#A8A8AA] hover:text-white"
-              }`}
+                }`}
             >
               {tab.label}
             </button>

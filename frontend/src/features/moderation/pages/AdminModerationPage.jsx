@@ -37,7 +37,7 @@ export default function AdminModerationPage() {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="flex flex-col gap-6">
       {/* ── Breadcrumbs (CA01) ──────────────────────────────── */}
       <Breadcrumbs items={breadcrumbItems} />
 
