@@ -41,7 +41,7 @@ export default function AdminDashboardPage() {
   const displayedActivities = showSampleData ? mockRecentActivity : activities;
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="flex flex-col gap-6">
       {/* ── Breadcrumbs ────────────────────────────────────────── */}
       <Breadcrumbs items={breadcrumbItems} />
 
