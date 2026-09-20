@@ -53,12 +53,7 @@ export default function AdminLayout() {
         { to: ROUTES.ADMIN_REPORTS, icon: InboxIcon, label: "Bandeja de consultas" },
       ],
     },
-    {
-      title: "MI CUENTA",
-      items: [
-        { to: ROUTES.ADMIN_SETTINGS, icon: Cog6ToothIcon, label: "Configuración" },
-      ],
-    },
+
   ];
 
   const adminDisplayName = user?.lastName && user?.name
@@ -76,7 +71,6 @@ export default function AdminLayout() {
         logoLink={ROUTES.ADMIN_DASHBOARD}
         logoText="Argendar"
         onMobileMenuClick={() => setIsSidebarOpen(true)}
-        onSettingsClick={() => navigate(ROUTES.ADMIN_SETTINGS)}
         userInitials={adminInitials}
         userName={adminDisplayName}
         showNotifications={false}
