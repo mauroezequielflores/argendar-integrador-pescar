@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   UserGroupIcon,
   DocumentTextIcon,
@@ -11,6 +12,7 @@ import StatCard from "../../../components/ui/StatCard";
 import RecentActivityCard from "../components/RecentActivityCard";
 import { useDashboardData } from "../hooks/useDashboardData";
 import { mockRecentActivity } from "../data/mockDashboardData";
+import { ROUTES } from "../../../constants/routes";
 
 /**
  * AdminDashboardPage — Pantalla principal de Dashboard General para Administrador.
@@ -24,6 +26,7 @@ import { mockRecentActivity } from "../data/mockDashboardData";
  */
 export default function AdminDashboardPage() {
   const [showSampleData, setShowSampleData] = useState(false);
+  const navigate = useNavigate();
   const { metrics, activities, isLoading, error, refetch } = useDashboardData({
     initialEmpty: true,
   });
@@ -78,21 +81,25 @@ export default function AdminDashboardPage() {
           icon={UserGroupIcon}
           label="USUARIOS"
           value={metrics.usuarios}
+          onClick={() => navigate(ROUTES.ADMIN_USERS)}
         />
         <StatCard
           icon={DocumentTextIcon}
           label="SOLICITUDES ACTIVAS"
           value={metrics.solicitudesActivas}
+          onClick={() => navigate(ROUTES.ADMIN_MODERATION)}
         />
         <StatCard
           icon={DocumentDuplicateIcon}
           label="OFERTAS REALIZADAS"
           value={metrics.ofertasRealizadas}
+          onClick={() => navigate(ROUTES.ADMIN_MODERATION)}
         />
         <StatCard
           icon={CreditCardIcon}
           label="TRANSACCIONES"
           value={metrics.transacciones}
+          onClick={() => navigate(ROUTES.ADMIN_TRANSACTIONS)}
         />
       </div>
 
