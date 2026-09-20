@@ -47,7 +47,7 @@ export default function AdminUsersPage() {
 
       {/* ── Encabezado Principal (CA01) ── */}
       <div>
-        <h1 className="text-[32px] font-bold leading-tight text-white">
+        <h1 className="text-2xl font-bold leading-tight text-white">
           Usuarios Argendar
         </h1>
         <p className="mt-1 text-sm text-[#A8A8AA]">
@@ -65,8 +65,8 @@ export default function AdminUsersPage() {
               type="button"
               onClick={() => setActiveTab(tab.id)}
               className={`pb-3 pt-1 text-sm font-semibold transition-colors cursor-pointer ${isActive
-                  ? "border-b-2 border-[#F78736] text-[#F78736]"
-                  : "border-b-2 border-transparent text-[#A8A8AA] hover:text-white"
+                ? "border-b-2 border-[#F78736] text-[#F78736]"
+                : "border-b-2 border-transparent text-[#A8A8AA] hover:text-white"
                 }`}
             >
               {tab.label}

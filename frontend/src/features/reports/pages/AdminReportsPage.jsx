@@ -47,7 +47,7 @@ export default function AdminReportsPage() {
 
       {/* ── Encabezado Principal (CA01) ── */}
       <div>
-        <h1 className="text-[32px] font-bold leading-tight text-white">
+        <h1 className="text-2xl font-bold leading-tight text-white">
           Bandeja de consultas
         </h1>
         <p className="mt-1 text-sm text-[#A8A8AA]">

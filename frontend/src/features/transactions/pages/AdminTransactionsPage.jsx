@@ -145,7 +145,7 @@ export default function AdminTransactionsPage() {
 
       {/* Título y descripción — CA01 */}
       <div>
-        <h1 className="text-3xl font-bold text-white">Transacciones</h1>
+        <h1 className="text-2xl font-bold text-white">Transacciones</h1>
         <p className="mt-1 text-sm text-[#A8A8AA]">
           Consultá el historial de transacciones realizadas en la plataforma.
         </p>

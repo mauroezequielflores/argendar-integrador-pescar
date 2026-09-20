@@ -43,7 +43,7 @@ export default function AdminModerationPage() {
 
       {/* ── Encabezado de sección (CA01) ────────────────────── */}
       <div>
-        <h1 className="text-[32px] font-bold leading-tight text-white">
+        <h1 className="text-2xl font-bold leading-tight text-white">
           Moderación
         </h1>
         <p className="mt-1 text-sm text-[#A8A8AA]">
