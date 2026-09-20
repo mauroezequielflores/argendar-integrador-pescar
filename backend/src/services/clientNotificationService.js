@@ -90,3 +90,4 @@ export const markAsRead = async (notificationId, userId) => {
     isNew: !data.is_read
   };
 };
+

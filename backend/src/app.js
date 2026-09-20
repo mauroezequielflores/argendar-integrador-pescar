@@ -34,11 +34,11 @@ app.get('/test-db', async (req, res) => {
     const { data, error } = await supabase.from('users').select('*').limit(1);
 
     if (error) {
-       // Si el error es de que la tabla no existe, significa que logramos conectar.
-       return res.status(200).json({ 
-         message: '¡Conectado a Supabase exitosamente! (La tabla "users" no existe aún, lo cual es normal)',
-         details: error.message
-       });
+      // Si el error es de que la tabla no existe, significa que logramos conectar.
+      return res.status(200).json({
+        message: '¡Conectado a Supabase exitosamente! (La tabla "users" no existe aún, lo cual es normal)',
+        details: error.message
+      });
     }
 
     res.status(200).json({ message: '¡Conectado a Supabase exitosamente y se encontró la tabla!', data });
@@ -52,3 +52,4 @@ app.get('/test-db', async (req, res) => {
 app.use(errorHandler);
 
 export default app;
+

@@ -18,3 +18,4 @@ router.get('/', validateRequest(getNotificationsSchema), listNotifications);
 router.patch('/:id/read', validateRequest(readNotificationSchema), readNotification);
 
 export default router;
+

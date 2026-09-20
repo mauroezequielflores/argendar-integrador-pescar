@@ -36,3 +36,4 @@ export const readNotification = async (req, res, next) => {
     next(error);
   }
 };
+
