@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Breadcrumbs from "../../../components/ui/Breadcrumbs";
 import ProfileHeader from "../components/ProfileHeader";
 import PublicProfileTab from "../components/PublicProfileTab";
 import ProfileInfoTab from "../components/ProfileInfoTab";
 import Loader from "../../../components/ui/Loader";
-import { api } from "../../../libs/axios";
+import { useClientProfile } from "../hooks/useProfileQueries";
 
 /**
  * ProfilePage — Pantalla principal de Mi Perfil (Cliente).
@@ -12,22 +12,8 @@ import { api } from "../../../libs/axios";
  */
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("public"); // "public" | "info"
-  const [profile, setProfile] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await api.get('/client/profile');
-        setProfile(response.data);
-      } catch (error) {
-        console.error("Error al cargar el perfil:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchProfile();
-  }, []);
+  const { data: profile, isLoading } = useClientProfile();
 
   const breadcrumbs = [
     { label: "Mi cuenta", href: "/client/profile" },

@@ -20,7 +20,7 @@ import Loader from "../../../components/ui/Loader";
 
 // ─── Header ──────────────────────────────────────────────────────────────────
 
-function ProfessionalProfileHeader({ profile }) {
+export function ProfessionalProfileHeader({ profile, isPublicView = false }) {
   const navigate = useNavigate();
 
   return (
@@ -52,14 +52,16 @@ function ProfessionalProfileHeader({ profile }) {
           </div>
         </div>
 
-        {/* Botón editar */}
-        <button
-          onClick={() => navigate("/professional/profile/edit-profile")}
-          className="flex items-center gap-2 self-start rounded-[6px] border border-[#323232] bg-transparent px-4 py-2 text-xs font-medium text-white hover:bg-[#323232] transition-colors sm:self-auto"
-        >
-          <PencilSquareIcon className="h-4 w-4" />
-          Editar perfil público
-        </button>
+        {/* Botón editar (oculto en vista pública) */}
+        {!isPublicView && (
+          <button
+            onClick={() => navigate("/professional/profile/edit-profile")}
+            className="flex items-center gap-2 self-start rounded-[6px] border border-[#323232] bg-transparent px-4 py-2 text-xs font-medium text-white hover:bg-[#323232] transition-colors sm:self-auto"
+          >
+            <PencilSquareIcon className="h-4 w-4" />
+            Editar perfil público
+          </button>
+        )}
       </div>
     </div>
   );
@@ -235,7 +237,7 @@ function OpinionesCard() {
   );
 }
 
-function PublicProfileTab({ profile }) {
+export function PublicProfileTab({ profile }) {
   return (
     <div className="flex flex-col gap-6">
       {/* Fila 1: Sobre mí (izq) + Info profesional + Disponibilidad (der) */}
@@ -352,26 +354,12 @@ function InfoProfileTab({ completitud }) {
 
 // ─── Página principal ─────────────────────────────────────────────────────────
 
-import { useEffect } from "react";
+import { useProfessionalProfile } from "../hooks/useProfileQueries";
 
 export default function ProfessionalProfilePage() {
   const [activeTab, setActiveTab] = useState("public");
-  const [profile, setProfile] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await api.get('/professional/profile');
-        setProfile(response.data);
-      } catch (error) {
-        console.error("Error al cargar el perfil profesional:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchProfile();
-  }, []);
+  
+  const { data: profile, isLoading } = useProfessionalProfile();
 
   if (isLoading) {
     return (

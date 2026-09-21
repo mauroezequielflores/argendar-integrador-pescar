@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "../../../libs/axios";
 import {
   CalendarIcon,
   RectangleStackIcon,
@@ -13,10 +15,6 @@ import {
 import { useAuth } from "../../../context/AuthContext";
 import { ROUTES } from "../../../constants/routes";
 import EmptyState from "../../../components/ui/EmptyState";
-import {
-  mockOfertasPendientes,
-  mockHistorial,
-} from "../data/mockProfessionalAgenda";
 
 // Feature Components
 import TurnoCard from "../components/TurnoCard";
@@ -25,9 +23,6 @@ import RechazoFinalizarModal from "../components/RechazoFinalizarModal";
 import ExitoFinalizarModal from "../components/ExitoFinalizarModal";
 import OfertaCard from "../components/OfertaCard";
 import SolicitudDetalleModal from "../components/SolicitudDetalleModal";
-
-// Data
-import { mockAgenda } from "../data/mockAgenda";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -178,44 +173,15 @@ function PanelOfertas({ items, onVerDetalle, onVerMiOferta }) {
   );
 }
 
-function PanelHistorial({ items }) {
-  return (
-    <div className="flex flex-col gap-3">
-      <FilterBar
-        count={items.length}
-        label={items.length === 1 ? "turno encontrado" : "turnos encontradas"}
-      />
-      <FilterChips />
-      <div className="rounded-[6px] border border-[#323232] bg-[#292929]">
-        {items.length === 0 ? (
-          <EmptyState
-            icon={ClockIcon}
-            title="Todavía no hay historial"
-            description="Tus ofertas y turnos finalizados o cancelados aparecerán acá."
-          />
-        ) : (
-          <div className="flex flex-col gap-3 p-4">
-            {items.map((item) => (
-              <div key={item.id} className="text-sm text-white">
-                {item.servicio}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ─── Página principal ────────────────────────────────────────────────────────
 
 export default function ProfessionalAgendaPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("turnos");
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState(location.state?.activeTab || "turnos");
 
   // States for Agenda data
-  const [turnos, setTurnos] = useState(mockAgenda);
   const [selectedTurno, setSelectedTurno] = useState(null);
 
   // Modal states
@@ -226,9 +192,35 @@ export default function ProfessionalAgendaPage() {
   // States para Ofertas
   const [isSolicitudDetalleOpen, setIsSolicitudDetalleOpen] = useState(false);
   const [selectedOferta, setSelectedOferta] = useState(null);
+  const [modalMode, setModalMode] = useState("solicitud"); // "solicitud" o "oferta"
 
   const greeting = getGreeting();
   const firstName = user?.name ?? "Profesional";
+
+  // Fetch appointments (Próximos turnos e Historial)
+  const { data: turnosData, isLoading: isLoadingTurnos } = useQuery({
+    queryKey: ["professional-appointments", activeTab],
+    queryFn: async () => {
+      const tabParam = activeTab === "turnos" ? "proximos" : activeTab;
+      const response = await api.get(`/professional/appointments?tab=${tabParam}`);
+      return response.data;
+    },
+    enabled: activeTab === "turnos" || activeTab === "historial",
+  });
+
+  const turnos = turnosData?.appointments || [];
+
+  // Fetch ofertas pendientes
+  const { data: pendingOffersData, isLoading: isLoadingOffers } = useQuery({
+    queryKey: ["professional-pending-offers"],
+    queryFn: async () => {
+      const response = await api.get("/offers/professional/pending");
+      return response.data;
+    },
+    enabled: activeTab === "ofertas",
+  });
+
+  const ofertasPendientes = pendingOffersData?.data || [];
 
   // ─── Acciones ──────────────────────────────────────────────────────────────
 
@@ -239,35 +231,42 @@ export default function ProfessionalAgendaPage() {
 
   const handleVerDetalleOferta = (oferta) => {
     setSelectedOferta(oferta);
+    setModalMode("solicitud");
     setIsSolicitudDetalleOpen(true);
   };
 
   const handleVerMiOferta = (oferta) => {
-    // Lógica para ver detalle de la propuesta enviada
-    console.log("Ver mi oferta", oferta);
+    setSelectedOferta(oferta);
+    setModalMode("oferta");
+    setIsSolicitudDetalleOpen(true);
   };
 
   const handleConfirmarPago = () => {
     if (!selectedTurno) return;
-
-    // Update the selected turno locally
-    const updatedTurno = {
-      ...selectedTurno,
-      pago: {
-        ...selectedTurno.pago,
-        estado: "CONFIRMADO"
-      }
-    };
-    setSelectedTurno(updatedTurno);
-
-    // Update the main list
-    setTurnos(turnos.map(t => t.id === updatedTurno.id ? updatedTurno : t));
+    // Implementation needed for local state update if required
   };
 
   const handleReprogramar = () => {
-    // Logic for reprogramar, just close for now
     setIsDetalleOpen(false);
   };
+
+  const queryClient = useQueryClient();
+
+  const { mutate: finalizarTurno, isLoading: isFinalizando } = useMutation({
+    mutationFn: async (turnoId) => {
+      const response = await api.post(`/professional/appointments/${turnoId}/confirm-completion`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["professional-appointments"]);
+      setIsDetalleOpen(false);
+      setIsExitoOpen(true);
+    },
+    onError: (error) => {
+      console.error("Error al finalizar turno:", error);
+      // Aquí podrías mostrar un toast de error si tuvieras uno
+    }
+  });
 
   const handleFinalizarClick = () => {
     if (selectedTurno?.pago?.estado === "PENDIENTE") {
@@ -276,13 +275,8 @@ export default function ProfessionalAgendaPage() {
       return;
     }
 
-    // Simulate backend response (success)
-    setIsDetalleOpen(false);
-    setIsExitoOpen(true);
-
-    // Move to history in a real app, here we might just change status or filter it out
     if (selectedTurno) {
-      setTurnos(turnos.map(t => t.id === selectedTurno.id ? { ...t, estado: "FINALIZADO" } : t));
+      finalizarTurno(selectedTurno.id);
     }
   };
 
@@ -330,20 +324,35 @@ export default function ProfessionalAgendaPage() {
 
       {/* Contenido del tab activo */}
       {activeTab === "turnos" && (
-        <PanelProximosTurnos
-          items={turnos.filter(t => t.estado !== "FINALIZADO")}
-          onVerDetalle={handleVerDetalle}
-        />
+        isLoadingTurnos ? (
+          <div className="flex justify-center p-8 text-white"><p>Cargando turnos...</p></div>
+        ) : (
+          <PanelProximosTurnos
+            items={turnos.filter(t => t.estado !== "FINALIZADO")}
+            onVerDetalle={handleVerDetalle}
+          />
+        )
       )}
       {activeTab === "ofertas" && (
-        <PanelOfertas
-          items={mockOfertasPendientes}
-          onVerDetalle={handleVerDetalleOferta}
-          onVerMiOferta={handleVerMiOferta}
-        />
+        isLoadingOffers ? (
+          <div className="flex justify-center p-8 text-white"><p>Cargando ofertas...</p></div>
+        ) : (
+          <PanelOfertas
+            items={ofertasPendientes}
+            onVerDetalle={handleVerDetalleOferta}
+            onVerMiOferta={handleVerMiOferta}
+          />
+        )
       )}
       {activeTab === "historial" && (
-        <PanelHistorial items={mockHistorial} />
+        isLoadingTurnos ? (
+          <div className="flex justify-center p-8 text-white"><p>Cargando historial...</p></div>
+        ) : (
+          <PanelProximosTurnos
+            items={turnos}
+            onVerDetalle={handleVerDetalle}
+          />
+        )
       )}
 
       {/* Modals */}
@@ -370,6 +379,7 @@ export default function ProfessionalAgendaPage() {
         isOpen={isSolicitudDetalleOpen}
         onClose={() => setIsSolicitudDetalleOpen(false)}
         oferta={selectedOferta}
+        mode={modalMode}
       />
     </div>
   );

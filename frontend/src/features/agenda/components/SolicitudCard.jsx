@@ -9,7 +9,7 @@ import {
   DocumentTextIcon
 } from "@heroicons/react/24/outline";
 
-export default function SolicitudCard({ solicitud, onVerDetalle }) {
+export default function SolicitudCard({ solicitud, onVerDetalle, onVerOfertas }) {
   return (
     <Card className="p-4 flex flex-col gap-4 border border-[#3a3a3a]">
       {/* Top Row */}
@@ -55,7 +55,16 @@ export default function SolicitudCard({ solicitud, onVerDetalle }) {
           <Badge className="uppercase">{solicitud.category?.name || "Sin Categoría"}</Badge>
         </div>
 
-        <div>
+        <div className="flex items-center gap-2">
+          {solicitud.offers && solicitud.offers.length > 0 && (
+            <Button 
+              variant="primary" 
+              onClick={onVerOfertas} 
+              className="bg-[#F78736] hover:bg-[#E0722D] text-white"
+            >
+              Ver ofertas ({solicitud.offers.length})
+            </Button>
+          )}
           <Button variant="ghost" onClick={onVerDetalle} className="border-[#3a3a3a] text-white hover:border-[#F78736]">
             Ver detalle <ArrowRightIcon className="h-4 w-4" />
           </Button>

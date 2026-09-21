@@ -9,7 +9,7 @@ class MarketplaceService {
 
     let query = supabase
       .from('requests')
-      .select('*, profiles(first_name, last_name)', { count: 'exact' })
+      .select('*, profiles(first_name, last_name), service_categories!inner(name)', { count: 'exact' })
       .eq('status', REQUEST_STATUS.PUBLISHED)
       .neq('client_id', professionalId) // Excluir solicitudes propias
       .order('created_at', { ascending: false })
@@ -21,12 +21,8 @@ class MarketplaceService {
 
     if (categories) {
       const categoriesArray = categories.split(',').map(c => c.trim());
-      // Supongamos que categories son nombres y usamos inner join o subqueries.
-      // O si categories en request es UUID, este filtro variará. 
-      // Si la UI pasa strings de categorias (nombres), necesitamos unir category_id.
-      // Asumimos que categories trae un ID o manejamos el filtro según el esquema.
-      // Para simplificar, si el query string trae IDs (o si requests guarda el string):
-      query = query.in('category_id', categoriesArray);
+      // Filtrar por el nombre de la categoría usando la relación
+      query = query.in('service_categories.name', categoriesArray);
     }
 
     const { data, count, error } = await query;
@@ -55,7 +51,7 @@ class MarketplaceService {
         id: req.id,
         titulo: req.title,
         descripcion: req.description,
-        categoria: req.category_id,
+        categoria: req.service_categories?.name || 'General',
         ubicacion: req.address ? `${req.neighborhood || ''}, ${req.city || ''}` : '',
         distanciaKm: distanceKm,
         fecha: req.created_at,
@@ -79,7 +75,7 @@ class MarketplaceService {
     // pero la UI lo oculta.
     const { data, error } = await supabase
       .from('requests')
-      .select('*, profiles(first_name, last_name), request_photos(storage_path)')
+      .select('*, profiles(first_name, last_name), request_photos(storage_path), service_categories!inner(name)')
       .eq('id', id)
       .eq('status', REQUEST_STATUS.PUBLISHED)
       .single();
@@ -91,19 +87,29 @@ class MarketplaceService {
       throw new AppError(`Error al obtener detalle de la solicitud: ${error.message}`, 500, 'DB_ERROR');
     }
 
+    // Verificar si el profesional ya hizo una oferta para esta solicitud
+    const { data: existingOffer } = await supabase
+      .from('offers')
+      .select('id')
+      .eq('request_id', id)
+      .eq('professional_id', professionalId)
+      .maybeSingle();
+
     return {
       id: data.id,
+      hasOffer: !!existingOffer,
       cliente: {
         nombre: data.profiles?.first_name || '',
         inicial: data.profiles?.last_name ? data.profiles.last_name.charAt(0) + '.' : ''
       },
-      categoria: data.category_id,
+      categoria: data.service_categories?.name || 'General',
       titulo: data.title,
       descripcion: data.description,
       cuestionario: {
         tieneMateriales: data.has_materials,
         esUrgencia: data.is_emergency,
-        cuandoLoNecesita: data.date_preference
+        cuandoLoNecesita: data.date_preference,
+        antiguedad: data.installation_age
       },
       ubicacion: data.address ? `${data.neighborhood || ''}, ${data.city || ''}` : '',
       horarioPreferencia: data.time_preference, // O de algun metadata

@@ -10,37 +10,28 @@ import InfoAlert from "../../../components/ui/InfoAlert";
 import EmptyState from "../../../components/ui/EmptyState";
 import RatingSummary from "../../../components/ui/RatingSummary";
 import Loader from "../../../components/ui/Loader";
-import { api } from "../../../libs/axios";
+import { useClientProfile, useUpdateClientProfile } from "../hooks/useProfileQueries";
 
 export default function EditProfilePage() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
   // States
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [profile, setProfile] = useState(null);
   const [bio, setBio] = useState("");
   
   // Base64 states for preview and upload
   const [avatarBase64, setAvatarBase64] = useState(null);
   const [coverBase64, setCoverBase64] = useState(null);
 
+  const { data: profile, isLoading } = useClientProfile();
+  const updateProfileMutation = useUpdateClientProfile();
+
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await api.get('/client/profile');
-        setProfile(response.data);
-        setBio(response.data.description || "");
-      } catch (error) {
-        console.error("Error fetching profile", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchProfile();
-  }, []);
+    if (profile?.description) {
+      setBio(profile.description);
+    }
+  }, [profile]);
 
   const handleCameraClick = () => {
     if (fileInputRef.current) {
@@ -62,33 +53,32 @@ export default function EditProfilePage() {
     }
   };
 
-  const handleSaveAndReturn = async () => {
-    setIsSaving(true);
-    try {
-      const payload = { description: bio };
-      if (avatarBase64) payload.avatarUrl = avatarBase64;
-      if (coverBase64) payload.coverUrl = coverBase64; // Cover is currently not mapped to a distinct input, we'll map both just in case
+  const handleSaveAndReturn = () => {
+    const payload = { description: bio };
+    if (avatarBase64) payload.avatarUrl = avatarBase64;
+    if (coverBase64) payload.coverUrl = coverBase64;
 
-      await api.patch('/client/profile', payload);
-      window.dispatchEvent(new CustomEvent('profileUpdated'));
-      navigate("/client/profile");
-    } catch (error) {
-      console.error("Error saving profile", error);
-      setIsSaving(false);
-    }
+    updateProfileMutation.mutate(payload, {
+      onSuccess: () => {
+        window.dispatchEvent(new CustomEvent('profileUpdated'));
+        navigate("/client/profile");
+      },
+      onError: (error) => {
+        console.error("Error saving profile", error);
+      }
+    });
   };
 
-  const handleSaveBio = async () => {
-    setIsSaving(true);
-    try {
-      await api.patch('/client/profile', { description: bio });
-      setIsSuccess(true);
-      setTimeout(() => setIsSuccess(false), 3000);
-    } catch (error) {
-      console.error("Error saving bio", error);
-    } finally {
-      setIsSaving(false);
-    }
+  const handleSaveBio = () => {
+    updateProfileMutation.mutate({ description: bio }, {
+      onSuccess: () => {
+        setIsSuccess(true);
+        setTimeout(() => setIsSuccess(false), 3000);
+      },
+      onError: (error) => {
+        console.error("Error saving bio", error);
+      }
+    });
   };
 
   if (isLoading) {
@@ -195,7 +185,7 @@ export default function EditProfilePage() {
                 <span className="text-sm text-green-500 font-medium">¡Cambios guardados!</span>
               )}
               <div className="w-auto">
-                <Button variant="primary" onClick={handleSaveBio} isLoading={isSaving} className="px-6">
+                <Button variant="primary" onClick={handleSaveBio} isLoading={updateProfileMutation.isPending} className="px-6">
                   Guardar cambios
                 </Button>
               </div>

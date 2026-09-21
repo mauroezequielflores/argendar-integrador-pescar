@@ -34,15 +34,15 @@ export default function TurnoCard({ turno, onVerDetalle }) {
       {/* Middle Row */}
       <div className="flex items-center gap-4 py-2 border-b border-[#3a3a3a]">
         <div className="h-12 w-12 rounded-full bg-[#727272] flex items-center justify-center overflow-hidden">
-          {turno.cliente?.foto ? (
-             <img src={turno.cliente.foto} alt="avatar" className="h-full w-full object-cover" />
+          {(turno.persona?.foto || turno.cliente?.foto) ? (
+             <img src={turno.persona?.foto || turno.cliente?.foto} alt="avatar" className="h-full w-full object-cover" />
           ) : (
             <UserIcon className="h-6 w-6 text-white" />
           )}
         </div>
         <div className="flex flex-col">
           <h3 className="text-base font-semibold text-white">{turno.titulo}</h3>
-          <span className="text-sm text-[#A8A8AA]">{turno.cliente?.nombre}</span>
+          <span className="text-sm text-[#A8A8AA]">{turno.persona?.nombre || turno.cliente?.nombre}</span>
         </div>
       </div>
 

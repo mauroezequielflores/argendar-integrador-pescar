@@ -6,7 +6,7 @@ import { StarIcon } from "@heroicons/react/24/solid";
 export default function TurnoDetalleModal({ turno, isOpen, onClose, onConfirmarPago, onReprogramar, onFinalizar }) {
   if (!turno) return null;
 
-  const isPagoPendiente = turno.pago.estado === "PENDIENTE";
+  const isPagoPendiente = turno?.pago?.estado === "PENDIENTE";
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -38,15 +38,15 @@ export default function TurnoDetalleModal({ turno, isOpen, onClose, onConfirmarP
             {/* Perfil */}
             <div className="flex items-center p-4 gap-4 border-b border-[#323232]">
               <div className="h-12 w-12 rounded-full bg-[#727272] flex items-center justify-center overflow-hidden shrink-0">
-                {turno.cliente?.foto ? (
-                  <img src={turno.cliente.foto} alt="avatar" className="h-full w-full object-cover" />
+                {(turno?.persona?.foto || turno?.cliente?.foto) ? (
+                  <img src={turno?.persona?.foto || turno?.cliente?.foto} alt="avatar" className="h-full w-full object-cover" />
                 ) : (
                   <UserIcon className="h-6 w-6 text-white" />
                 )}
               </div>
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-white font-bold text-sm">{turno.cliente?.nombre || "Ricardo Gómez"}</span>
+                  <span className="text-white font-bold text-sm">{turno?.persona?.nombre || turno?.cliente?.nombre || "Ricardo Gómez"}</span>
                   <div className="flex text-white h-2.5">
                     <StarIcon className="h-2.5 w-2.5" />
                     <StarIcon className="h-2.5 w-2.5" />
@@ -55,7 +55,7 @@ export default function TurnoDetalleModal({ turno, isOpen, onClose, onConfirmarP
                     <StarIcon className="h-2.5 w-2.5 text-[#A8A8AA]" />
                   </div>
                 </div>
-                <span className="text-[10px] text-[#A8A8AA] uppercase tracking-wide">{turno.cliente?.profesion || "ELECTRICISTA"}</span>
+                <span className="text-[10px] text-[#A8A8AA] uppercase tracking-wide">{turno?.persona?.profesion || turno?.cliente?.profesion || "ELECTRICISTA"}</span>
               </div>
             </div>
             

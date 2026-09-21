@@ -3,10 +3,11 @@ import AppointmentsService from '../services/AppointmentsService.js';
 class AppointmentsController {
   async list(req, res, next) {
     try {
-      const clientId = req.user.id;
+      const userId = req.user.id;
+      const role = req.user.role;
       const filters = req.query;
 
-      const result = await AppointmentsService.listAppointments(clientId, filters);
+      const result = await AppointmentsService.listAppointments(userId, role, filters);
 
       return res.status(200).json({
         appointments: result.data,
@@ -52,10 +53,10 @@ class AppointmentsController {
 
   async confirmCompletion(req, res, next) {
     try {
-      const clientId = req.user.id;
+      const userId = req.user.id;
       const { id } = req.params;
 
-      await AppointmentsService.confirmCompletion(clientId, id);
+      await AppointmentsService.confirmCompletion(userId, id);
 
       return res.status(200).json({
         message: 'El trabajo ha sido finalizado correctamente.',

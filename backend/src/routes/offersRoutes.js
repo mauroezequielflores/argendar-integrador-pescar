@@ -26,4 +26,12 @@ router.post(
   OffersController.accept
 );
 
+// Obtener ofertas pendientes de un profesional
+router.get(
+  '/professional/pending',
+  authMiddleware,
+  requireRole(ROLES.PROFESSIONAL),
+  OffersController.getPendingProfessionalOffers
+);
+
 export default router;

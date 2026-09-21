@@ -24,6 +24,17 @@ class JobRequestsController {
       next(error);
     }
   }
+
+  async getRequestOffers(req, res, next) {
+    try {
+      const clientId = req.user.id;
+      const { id: requestId } = req.params;
+      const offers = await JobRequestsService.getRequestOffers(clientId, requestId);
+      return res.status(200).json(offers);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new JobRequestsController();

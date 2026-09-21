@@ -43,7 +43,7 @@ Ubicaciones y zonas de cobertura o agrupación geográfica.
 #### `requests`
 Solicitudes de trabajo publicadas por los clientes.
 - **Campos clave:** `id`, `client_id` (FK a `profiles`), `category_id` (FK a `service_categories`), `status` (enum: `open`, `offered`, `scheduled`, `completed`, `cancelled`).
-- **Detalles del trabajo:** `title`, `description`, `date_preference`, `estimated_budget`.
+- **Detalles del trabajo:** `title`, `description`, `date_preference`, `estimated_budget`, `is_emergency`, `has_materials`, `installation_age`, `time_preference`.
 - **Ubicación:** `address`, `neighborhood`, `city`, `latitude`, `longitude`.
 
 #### `request_photos`

@@ -49,11 +49,22 @@ export const loginUser = async ({ email, password }) => {
     throw new AppError(error.message, error.status || 500, ERROR_CODES.INTERNAL_SERVER_ERROR);
   }
 
+  // Fetch the user's profile to get their name and avatar
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('first_name, last_name, avatar_url')
+    .eq('id', data.user.id)
+    .single();
+
   return {
     user: {
       id: data.user.id,
       email: data.user.email,
       role: data.user.user_metadata?.role,
+      name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : null,
+      first_name: profile?.first_name,
+      last_name: profile?.last_name,
+      avatar_url: profile?.avatar_url,
     },
     session: {
       access_token: data.session.access_token,

@@ -25,4 +25,12 @@ router.get(
   JobRequestsController.getClientRequests
 );
 
+// Endpoint para que el cliente obtenga las ofertas de una solicitud específica
+router.get(
+  '/:id/offers',
+  authMiddleware,
+  requireRole(ROLES.CLIENT),
+  JobRequestsController.getRequestOffers
+);
+
 export default router;

@@ -186,16 +186,17 @@ function InfoCard({ label, value, extra }) {
   );
 }
 
+import { useProfileSettings, useUpdateProfileSettings } from "../hooks/useProfileQueries";
+
 /* ── Pantalla principal ─────────────────────────────────────────── */
 export default function EditProfileSettingsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const match = location.pathname.match(/^\/(professional|client)/);
   const prefix = match ? `/${match[1]}` : "";
+  const role = match ? match[1] : "client";
   const fileInputRef = useRef(null);
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [form, setForm] = useState({
     firstName: "",
@@ -210,61 +211,53 @@ export default function EditProfileSettingsPage() {
     profesion: PROFESIONES[0],
   });
 
+  const { data: settings, isLoading } = useProfileSettings(role);
+  const updateSettingsMutation = useUpdateProfileSettings();
+
   useEffect(() => {
-    const fetchSettings = async () => {
-      if (!prefix) return;
-      try {
-        const response = await api.get(`${prefix}/profile/settings`);
-        const { personalInfo, location: loc, accountData } = response.data;
-        
-        setForm((prev) => ({
-          ...prev,
-          firstName: personalInfo?.firstName || "",
-          lastName: personalInfo?.lastName || "",
-          dni: personalInfo?.dni || "",
-          location: loc?.address || "",
-          email: accountData?.email || "",
-          phone: accountData?.phone || "",
-          emailAlerts: true, // Valores por defecto o del API si existen
-          phoneAlerts: true,
-        }));
-      } catch (error) {
-        console.error("Error al cargar las configuraciones:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchSettings();
-  }, [prefix]);
+    if (settings) {
+      const { personalInfo, location: loc, accountData } = settings;
+      
+      setForm((prev) => ({
+        ...prev,
+        firstName: personalInfo?.firstName || "",
+        lastName: personalInfo?.lastName || "",
+        dni: personalInfo?.dni || "",
+        location: loc?.address || "",
+        email: accountData?.email || "",
+        phone: accountData?.phone || "",
+        emailAlerts: true, // Valores por defecto o del API si existen
+        phoneAlerts: true,
+      }));
+    }
+  }, [settings]);
 
   const set = (field) => (value) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
   const handleBack = () => navigate(`${prefix}/profile/profile-settings`);
   
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      const payload = {
-        firstName: form.firstName,
-        lastName: form.lastName,
-        dni: form.dni,
-        location: form.location,
-        phone: form.phone,
-        emailAlerts: form.emailAlerts,
-        phoneAlerts: form.phoneAlerts
-      };
+  const handleSave = () => {
+    const payload = {
+      firstName: form.firstName,
+      lastName: form.lastName,
+      dni: form.dni,
+      location: form.location,
+      phone: form.phone,
+      emailAlerts: form.emailAlerts,
+      phoneAlerts: form.phoneAlerts
+    };
 
-      await api.patch(`${prefix}/profile/settings`, payload);
-      // Dispatch event para actualizar Navbar si se cambió el nombre
-      window.dispatchEvent(new CustomEvent('profileUpdated'));
-      navigate(`${prefix}/profile/profile-settings`);
-    } catch (error) {
-      console.error("Error al guardar configuraciones:", error);
-      alert(error.response?.data?.error?.message || error.response?.data?.message || "Ocurrió un error al guardar los cambios.");
-    } finally {
-      setIsSaving(false);
-    }
+    updateSettingsMutation.mutate({ role, payload }, {
+      onSuccess: () => {
+        window.dispatchEvent(new CustomEvent('profileUpdated'));
+        navigate(`${prefix}/profile/profile-settings`);
+      },
+      onError: (error) => {
+        console.error("Error al guardar configuraciones:", error);
+        alert(error.response?.data?.error?.message || error.response?.data?.message || "Ocurrió un error al guardar los cambios.");
+      }
+    });
   };
 
   if (isLoading) {
@@ -543,7 +536,7 @@ export default function EditProfileSettingsPage() {
           <Button
             variant="primary"
             onClick={handleSave}
-            isLoading={isSaving}
+            isLoading={updateSettingsMutation.isPending}
             className="px-6"
           >
             Guardar cambios

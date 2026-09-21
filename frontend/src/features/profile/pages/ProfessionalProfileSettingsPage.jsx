@@ -16,7 +16,7 @@ import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import Button from "../../../components/ui/Button";
 import ProgressBar from "../../../components/ui/ProgressBar";
 import Loader from "../../../components/ui/Loader";
-import { api } from "../../../libs/axios";
+import { useProfileSettings } from "../hooks/useProfileQueries";
 
 /* ── Sub-componentes ──────────────────────────────────────────── */
 
@@ -56,22 +56,7 @@ function Section({ title, children }) {
 
 export default function ProfessionalProfileSettingsPage() {
   const navigate = useNavigate();
-  const [settings, setSettings] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const response = await api.get('/professional/profile/settings');
-        setSettings(response.data);
-      } catch (error) {
-        console.error("Error al obtener configuraciones:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchSettings();
-  }, []);
+  const { data: settings, isLoading } = useProfileSettings("professional");
 
   const nombre = settings?.personalInfo?.firstName ? `${settings.personalInfo.firstName} ${settings.personalInfo.lastName || ""}`.trim() : null;
   const dni = settings?.personalInfo?.dni;

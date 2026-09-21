@@ -34,6 +34,20 @@ class OffersController {
       next(error);
     }
   }
+
+  async getPendingProfessionalOffers(req, res, next) {
+    try {
+      const professionalId = req.user.id;
+      const offers = await OffersService.getPendingProfessionalOffers(professionalId);
+      
+      return res.status(200).json({
+        success: true,
+        data: offers
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new OffersController();

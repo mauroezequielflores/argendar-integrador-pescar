@@ -3,17 +3,21 @@ import { AppError } from '../utils/errors.js';
 import { REQUEST_STATUS, APPOINTMENT_STATUS, PAYMENT_STATUS } from '../utils/constants.js';
 
 class AppointmentsService {
-  async listAppointments(clientId, filters) {
+  async listAppointments(userId, role, filters) {
     const { tab = 'solicitudes', sort = 'newest', page = 1, limit = 20 } = filters;
     const offset = (Number(page) - 1) * Number(limit);
     const ascending = sort === 'oldest';
 
     if (tab === 'solicitudes') {
+      if (role === 'professional') {
+        throw new AppError('Tab de solicitudes no válido para este rol', 400, 'VALIDATION_ERROR');
+      }
+
       // Devolver solicitudes del cliente en estado PUBLISHED u OFFERED
       const { data, count, error } = await supabase
         .from('requests')
         .select('*, offers(id)', { count: 'exact' })
-        .eq('client_id', clientId)
+        .eq('client_id', userId)
         .in('status', [REQUEST_STATUS.PUBLISHED, REQUEST_STATUS.OFFERED])
         .order('created_at', { ascending })
         .range(offset, offset + Number(limit) - 1);
@@ -41,7 +45,7 @@ class AppointmentsService {
     
     if (tab === 'proximos' || tab === 'historial') {
       // Necesitamos unir appointments -> offers -> requests
-      // y appointments -> offers -> professional_profiles (para los datos del profesional)
+      // y appointments -> offers -> professional_profiles o profiles
       let query = supabase
         .from('appointments')
         .select(`
@@ -52,7 +56,7 @@ class AppointmentsService {
             id,
             amount,
             professional_id,
-            profiles:professional_id (first_name, last_name),
+            profiles:professional_id (first_name, last_name, avatar_url),
             requests!inner (
               id,
               client_id,
@@ -60,11 +64,17 @@ class AppointmentsService {
               category_id,
               address,
               neighborhood,
-              city
+              city,
+              profiles:client_id (first_name, last_name, avatar_url)
             )
           )
-        `, { count: 'exact' })
-        .eq('offers.requests.client_id', clientId);
+        `, { count: 'exact' });
+
+      if (role === 'professional') {
+        query = query.eq('offers.professional_id', userId);
+      } else {
+        query = query.eq('offers.requests.client_id', userId);
+      }
 
       if (tab === 'proximos') {
         query = query.in('status', [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.RESCHEDULED]);
@@ -81,7 +91,23 @@ class AppointmentsService {
         data: data.map(app => {
           const offer = app.offers;
           const req = offer?.requests;
-          const prof = offer?.profiles;
+          
+          let persona = null;
+          if (role === 'professional') {
+            const clientProf = req?.profiles;
+            persona = {
+              nombre: clientProf ? `${clientProf.first_name} ${clientProf.last_name}` : 'Cliente',
+              foto: clientProf?.avatar_url || null,
+              calificacion: 5.0
+            };
+          } else {
+            const prof = offer?.profiles;
+            persona = {
+              nombre: prof ? `${prof.first_name} ${prof.last_name}` : 'Profesional',
+              foto: prof?.avatar_url || null,
+              calificacion: 5.0
+            };
+          }
 
           return {
             id: app.id,
@@ -91,11 +117,7 @@ class AppointmentsService {
             titulo: req?.title,
             fecha: app.scheduled_at,
             categoria: req?.category_id,
-            profesional: {
-              nombre: prof ? `${prof.first_name} ${prof.last_name}` : 'Profesional',
-              foto: null, // Asumir null si no se guarda en profile
-              calificacion: 5.0 // Hardcode o se deberia traer de rating
-            }
+            persona: persona // Se envía 'persona' genérico en lugar de 'profesional' o 'cliente'
           };
         }),
         total: count,
@@ -223,7 +245,7 @@ class AppointmentsService {
     return appointmentId;
   }
 
-  async confirmCompletion(clientId, appointmentId) {
+  async confirmCompletion(userId, appointmentId) {
     // 1. Validar turno
     const { data: app, error } = await supabase
       .from('appointments')
@@ -231,7 +253,7 @@ class AppointmentsService {
       .eq('id', appointmentId)
       .single();
 
-    if (error || !app || app.offers.requests.client_id !== clientId) {
+    if (error || !app || (app.offers.requests.client_id !== userId && app.offers.professional_id !== userId)) {
       throw new AppError('Turno no encontrado', 404, 'RECURSO_NO_ENCONTRADO');
     }
 

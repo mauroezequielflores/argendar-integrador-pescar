@@ -1,17 +1,22 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useRequests } from "../hooks/useMarketplaceQueries";
 import {
   MagnifyingGlassIcon,
   MapPinIcon,
   MapIcon,
   BuildingStorefrontIcon,
   XMarkIcon,
+  CalendarIcon,
+  ClockIcon,
+  UserIcon,
+  ArrowRightIcon
 } from "@heroicons/react/24/outline";
 
 import { ROUTES } from "../../../constants/routes";
 import EmptyState from "../../../components/ui/EmptyState";
+import SolicitudDetailModal from "../components/SolicitudDetailModal";
 import {
-  mockSolicitudes,
   CATEGORIAS,
   UBICACION_ACTUAL,
 } from "../data/mockProfessionalMarketplace";
@@ -19,21 +24,34 @@ import {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatFecha(fechaISO) {
-  const [year, month, day] = fechaISO.split("-");
+  if (!fechaISO) return "";
+  const date = new Date(fechaISO);
+  // Formato ej: 17/09/2026
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
   return `${day}/${month}/${year}`;
 }
 
-function applyFilters(solicitudes, { searchText, selectedCategories }) {
-  return solicitudes.filter((s) => {
-    const matchesSearch =
-      searchText.trim() === "" ||
-      s.titulo.toLowerCase().includes(searchText.toLowerCase()) ||
-      s.descripcion.toLowerCase().includes(searchText.toLowerCase());
-    const matchesCategory =
-      selectedCategories.length === 0 ||
-      selectedCategories.includes(s.categoria);
-    return matchesSearch && matchesCategory;
-  });
+function timeSince(fechaISO) {
+  if (!fechaISO) return "";
+  const date = new Date(fechaISO);
+  const now = new Date();
+  const seconds = Math.floor((now - date) / 1000);
+  
+  let interval = seconds / 86400;
+  if (interval > 1) {
+    return `Publicado hace ${Math.floor(interval)} días`;
+  }
+  interval = seconds / 3600;
+  if (interval > 1) {
+    return `Publicado hace ${Math.floor(interval)} horas`;
+  }
+  interval = seconds / 60;
+  if (interval > 1) {
+    return `Publicado hace ${Math.floor(interval)} min`;
+  }
+  return "Publicado hace unos instantes";
 }
 
 // ─── Subcomponentes ──────────────────────────────────────────────────────────
@@ -135,25 +153,64 @@ function ActiveChips({ sortLabel, appliedCategories, onRemoveCategory }) {
   );
 }
 
-function SolicitudCard({ solicitud }) {
+function SolicitudCard({ solicitud, onViewDetail }) {
   return (
-    <div className="rounded-[6px] border border-[#323232] bg-[#292929] p-4 flex flex-col gap-3">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="text-sm font-semibold text-white">{solicitud.titulo}</p>
-          <p className="text-xs text-[#A8A8AA] mt-0.5">{solicitud.cliente}</p>
+    <div className="rounded-[6px] border border-[#323232] bg-[#292929] flex flex-col hover:border-[#404040] transition-colors">
+      {/* Header Fila */}
+      <div className="flex items-center justify-between border-b border-[#323232] px-4 py-2 text-[10px] uppercase font-semibold text-[#A8A8AA] tracking-wide">
+        <div className="flex items-center gap-2">
+          <span>SOLICITUD</span>
+          <span>-</span>
+          <span className="flex items-center gap-1">
+            <MapPinIcon className="h-3 w-3" />
+            {solicitud.ubicacion}
+          </span>
         </div>
-        <span className="shrink-0 rounded-full bg-[#323232] px-2.5 py-1 text-xs text-[#F78736] font-medium">
-          {solicitud.categoria}
-        </span>
+        <div className="flex items-center gap-1">
+          <ClockIcon className="h-3 w-3" />
+          <span>{timeSince(solicitud.fecha)}</span>
+        </div>
       </div>
-      <p className="text-xs text-[#A8A8AA] leading-relaxed">{solicitud.descripcion}</p>
-      <div className="flex items-center gap-4 text-xs text-[#A8A8AA]">
-        <span className="flex items-center gap-1">
-          <MapPinIcon className="h-4 w-4" />
-          {solicitud.ubicacion}
-        </span>
-        <span>{formatFecha(solicitud.fecha)}</span>
+
+      {/* Main Content Fila */}
+      <div className="px-4 pt-4 pb-2 flex gap-4">
+        {/* Avatar Placeholder */}
+        <div className="h-10 w-10 shrink-0 rounded-full bg-[#323232] flex items-center justify-center text-[#A8A8AA]">
+          <UserIcon className="h-5 w-5" />
+        </div>
+        
+        {/* Título y Descripción */}
+        <div className="flex-1 flex flex-col gap-1">
+          <h4 className="text-base font-bold text-white">{solicitud.titulo}</h4>
+          <p className="text-xs text-[#A8A8AA] leading-relaxed line-clamp-2">
+            {solicitud.descripcion}
+          </p>
+        </div>
+      </div>
+
+      {/* Footer Fila */}
+      <div className="px-4 pb-4 pt-2 flex items-center justify-between">
+        <div className="flex items-center gap-3 text-[10px] font-bold text-[#A8A8AA] uppercase tracking-wide">
+          <span className="flex items-center gap-1">
+            <CalendarIcon className="h-3 w-3" />
+            Preferencia: {solicitud.cuestionario?.cuandoLoNecesita || 'Soy flexible'}
+          </span>
+          <span className="h-1 w-1 rounded-full bg-[#A8A8AA]"></span>
+          <span className="rounded-full bg-[#323232] px-2 py-0.5 text-[#F78736]">
+            {solicitud.categoria}
+          </span>
+          <span className="h-1 w-1 rounded-full bg-[#A8A8AA]"></span>
+          <span className="flex items-center gap-1 text-white">
+            <ClockIcon className="h-3 w-3" />
+            ESPERANDO OFERTAS...
+          </span>
+        </div>
+        <button
+          onClick={() => onViewDetail(solicitud.id)}
+          className="flex items-center gap-1 text-xs text-white bg-[#323232] px-3 py-1.5 rounded-[6px] hover:bg-[#3f3f3f] transition-colors font-medium"
+        >
+          Ver detalle <ArrowRightIcon className="h-3 w-3" />
+        </button>
       </div>
     </div>
   );
@@ -171,6 +228,9 @@ export default function ProfessionalMarketplacePage() {
   // Estado de filtros aplicados (snapshot al hacer "Aplicar")
   const [appliedSearch, setAppliedSearch] = useState("");
   const [appliedCategories, setAppliedCategories] = useState([]);
+
+  // Modal de detalle
+  const [selectedRequestId, setSelectedRequestId] = useState(null);
 
   const handleCategoryToggle = (cat) => {
     setSelectedCategories((prev) =>
@@ -196,10 +256,14 @@ export default function ProfessionalMarketplacePage() {
     setSelectedCategories(updated);
   };
 
-  const results = applyFilters(mockSolicitudes, {
-    searchText: appliedSearch,
-    selectedCategories: appliedCategories,
-  });
+  const filters = {
+    search: appliedSearch || undefined,
+    categories: appliedCategories.length > 0 ? appliedCategories.join(",") : undefined,
+  };
+
+  const { data: resultData, isLoading, isError } = useRequests(filters);
+
+  const results = resultData?.data || [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -270,7 +334,15 @@ export default function ProfessionalMarketplacePage() {
           <p className="text-base font-semibold text-white">Solicitudes nuevas</p>
 
           {/* Cards o empty state */}
-          {results.length === 0 ? (
+          {isLoading ? (
+            <div className="text-white p-8 text-center bg-[#292929] rounded-[6px]">
+              Cargando solicitudes...
+            </div>
+          ) : isError ? (
+            <div className="text-red-400 p-8 text-center bg-[#292929] rounded-[6px]">
+              Ocurrió un error al cargar el marketplace.
+            </div>
+          ) : results.length === 0 ? (
             <div className="rounded-[6px] border border-[#323232] bg-[#292929]">
               <EmptyState
                 icon={BuildingStorefrontIcon}
@@ -281,12 +353,22 @@ export default function ProfessionalMarketplacePage() {
           ) : (
             <div className="flex flex-col gap-3">
               {results.map((s) => (
-                <SolicitudCard key={s.id} solicitud={s} />
+                <SolicitudCard
+                  key={s.id}
+                  solicitud={s}
+                  onViewDetail={(id) => setSelectedRequestId(id)}
+                />
               ))}
             </div>
           )}
         </div>
       </div>
+
+      <SolicitudDetailModal
+        isOpen={selectedRequestId !== null}
+        onClose={() => setSelectedRequestId(null)}
+        solicitudId={selectedRequestId}
+      />
     </div>
   );
 }

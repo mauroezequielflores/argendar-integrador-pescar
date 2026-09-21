@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { KeyIcon, PaperAirplaneIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
 
 import { resetPasswordRequestSchema } from "../../../validations/resetPassword.schema";
-import { requestPasswordReset, resendPasswordReset } from "../services/auth.service";
+import { useRequestPasswordReset, useResendPasswordReset } from "../hooks/useAuthQueries";
 import { ROUTES } from "../../../constants/routes";
 
 import AuthCenteredCard from "../components/AuthCenteredCard";
@@ -32,10 +32,11 @@ export default function ResetPasswordPage() {
   const initialStep = searchParams.get("step") === "sent" ? "sent" : "request";
   const [step, setStep] = useState(initialStep);
   const [submittedEmail, setSubmittedEmail] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isResending, setIsResending] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [serverError, setServerError] = useState("");
+
+  const requestResetMutation = useRequestPasswordReset();
+  const resendResetMutation = useResendPasswordReset();
 
   const {
     register,
@@ -46,32 +47,36 @@ export default function ResetPasswordPage() {
     defaultValues: { email: "" },
   });
 
-  const onSubmit = async (data) => {
+  const onSubmit = (data) => {
     setServerError("");
-    setIsLoading(true);
-    try {
-      await requestPasswordReset({ email: data.email });
-      setSubmittedEmail(data.email);
-      setStep("sent");
-    } catch (error) {
-      setServerError(error.message || "Ocurrió un error al procesar tu solicitud.");
-    } finally {
-      setIsLoading(false);
-    }
+    requestResetMutation.mutate(
+      { email: data.email },
+      {
+        onSuccess: () => {
+          setSubmittedEmail(data.email);
+          setStep("sent");
+        },
+        onError: (error) => {
+          setServerError(error.message || "Ocurrió un error al procesar tu solicitud.");
+        },
+      }
+    );
   };
 
-  const handleResend = async () => {
+  const handleResend = () => {
     setServerError("");
     setFeedbackMessage("");
-    setIsResending(true);
-    try {
-      const res = await resendPasswordReset({ email: submittedEmail });
-      setFeedbackMessage(res.message || "Enlace reenviado.");
-    } catch (error) {
-      setServerError(error.message || "Error al reenviar el correo.");
-    } finally {
-      setIsResending(false);
-    }
+    resendResetMutation.mutate(
+      { email: submittedEmail },
+      {
+        onSuccess: (res) => {
+          setFeedbackMessage(res.message || "Enlace reenviado.");
+        },
+        onError: (error) => {
+          setServerError(error.message || "Error al reenviar el correo.");
+        },
+      }
+    );
   };
 
   return (
@@ -115,7 +120,7 @@ export default function ResetPasswordPage() {
             <Button
               type="submit"
               variant="primary"
-              isLoading={isLoading}
+              isLoading={requestResetMutation.isPending}
               className="mt-1 font-semibold"
             >
               Enviar instrucciones
@@ -184,10 +189,10 @@ export default function ResetPasswordPage() {
             <button
               type="button"
               onClick={handleResend}
-              disabled={isResending}
+              disabled={resendResetMutation.isPending}
               className="font-semibold text-white underline hover:text-[#FD7B03] transition-colors disabled:opacity-50"
             >
-              {isResending ? "Reenviando..." : "Reenviar enlace"}
+              {resendResetMutation.isPending ? "Reenviando..." : "Reenviar enlace"}
             </button>
           </div>
         </div>

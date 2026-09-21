@@ -102,6 +102,54 @@ class OffersService {
 
     return appointmentId;
   }
+
+  async getPendingProfessionalOffers(professionalId) {
+    const { data, error } = await supabase
+      .from('offers')
+      .select(`
+        *,
+        requests!inner(
+          title, description, address, neighborhood, city, created_at,
+          has_materials, is_emergency, installation_age, date_preference, time_preference,
+          profiles(first_name, last_name, avatar_url),
+          service_categories(name)
+        )
+      `)
+      .eq('professional_id', professionalId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new AppError(`Error al obtener ofertas pendientes: ${error.message}`, 500, 'DB_ERROR');
+    }
+
+    return data.map(offer => ({
+      id: offer.id,
+      request_id: offer.request_id,
+      titulo: offer.requests.title,
+      servicio: offer.requests.service_categories?.name || 'General',
+      descripcion: offer.requests.description,
+      fecha: offer.proposed_date,
+      hora: offer.proposed_time,
+      monto: offer.amount,
+      mensajeOferta: offer.message,
+      estado: 'Pendiente',
+      ubicacion: offer.requests.address ? `${offer.requests.neighborhood || ''}, ${offer.requests.city || ''}` : '',
+      fechaPublicacion: offer.requests.created_at,
+      cuestionario: {
+        tieneMateriales: offer.requests.has_materials,
+        esUrgencia: offer.requests.is_emergency,
+        antiguedad: offer.requests.installation_age,
+        cuandoLoNecesita: offer.requests.date_preference,
+        horarioPreferencia: offer.requests.time_preference,
+      },
+      cliente: {
+        nombre: offer.requests.profiles?.first_name || '',
+        inicial: offer.requests.profiles?.last_name ? offer.requests.profiles.last_name.charAt(0) + '.' : '',
+        avatar_url: offer.requests.profiles?.avatar_url || null
+      }
+    }));
+  }
 }
 
 export default new OffersService();
