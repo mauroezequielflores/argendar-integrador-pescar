@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   BellIcon,
@@ -20,9 +20,10 @@ import PaymentSummary from "../components/PaymentSummary";
 import RatingModal from "../components/RatingModal";
 
 import {
-  mockClientNotificaciones,
-  mockClientHistorial,
-} from "../data/mockClientNotifications";
+  useNotificationsQuery,
+  useMarkNotificationAsReadMutation,
+  useSubmitReviewMutation,
+} from "../hooks/useNotifications";
 
 // ─── Configuración de pestañas ────────────────────────────────────────────────
 const NOTIFICATION_TABS = [
@@ -58,8 +59,12 @@ export default function NotificationsPage() {
   const [selectedCancellation, setSelectedCancellation] = useState(null);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [selectedRating, setSelectedRating] = useState(null);
-  const [notifications, setNotifications] = useState(mockClientNotificaciones);
-  const [history, setHistory] = useState(mockClientHistorial);
+  const { data: allNotifications = [], isLoading, isError } = useNotificationsQuery(1, 100);
+  const markAsReadMutation = useMarkNotificationAsReadMutation();
+  const submitReviewMutation = useSubmitReviewMutation();
+
+  const notifications = useMemo(() => allNotifications.filter(n => n.isNew), [allNotifications]);
+  const history = useMemo(() => allNotifications.filter(n => !n.isNew), [allNotifications]);
 
   // Breadcrumbs items
   const breadcrumbItems = [
@@ -98,16 +103,9 @@ export default function NotificationsPage() {
   };
 
   const handleNotificationClick = (notification) => {
-    const readNotification = { ...notification, isNew: false };
-    setNotifications((currentNotifications) =>
-      currentNotifications.map((item) =>
-        item.id === notification.id ? readNotification : item,
-      ),
-    );
-    setHistory((currentHistory) => [
-      readNotification,
-      ...currentHistory.filter((item) => item.id !== notification.id),
-    ]);
+    if (notification.isNew) {
+      markAsReadMutation.mutate(notification.id);
+    }
 
     if (notification.tipo === "reminder") {
       setSelectedReminder(notification);
@@ -196,33 +194,42 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      {/* ─── Contenedor Principal: Empty State o Lista de Notificaciones ─── */}
-      <div className="w-full">
-        {processedItems.length === 0 ? (
-          <EmptyState
-            icon={BellIcon}
-            title={emptyStateTitle}
-            description="Te avisaremos cuando ocurra algo importante."
-            isCard={true}
-          />
-        ) : (
-          <div className="flex flex-col gap-3">
-            {processedItems.map((notification) => (
-              <NotificationCard
-                key={notification.id}
-                title={notification.titulo}
-                description={notification.descripcion}
-                time={notification.fecha}
-                icon={notification.icon}
-                iconBgColor={notification.iconBgColor}
-                iconColor={notification.iconColor}
-                isNew={notification.isNew}
-                onClick={() => handleNotificationClick(notification)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      {isLoading ? (
+        <div className="w-full flex justify-center py-20 text-white">
+          <p>Cargando notificaciones...</p>
+        </div>
+      ) : isError ? (
+        <div className="w-full flex justify-center py-20 text-red-400">
+          <p>Ocurrió un error al cargar las notificaciones.</p>
+        </div>
+      ) : (
+        <div className="w-full">
+          {processedItems.length === 0 ? (
+            <EmptyState
+              icon={BellIcon}
+              title={emptyStateTitle}
+              description="Te avisaremos cuando ocurra algo importante."
+              isCard={true}
+            />
+          ) : (
+            <div className="flex flex-col gap-3">
+              {processedItems.map((notification) => (
+                <NotificationCard
+                  key={notification.id}
+                  title={notification.titulo}
+                  description={notification.descripcion}
+                  time={notification.fecha}
+                  icon={notification.icon}
+                  iconBgColor={notification.iconBgColor}
+                  iconColor={notification.iconColor}
+                  isNew={notification.isNew}
+                  onClick={() => handleNotificationClick(notification)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {selectedReminder && (
         <ReminderSummary

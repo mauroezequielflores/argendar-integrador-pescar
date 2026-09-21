@@ -21,3 +21,8 @@ Se implementó la arquitectura de 3 capas (`routes`, `controllers`, `services`) 
 **Hecho:** Implementación del endpoint de Calificación de Servicio (Reviews) desde Notificaciones. Se crearon los esquemas de validación Zod, el controlador `clientReviewController`, el servicio `clientReviewService` y el enrutador `clientReviewRoutes`.
 **Pendiente:** Ejecutar el script SQL en Supabase para añadir `appointment_id` y `tags` a la tabla `reviews`.
 **Decisiones:** Se decidió usar un nuevo endpoint `POST /api/v1/client/reviews` que recibe `notificationId` en lugar del `appointmentId` directo, cruzando la información de las notificaciones y los turnos internamente para garantizar seguridad e integridad.
+
+## [21/09/2026]
+**Hecho:** Implementación del servicio de creación automática de notificaciones (`notificationCreatorService.js`) correspondiente a la historia de usuario 'Creación Automática de Notificaciones para el Cliente'.
+**Pendiente:** Llamar a este servicio desde los flujos de creación de ofertas, confirmación de pagos y finalización/cancelación de turnos (cuando estos endpoints sean desarrollados).
+**Decisiones:** Se ha diseñado la función `createNotification` como "fire-and-forget" capturando internamente los errores para no interrumpir el flujo principal de negocio.
