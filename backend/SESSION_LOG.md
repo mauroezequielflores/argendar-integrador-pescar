@@ -16,3 +16,8 @@ Se implementó la arquitectura de 3 capas (`routes`, `controllers`, `services`) 
 **Hecho:** Implementación de endpoints de Listado y Gestión de Notificaciones del Cliente (HU Listado de Notificaciones). Se crearon el servicio (clientNotificationService.js), el controlador (clientNotificationController.js), el enrutador (clientNotificationRoutes.js) y las validaciones de schema Zod (notificationSchemas.js). Se montó la ruta en app.js bajo /api/v1/client/notifications.
 **Pendiente:** Agregar la funcionalidad de Calificación de Servicio Finalizado (Review).
 **Decisiones:** Se montaron las rutas de notificaciones del cliente en app.js importando `clientNotificationRoutes` bajo el prefijo general del cliente.
+
+## [19/09/2026]
+**Hecho:** Implementación del endpoint de Calificación de Servicio (Reviews) desde Notificaciones. Se crearon los esquemas de validación Zod, el controlador `clientReviewController`, el servicio `clientReviewService` y el enrutador `clientReviewRoutes`.
+**Pendiente:** Ejecutar el script SQL en Supabase para añadir `appointment_id` y `tags` a la tabla `reviews`.
+**Decisiones:** Se decidió usar un nuevo endpoint `POST /api/v1/client/reviews` que recibe `notificationId` en lugar del `appointmentId` directo, cruzando la información de las notificaciones y los turnos internamente para garantizar seguridad e integridad.
