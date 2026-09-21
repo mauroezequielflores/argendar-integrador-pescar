@@ -12,7 +12,7 @@ export default function QuickShortcuts() {
         Atajos Rápidos
       </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {QUICK_SHORTCUTS.map((shortcut) => {
           const Icon = shortcut.icon;
           return (

@@ -78,7 +78,7 @@ export default function ModerationPanel({ panelKey }) {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Buscar por número de orden..."
+          placeholder="Buscar por número de ID.."
           className="w-full rounded-[6px] border border-[#323232] bg-[#292929] py-2 pl-9 pr-3 text-sm text-white placeholder-[#A8A8AA] focus:border-[#F78736] focus:outline-none focus:ring-1 focus:ring-[#F78736]"
         />
       </div>
@@ -127,7 +127,7 @@ export default function ModerationPanel({ panelKey }) {
       {searchBar}
 
       {/* Área de tarjetas o empty state */}
-      <div className="min-h-[380px] rounded-[12px] bg-[#202020] p-4">
+      <div className="min-h-[380px] rounded-[12px] bg-[#202020]">
         {filteredItems.length === 0 ? (
           /* ── Empty State (CA06) ──────────────────────────────── */
           <div className="flex h-full min-h-[340px] flex-col items-center justify-center gap-3 text-center">

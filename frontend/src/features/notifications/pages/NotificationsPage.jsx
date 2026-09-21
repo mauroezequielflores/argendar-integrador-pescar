@@ -1,8 +1,12 @@
-import React, { useState, useMemo } from "react";
+﻿import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { BellIcon, ClockIcon } from "@heroicons/react/24/outline";
-
+import {
+  BellIcon,
+  ClockIcon,
+} from "@heroicons/react/24/outline";
 import { ROUTES } from "../../../constants/routes";
+
+// Componentes UI Reutilizables de Argendar
 import Breadcrumbs from "../../../components/ui/Breadcrumbs";
 import Tabs from "../../../components/ui/Tabs";
 import FilterBar from "../../../components/ui/FilterBar";
@@ -11,6 +15,9 @@ import EmptyState from "../../../components/ui/EmptyState";
 import NotificationCard from "../../../components/ui/NotificationCard";
 import ReminderSummary from "../components/ReminderSummary";
 import OfferSummary from "../components/OfferSummary";
+import CancellationSummary from "../components/CancellationSummary";
+import PaymentSummary from "../components/PaymentSummary";
+import RatingModal from "../components/RatingModal";
 
 import {
   mockClientNotificaciones,
@@ -37,7 +44,7 @@ const SORT_LABELS = {
 
 /**
  * NotificationsPage — Pantalla de Notificaciones del Cliente.
- * Cumple con la Historia de Usuario y criterios CA01 a CA06.
+ * Cumple con la Historia de Usuario y criterios CA01 a CA07.
  */
 export default function NotificationsPage() {
   const navigate = useNavigate();
@@ -48,12 +55,15 @@ export default function NotificationsPage() {
   const [activeFilterId, setActiveFilterId] = useState("todo");
   const [selectedReminder, setSelectedReminder] = useState(null);
   const [selectedOffer, setSelectedOffer] = useState(null);
+  const [selectedCancellation, setSelectedCancellation] = useState(null);
+  const [selectedPayment, setSelectedPayment] = useState(null);
+  const [selectedRating, setSelectedRating] = useState(null);
   const [notifications, setNotifications] = useState(mockClientNotificaciones);
   const [history, setHistory] = useState(mockClientHistorial);
 
   // Breadcrumbs items
   const breadcrumbItems = [
-    { label: "Inicio", href: ROUTES.CLIENT_AGENDA || "/client/agenda" },
+    { label: "Actividad", href: ROUTES.CLIENT_AGENDA || "/client/agenda" },
     { label: "Notificaciones" },
   ];
 
@@ -107,6 +117,18 @@ export default function NotificationsPage() {
       setSelectedOffer(notification);
       return;
     }
+    if (notification.tipo === "cancellation") {
+      setSelectedCancellation(notification);
+      return;
+    }
+    if (notification.tipo === "payment") {
+      setSelectedPayment(notification);
+      return;
+    }
+    if (notification.tipo === "rating") {
+      setSelectedRating(notification);
+      return;
+    }
 
     navigate(notification.href || ROUTES.CLIENT_AGENDA);
   };
@@ -129,13 +151,13 @@ export default function NotificationsPage() {
       : "No tenés notificaciones leidas";
 
   return (
-    <div className="flex flex-col gap-6 text-white max-w-7xl mx-auto w-full">
+    <div className="flex flex-col gap-6 text-white mx-auto w-full">
       {/* ─── Breadcrumb de navegación (CA01) ─── */}
       <Breadcrumbs items={breadcrumbItems} separator="/" />
 
       {/* ─── Encabezado principal (CA01) ─── */}
       <div>
-        <h1 className="text-3xl lg:text-[32px] font-bold text-white tracking-tight">
+        <h1 className="text-2xl lg:text-[24px] font-bold text-white tracking-tight">
           Mis notificaciones
         </h1>
         <p className="mt-1 text-sm text-[#A8A8AA]">
@@ -174,7 +196,7 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      {/* ─── Contenedor Principal: Empty State (CA04, CA05) o Lista de Notificaciones ─── */}
+      {/* ─── Contenedor Principal: Empty State o Lista de Notificaciones ─── */}
       <div className="w-full">
         {processedItems.length === 0 ? (
           <EmptyState
@@ -207,6 +229,42 @@ export default function NotificationsPage() {
           reminder={selectedReminder}
           onClose={() => setSelectedReminder(null)}
           onViewDetails={() => navigate(selectedReminder.href || ROUTES.CLIENT_AGENDA)}
+        />
+      )}
+
+      {selectedCancellation && (
+        <CancellationSummary
+          cancellation={selectedCancellation}
+          onClose={() => setSelectedCancellation(null)}
+          onViewDetails={() => {
+            setSelectedCancellation(null);
+            navigate(selectedCancellation.href || ROUTES.CLIENT_AGENDA);
+          }}
+        />
+      )}
+
+      {selectedPayment && (
+        <PaymentSummary
+          payment={selectedPayment}
+          onClose={() => setSelectedPayment(null)}
+          onViewDetails={() => {
+            setSelectedPayment(null);
+            navigate(selectedPayment.href || ROUTES.CLIENT_AGENDA);
+          }}
+        />
+      )}
+
+      {selectedRating && (
+        <RatingModal
+          notification={selectedRating}
+          onClose={() => setSelectedRating(null)}
+          onViewDetails={() => {
+            setSelectedRating(null);
+            navigate(selectedRating.href || ROUTES.CLIENT_AGENDA);
+          }}
+          onSubmitSuccess={(reviewData) => {
+            console.log("Calificación enviada:", reviewData);
+          }}
         />
       )}
 

@@ -33,7 +33,7 @@ export default function HelpPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 text-white font-sans w-full">
+    <div className="flex flex-col gap-12 text-white font-sans w-full">
       {/* ── Breadcrumbs ──────────────────────────────────────────────── */}
       <Breadcrumbs items={breadcrumbs} />
 

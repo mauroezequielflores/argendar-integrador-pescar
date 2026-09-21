@@ -22,7 +22,7 @@ export default function ContactFormCard() {
   };
 
   return (
-    <div className="flex flex-col gap-4 rounded-[6px] border border-[#323232] bg-[#292929] p-5">
+    <div className="flex flex-col gap-4 rounded-[6px] border border-[#323232] bg-[#292929] p-5 pb-20">
       <div>
         <h3 className="text-sm sm:text-base font-semibold text-white">
           Envianos una consulta

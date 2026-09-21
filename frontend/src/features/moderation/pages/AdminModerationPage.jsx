@@ -1,4 +1,10 @@
-import { useState } from "react";
+﻿import { useState } from "react";
+import {
+  DocumentTextIcon,
+  DocumentDuplicateIcon,
+  StarIcon,
+  CalendarDaysIcon,
+} from "@heroicons/react/24/outline";
 import Breadcrumbs from "../../../components/ui/Breadcrumbs";
 import ModerationTabs from "../components/ModerationTabs";
 import ModerationPanel from "../components/ModerationPanel";
@@ -6,13 +12,13 @@ import { ROUTES } from "../../../constants/routes";
 
 /**
  * Definición de los cuatro paneles según la historia de usuario (CA02).
- * El orden y los labels coinciden con las capturas de diseño.
+ * El orden, labels e íconos coinciden con las capturas de diseño.
  */
 const TABS = [
-  { key: "solicitudes", label: "Solicitudes" },
-  { key: "ofertas", label: "Ofertas" },
-  { key: "calificaciones", label: "Calificaciones" },
-  { key: "turnos", label: "Turnos" },
+  { key: "solicitudes", label: "Solicitudes", icon: DocumentTextIcon },
+  { key: "ofertas", label: "Ofertas", icon: DocumentDuplicateIcon },
+  { key: "calificaciones", label: "Calificaciones", icon: StarIcon },
+  { key: "turnos", label: "Turnos", icon: CalendarDaysIcon },
 ];
 
 /**
@@ -21,7 +27,7 @@ const TABS = [
  *
  * Criterios de Aceptación:
  * - CA01: Título "Moderación" y descripción introductoria.
- * - CA02: Cuatro paneles alternables (Solicitudes, Ofertas, Calificaciones, Turnos).
+ * - CA02: Cuatro paneles alternables (Solicitudes, Ofertas, Calificaciones, Turnos) con ícono + label.
  *         Panel por defecto: "Solicitudes".
  * - CA03: Barra de búsqueda por número de orden en cada panel.
  * - CA04: Tarjetas con ID, estado, título, descripción, usuario y tres acciones.
@@ -37,13 +43,13 @@ export default function AdminModerationPage() {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="flex flex-col gap-6">
       {/* ── Breadcrumbs (CA01) ──────────────────────────────── */}
       <Breadcrumbs items={breadcrumbItems} />
 
       {/* ── Encabezado de sección (CA01) ────────────────────── */}
       <div>
-        <h1 className="text-[32px] font-bold leading-tight text-white">
+        <h1 className="text-2xl font-bold leading-tight text-white">
           Moderación
         </h1>
         <p className="mt-1 text-sm text-[#A8A8AA]">

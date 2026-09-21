@@ -376,12 +376,12 @@ export default function ProfessionalHelpPage() {
       {/* Atajos Rápidos */}
       <div className="flex flex-col gap-4">
         <p className="text-base font-semibold text-white">Atajos Rápidos</p>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {SHORTCUTS.slice(0, 3).map((s) => (
             <ShortcutCard key={s.id} shortcut={s} />
           ))}
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {SHORTCUTS.slice(3).map((s) => (
             <ShortcutCard key={s.id} shortcut={s} />
           ))}
