@@ -5,9 +5,9 @@ import { BellIcon, ClockIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { ROUTES } from "../../../constants/routes";
 import EmptyState from "../../../components/ui/EmptyState";
 import {
-  mockNotificaciones,
-  mockHistorialNotificaciones,
-} from "../data/mockProfessionalNotifications";
+  useProfessionalNotificationsQuery,
+  useMarkProfessionalNotificationAsReadMutation,
+} from "../hooks/useProfessionalNotifications";
 
 // ─── Tabs config ─────────────────────────────────────────────────────────────
 
@@ -146,7 +146,20 @@ export default function ProfessionalNotificationsPage() {
   const [activeTab, setActiveTab] = useState("todas");
   const [selectedReminder, setSelectedReminder] = useState(null);
 
+  // Map UI tabs to backend tab values
+  const backendTab = activeTab === "todas" ? "active" : "history";
+
+  const { data, isLoading, isError } = useProfessionalNotificationsQuery(backendTab);
+  const markAsRead = useMarkProfessionalNotificationAsReadMutation();
+
+  const notifications = data?.notifications || [];
+
   const handleNotificationClick = (n) => {
+    // Mark as read when clicking
+    if (n.isNew) {
+      markAsRead.mutate(n.id);
+    }
+
     if (n.titulo === "Recordatorio") {
       setSelectedReminder(n);
     } else {
@@ -179,10 +192,22 @@ export default function ProfessionalNotificationsPage() {
       {/* Tabs */}
       <TabNav active={activeTab} onChange={setActiveTab} />
 
-      {/* Contenido del tab activo */}
-      {activeTab === "todas" && <PanelTodas items={mockNotificaciones} onNotificationClick={handleNotificationClick} />}
-      {activeTab === "historial" && (
-        <PanelHistorial items={mockHistorialNotificaciones} onNotificationClick={handleNotificationClick} />
+      {/* Loading state */}
+      {isLoading && (
+        <p className="text-sm text-[#A8A8AA] text-center py-8">Cargando notificaciones...</p>
+      )}
+
+      {/* Error state */}
+      {isError && (
+        <p className="text-sm text-red-400 text-center py-8">Error al cargar las notificaciones.</p>
+      )}
+
+      {/* Content */}
+      {!isLoading && !isError && activeTab === "todas" && (
+        <PanelTodas items={notifications} onNotificationClick={handleNotificationClick} />
+      )}
+      {!isLoading && !isError && activeTab === "historial" && (
+        <PanelHistorial items={notifications} onNotificationClick={handleNotificationClick} />
       )}
 
       {selectedReminder && (

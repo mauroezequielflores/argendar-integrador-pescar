@@ -26,3 +26,8 @@ Se implementó la arquitectura de 3 capas (`routes`, `controllers`, `services`) 
 **Hecho:** Implementación del servicio de creación automática de notificaciones (`notificationCreatorService.js`) correspondiente a la historia de usuario 'Creación Automática de Notificaciones para el Cliente'.
 **Pendiente:** Llamar a este servicio desde los flujos de creación de ofertas, confirmación de pagos y finalización/cancelación de turnos (cuando estos endpoints sean desarrollados).
 **Decisiones:** Se ha diseñado la función `createNotification` como "fire-and-forget" capturando internamente los errores para no interrumpir el flujo principal de negocio.
+
+## [21/09/2026] (Parte 2)
+**Hecho:** Implementación de endpoints de Listado y Gestión de Notificaciones del Profesional (HU Notificaciones del Profesional). Se crearon `professionalNotificationService.js`, `professionalNotificationController.js` y `professionalNotificationRoutes.js`. Se montó la ruta en `app.js` bajo `/api/v1/professional/notifications`.
+**Pendiente:** Agregar endpoints de creación de ofertas y pagos para que puedan disparar notificaciones reales.
+**Decisiones:** Se montaron las rutas bajo el scope de `/professional`, utilizando el middleware de roles `requireRole('professional')`. Como la tabla `notifications` ya existía previamente para los clientes, se reutilizó la misma tabla sin necesidad de crear una nueva migración, dado que la estructura de la base de datos es compartida.
