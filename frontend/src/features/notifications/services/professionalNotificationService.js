@@ -22,4 +22,9 @@ export const professionalNotificationService = {
     const { data } = await api.patch(`/professional/notifications/${notificationId}/read`);
     return data;
   },
+
+  getOfferDetail: async (offerId) => {
+    const { data } = await api.get(`/professional/offers/${offerId}`);
+    return data?.data;
+  },
 };

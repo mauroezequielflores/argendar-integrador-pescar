@@ -1,10 +1,32 @@
 import { supabase } from '../config/supabase.js';
 import { AppError } from '../utils/errors.js';
 
+// Helper to resolve href if not directly stored in database
+const resolveHref = (n) => {
+  if (n.href) return n.href;
+  if (!n.related_entity_id) return null;
+
+  switch (n.type) {
+    case 'offer_accepted':
+    case 'offer_rejected':
+      return `/professional/offers/${n.related_entity_id}/details`;
+    case 'appointment_reminder':
+      return `/professional/reminders/${n.related_entity_id}/details`;
+    case 'appointment_cancelled':
+      return `/professional/cancellations/${n.related_entity_id}/details`;
+    case 'payment_confirmed':
+      return `/professional/payments/${n.related_entity_id}/details`;
+    case 'review_received':
+      return `/professional/reviews/${n.related_entity_id}/details`;
+    default:
+      return null;
+  }
+};
+
 export const getNotifications = async (userId, { tab = 'active', type = 'all', sort = 'newest' }) => {
   let query = supabase
     .from('notifications')
-    .select('id, type, title, description, is_read, created_at, related_entity_id, related_entity_type', { count: 'exact' })
+    .select('id, type, title, description, is_read, created_at, related_entity_id, related_entity_type, href', { count: 'exact' })
     .eq('user_id', userId);
 
   // Tab filter
@@ -42,7 +64,8 @@ export const getNotifications = async (userId, { tab = 'active', type = 'all', s
       isRead: n.is_read,
       createdAt: n.created_at,
       relatedEntityId: n.related_entity_id,
-      relatedEntityType: n.related_entity_type
+      relatedEntityType: n.related_entity_type,
+      href: resolveHref(n)
     }))
   };
 };
@@ -62,7 +85,7 @@ export const getPreview = async (userId) => {
   // Get latest 4 notifications
   const { data, error } = await supabase
     .from('notifications')
-    .select('id, type, title, description, is_read, created_at')
+    .select('id, type, title, description, is_read, created_at, related_entity_id, related_entity_type, href')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(4);
@@ -79,7 +102,10 @@ export const getPreview = async (userId) => {
       title: n.title,
       description: n.description,
       isRead: n.is_read,
-      createdAt: n.created_at
+      createdAt: n.created_at,
+      relatedEntityId: n.related_entity_id,
+      relatedEntityType: n.related_entity_type,
+      href: resolveHref(n)
     }))
   };
 };
@@ -87,7 +113,7 @@ export const getPreview = async (userId) => {
 export const getNotificationById = async (userId, notificationId) => {
   const { data, error } = await supabase
     .from('notifications')
-    .select('id, type, title, description, is_read, created_at, related_entity_id, related_entity_type, metadata')
+    .select('id, type, title, description, is_read, created_at, related_entity_id, related_entity_type, metadata, href')
     .eq('user_id', userId)
     .eq('id', notificationId)
     .single();
@@ -112,7 +138,8 @@ export const getNotificationById = async (userId, notificationId) => {
     createdAt: data.created_at,
     relatedEntityId: data.related_entity_id,
     relatedEntityType: data.related_entity_type,
-    metadata: data.metadata
+    metadata: data.metadata,
+    href: resolveHref(data)
   };
 };
 

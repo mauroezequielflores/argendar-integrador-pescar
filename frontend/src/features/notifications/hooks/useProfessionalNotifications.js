@@ -23,6 +23,7 @@ export const PROF_NOTIFICATIONS_KEYS = {
   list: (tab, type, sort) => [...PROF_NOTIFICATIONS_KEYS.all, 'list', tab, type, sort],
   preview: () => [...PROF_NOTIFICATIONS_KEYS.all, 'preview'],
   detail: (id) => [...PROF_NOTIFICATIONS_KEYS.all, 'detail', id],
+  offerDetail: (id) => [...PROF_NOTIFICATIONS_KEYS.all, 'offer-detail', id],
 };
 
 /**
@@ -120,5 +121,54 @@ export const useMarkProfessionalNotificationAsReadMutation = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PROF_NOTIFICATIONS_KEYS.all });
     },
+  });
+};
+
+const formatCurrency = (val) => {
+  if (val === null || val === undefined) return '$0';
+  const num = typeof val === 'number' ? val : parseFloat(val);
+  return isNaN(num) ? String(val) : `$${num.toLocaleString('es-AR')}`;
+};
+
+const formatAvailability = (date, time) => {
+  if (!date) return 'A convenir';
+  const formattedDate = dayjs(date).format('DD/MM');
+  const formattedTime = time ? ` a las ${time.slice(0, 5)}hs` : '';
+  return `${formattedDate}${formattedTime}`;
+};
+
+const mapOfferDetail = (data) => {
+  if (!data) return null;
+  const client = data.client || {};
+  const prof = data.professional || {};
+
+  return {
+    id: data.id,
+    clientName: client.name || 'Cliente',
+    clientInitials: client.initials || 'CL',
+    clientAvatarUrl: client.avatarUrl || null,
+    profName: prof.name || 'Ricardo Gómez',
+    profCategory: prof.category || 'PROFESIONAL',
+    profAvatarUrl: prof.avatarUrl || null,
+    rating: prof.rating || 5.0,
+    price: formatCurrency(data.price),
+    deposit: formatCurrency(data.deposit),
+    message: data.message ? `"${data.message.replace(/^"|"$/g, '')}"` : '',
+    availability: formatAvailability(data.availabilityDate, data.availabilityTime),
+    requestTitle: data.requestTitle || '',
+    requestDescription: data.requestDescription || '',
+    status: data.status || 'accepted',
+  };
+};
+
+export const useProfessionalOfferDetailQuery = (offerId) => {
+  return useQuery({
+    queryKey: PROF_NOTIFICATIONS_KEYS.offerDetail(offerId),
+    queryFn: async () => {
+      const data = await professionalNotificationService.getOfferDetail(offerId);
+      return mapOfferDetail(data);
+    },
+    enabled: Boolean(offerId),
+    staleTime: 1000 * 60 * 5, // 5 min
   });
 };

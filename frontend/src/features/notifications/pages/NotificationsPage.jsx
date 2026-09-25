@@ -111,7 +111,7 @@ export default function NotificationsPage() {
       setSelectedReminder(notification);
       return;
     }
-    if (notification.tipo === "new_offer") {
+    if (notification.tipo === "new_offer" || notification.tipo === "nueva_oferta" || notification.tipo === "offer") {
       setSelectedOffer(notification);
       return;
     }

@@ -6,6 +6,7 @@ import clientRoutes from './routes/clientRoutes.js';
 import clientNotificationRoutes from './routes/clientNotificationRoutes.js';
 import professionalRoutes from './routes/professionalRoutes.js';
 import professionalNotificationRoutes from './routes/professionalNotificationRoutes.js';
+import professionalDetailsRoutes from './routes/professionalDetailsRoutes.js';
 import clientReviewRoutes from './routes/clientReviewRoutes.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 
@@ -22,6 +23,7 @@ app.use('/api/v1/client/notifications', clientNotificationRoutes);
 app.use('/api/v1/client/reviews', clientReviewRoutes);
 app.use('/api/v1/professional', professionalRoutes);
 app.use('/api/v1/professional/notifications', professionalNotificationRoutes);
+app.use('/api/v1/professional', professionalDetailsRoutes);
 
 // --- Rutas de Diagnóstico (Pruebas iniciales) ---
 // NOTA: Más adelante, las rutas de la aplicación se separarán en la carpeta src/routes/

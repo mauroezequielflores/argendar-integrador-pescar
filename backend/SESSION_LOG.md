@@ -1,3 +1,20 @@
+## [23/09/2026]
+**Hecho:** Implementación de los 5 endpoints de detalle del profesional (HU: Vistas de Detalles).
+- `GET /api/v1/professional/offers/:id`
+- `GET /api/v1/professional/reminders/:id`
+- `GET /api/v1/professional/cancellations/:id`
+- `GET /api/v1/professional/payments/:id`
+- `GET /api/v1/professional/reviews/:id`
+
+Archivos creados:
+- `src/services/professionalDetailsService.js` (lógica con JOINs relacionales y filtros IDOR)
+- `src/controllers/professionalDetailsController.js` (controladores delgados)
+- `src/routes/professionalDetailsRoutes.js` (rutas protegidas con `requireRole('professional')`)
+- `src/app.js` modificado: import y montaje del nuevo router.
+
+**Pendiente:** Integrar llamadas a `notificationCreatorService.createNotification()` en flujos de negocio de ofertas, pagos y finalización de turnos.
+**Decisiones:** Los endpoints `/reminders/:id` y `/cancellations/:id` comparten la misma función de servicio `getAppointmentById()` ya que ambos leen la tabla `appointments`. El filtro IDOR en `appointments` y `payments` se aplica manualmente en el servicio, verificando que `professional_id` del JOIN coincida con `req.user.id`.
+
 ## [06/09/2026]
 **Hecho:** Implementación de endpoints de Autenticación (POST `/api/v1/auth/register` y POST `/api/v1/auth/login`) correspondientes a HU-01 y HU-02. Se crearon tests unitarios con Jest y colección de Postman. Se documentó todo en `context/reportesImplementacion/Auth_Implementation_Report.md`.
 **Pendiente:** Confirmar variables de entorno en producción. Enlazar frontend real cuando estén listos los formularios axios.
