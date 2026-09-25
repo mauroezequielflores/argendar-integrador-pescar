@@ -48,3 +48,11 @@ Se implementó la arquitectura de 3 capas (`routes`, `controllers`, `services`) 
 **Hecho:** Implementación de endpoints de Listado y Gestión de Notificaciones del Profesional (HU Notificaciones del Profesional). Se crearon `professionalNotificationService.js`, `professionalNotificationController.js` y `professionalNotificationRoutes.js`. Se montó la ruta en `app.js` bajo `/api/v1/professional/notifications`.
 **Pendiente:** Agregar endpoints de creación de ofertas y pagos para que puedan disparar notificaciones reales.
 **Decisiones:** Se montaron las rutas bajo el scope de `/professional`, utilizando el middleware de roles `requireRole('professional')`. Como la tabla `notifications` ya existía previamente para los clientes, se reutilizó la misma tabla sin necesidad de crear una nueva migración, dado que la estructura de la base de datos es compartida.
+
+## [25/09/2026]
+**Hecho:** Implementación del backend para notificaciones de recordatorio de turno dirigidas al cliente (1 día antes del turno confirmado):
+1. Se extendió `appointmentReminderService.js` para detectar turnos confirmados en ventana de 36 horas y generar notificaciones tanto para el profesional como para el cliente, utilizando consultas desacopladas seguras e idempotencia estricta para evitar duplicados.
+2. Se enriqueció `clientNotificationService.js` para resolver automáticamente datos del turno, del profesional y del servicio ante cualquier notificación de tipo `reminder` o `appointment_reminder`.
+3. Se añadió el endpoint `POST /api/v1/client/reminders/check` en `clientNotificationRoutes.js` y `clientNotificationController.js`.
+**Pendiente:** Probar visualmente en frontend cuando el cliente abra sus notificaciones o cuando se indique avanzar con la UI.
+**Decisiones:** Se aseguró compatibilidad mapeando internamente `appointment_reminder` a `reminder` para el cliente de modo que coincida con las expectativas de la UI y los componentes existentes (`ReminderSummary.jsx`).

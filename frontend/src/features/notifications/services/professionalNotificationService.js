@@ -27,4 +27,9 @@ export const professionalNotificationService = {
     const { data } = await api.get(`/professional/offers/${offerId}`);
     return data?.data;
   },
+
+  getReminderDetail: async (reminderId) => {
+    const { data } = await api.get(`/professional/reminders/${reminderId}`);
+    return data?.data;
+  },
 };

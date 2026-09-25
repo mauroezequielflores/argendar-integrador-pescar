@@ -35,6 +35,7 @@ const mapNotificationFromBackend = (item) => {
       iconColor = "text-[#3B82F6]";
       break;
     case 'reminder':
+    case 'appointment_reminder':
       icon = CalendarDaysIcon;
       iconColor = "text-[#F78736]";
       break;

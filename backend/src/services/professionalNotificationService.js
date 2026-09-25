@@ -26,7 +26,7 @@ const resolveHref = (n) => {
 export const getNotifications = async (userId, { tab = 'active', type = 'all', sort = 'newest' }) => {
   let query = supabase
     .from('notifications')
-    .select('id, type, title, description, is_read, created_at, related_entity_id, related_entity_type, href', { count: 'exact' })
+    .select('id, type, title, description, is_read, created_at, related_entity_id, related_entity_type, href, metadata', { count: 'exact' })
     .eq('user_id', userId);
 
   // Tab filter
@@ -54,19 +54,98 @@ export const getNotifications = async (userId, { tab = 'active', type = 'all', s
     throw new AppError('Error fetching notifications', 500);
   }
 
+  // Enriquecer recordatorios de turnos con datos reales del cliente
+  const reminderApptIds = (data || [])
+    .filter(n => (n.type === 'appointment_reminder' || n.title === 'Recordatorio') && n.related_entity_id)
+    .map(n => n.related_entity_id);
+
+  let remindersMap = {};
+  if (reminderApptIds.length > 0) {
+    const { data: appts } = await supabase
+      .from('appointments')
+      .select('id, scheduled_at, status, offer_id')
+      .in('id', reminderApptIds);
+
+    if (appts && appts.length > 0) {
+      const offerIds = appts.map(a => a.offer_id).filter(Boolean);
+      const { data: offers } = await supabase
+        .from('offers')
+        .select('id, request_id')
+        .in('id', offerIds);
+
+      const reqIds = (offers || []).map(o => o.request_id).filter(Boolean);
+      const { data: reqs } = await supabase
+        .from('requests')
+        .select('id, title, client_id')
+        .in('id', reqIds);
+
+      const clientIds = (reqs || []).map(r => r.client_id).filter(Boolean);
+      const { data: clients } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, avatar_url')
+        .in('id', clientIds);
+
+      const offerMap = (offers || []).reduce((acc, o) => ({ ...acc, [o.id]: o }), {});
+      const reqMap = (reqs || []).reduce((acc, r) => ({ ...acc, [r.id]: r }), {});
+      const clientMap = (clients || []).reduce((acc, c) => ({ ...acc, [c.id]: c }), {});
+
+      appts.forEach(appt => {
+        const off = offerMap[appt.offer_id];
+        const req = off ? reqMap[off.request_id] : null;
+        const cli = req ? clientMap[req.client_id] : null;
+
+        const name = cli ? `${cli.first_name || ''} ${cli.last_name || ''}`.trim() : 'Cliente';
+        const parts = name.split(' ').filter(Boolean);
+        const initials = parts.length >= 2 ? `${parts[0][0]}${parts[1][0]}`.toUpperCase() : name.slice(0, 2).toUpperCase();
+
+        const formatDateStr = (d) => {
+          if (!d) return 'Fecha a convenir';
+          const dateObj = new Date(d);
+          if (isNaN(dateObj.getTime())) return String(d);
+          const day = String(dateObj.getDate()).padStart(2, '0');
+          const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+          const year = dateObj.getFullYear();
+          const hours = String(dateObj.getHours()).padStart(2, '0');
+          const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+          return `${day}/${month}/${year} ${hours}:${minutes} hs`;
+        };
+
+        remindersMap[appt.id] = {
+          clientName: name,
+          clientInitials: initials,
+          clientAvatarUrl: cli?.avatar_url || null,
+          serviceName: req?.title || 'Servicio acordado',
+          status: (appt.status || 'CONFIRMADO').toUpperCase(),
+          date: formatDateStr(appt.scheduled_at),
+          timeAgo: 'Hoy',
+        };
+      });
+    }
+  }
+
   return {
     total: count || 0,
-    notifications: data.map(n => ({
-      id: n.id,
-      type: n.type,
-      title: n.title,
-      description: n.description,
-      isRead: n.is_read,
-      createdAt: n.created_at,
-      relatedEntityId: n.related_entity_id,
-      relatedEntityType: n.related_entity_type,
-      href: resolveHref(n)
-    }))
+    notifications: (data || []).map(n => {
+      const enrichedReminder = remindersMap[n.related_entity_id] || {};
+      const metadata = {
+        ...enrichedReminder,
+        ...(n.metadata || {})
+      };
+
+      return {
+        id: n.id,
+        type: n.type,
+        title: n.title,
+        description: n.description,
+        isRead: n.is_read,
+        createdAt: n.created_at,
+        relatedEntityId: n.related_entity_id,
+        relatedEntityType: n.related_entity_type,
+        href: resolveHref(n),
+        metadata,
+        ...metadata
+      };
+    })
   };
 };
 

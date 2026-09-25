@@ -1,4 +1,5 @@
 import * as professionalDetailsService from '../services/professionalDetailsService.js';
+import * as appointmentReminderService from '../services/appointmentReminderService.js';
 
 // ─── GET /professional/offers/:id ─────────────────────────────────────────────
 export const getOfferDetail = async (req, res, next) => {
@@ -57,6 +58,18 @@ export const getReviewDetail = async (req, res, next) => {
     const { id } = req.params;
     const data = await professionalDetailsService.getReviewById(professionalId, id);
     return res.status(200).json({ data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─── POST /professional/reminders/check ────────────────────────────────────────
+// Verifica los turnos de las próximas 36 horas y genera recordatorios evitando duplicados
+export const triggerReminderCheck = async (req, res, next) => {
+  try {
+    const professionalId = req.user.id;
+    const result = await appointmentReminderService.processUpcomingReminders(professionalId);
+    return res.status(200).json(result);
   } catch (error) {
     next(error);
   }

@@ -160,7 +160,7 @@ export default function ProfessionalNotificationsPage() {
       markAsRead.mutate(n.id);
     }
 
-    if (n.titulo === "Recordatorio") {
+    if (n.titulo === "Recordatorio" || n.type === "appointment_reminder" || n.type === "reminder") {
       setSelectedReminder(n);
     } else {
       navigate(n.href || "#");

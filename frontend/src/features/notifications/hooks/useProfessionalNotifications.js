@@ -24,6 +24,7 @@ export const PROF_NOTIFICATIONS_KEYS = {
   preview: () => [...PROF_NOTIFICATIONS_KEYS.all, 'preview'],
   detail: (id) => [...PROF_NOTIFICATIONS_KEYS.all, 'detail', id],
   offerDetail: (id) => [...PROF_NOTIFICATIONS_KEYS.all, 'offer-detail', id],
+  reminderDetail: (id) => [...PROF_NOTIFICATIONS_KEYS.all, 'reminder-detail', id],
 };
 
 /**
@@ -169,6 +170,38 @@ export const useProfessionalOfferDetailQuery = (offerId) => {
       return mapOfferDetail(data);
     },
     enabled: Boolean(offerId),
+    staleTime: 1000 * 60 * 5, // 5 min
+  });
+};
+
+const mapReminderDetail = (data) => {
+  if (!data) return null;
+  const client = data.client || {};
+
+  return {
+    id: data.id,
+    clientName: data.clientName || client.name || 'Cliente',
+    clientInitials: data.clientInitials || client.initials || 'CL',
+    clientAvatarUrl: data.clientAvatarUrl || client.avatarUrl || null,
+    serviceName: data.serviceName || data.requestTitle || 'Instalación eléctrica',
+    status: (data.status || 'CONFIRMADO').toUpperCase(),
+    date: data.date || (data.scheduledAt ? dayjs(data.scheduledAt).format('DD/MM/YYYY HH:mm [hs]') : 'Fecha a convenir'),
+    timeAgo: data.timeAgo || (data.scheduledAt ? dayjs(data.scheduledAt).fromNow() : 'Recientemente'),
+    notes: data.notes || '',
+    amount: data.amount,
+    message: data.message,
+    offerId: data.offerId || null,
+  };
+};
+
+export const useProfessionalReminderDetailQuery = (reminderId) => {
+  return useQuery({
+    queryKey: PROF_NOTIFICATIONS_KEYS.reminderDetail(reminderId),
+    queryFn: async () => {
+      const data = await professionalNotificationService.getReminderDetail(reminderId);
+      return mapReminderDetail(data);
+    },
+    enabled: Boolean(reminderId),
     staleTime: 1000 * 60 * 5, // 5 min
   });
 };

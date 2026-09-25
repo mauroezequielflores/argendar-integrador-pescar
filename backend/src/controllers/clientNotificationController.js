@@ -1,4 +1,5 @@
 import { getNotifications, markAsRead } from '../services/clientNotificationService.js';
+import { processUpcomingReminders } from '../services/appointmentReminderService.js';
 import { AppError } from '../utils/errors.js';
 
 /**
@@ -36,4 +37,18 @@ export const readNotification = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Controller to trigger reminder check for the authenticated client.
+ */
+export const triggerReminderCheck = async (req, res, next) => {
+  try {
+    const clientId = req.user.id;
+    const result = await processUpcomingReminders({ targetClientId: clientId });
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 

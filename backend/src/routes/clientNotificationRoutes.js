@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listNotifications, readNotification } from '../controllers/clientNotificationController.js';
+import { listNotifications, readNotification, triggerReminderCheck } from '../controllers/clientNotificationController.js';
 import { authMiddleware } from '../middlewares/authMiddleware.js';
 import { requireRole } from '../middlewares/roleMiddleware.js';
 import { validateRequest } from '../middlewares/validateRequest.js';
@@ -16,6 +16,9 @@ router.get('/', validateRequest(getNotificationsSchema), listNotifications);
 
 // PATCH /api/v1/client/notifications/:id/read
 router.patch('/:id/read', validateRequest(readNotificationSchema), readNotification);
+
+// POST /api/v1/client/reminders/check
+router.post('/reminders/check', triggerReminderCheck);
 
 export default router;
 

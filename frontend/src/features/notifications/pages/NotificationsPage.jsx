@@ -107,7 +107,7 @@ export default function NotificationsPage() {
       markAsReadMutation.mutate(notification.id);
     }
 
-    if (notification.tipo === "reminder") {
+    if (notification.tipo === "reminder" || notification.tipo === "appointment_reminder") {
       setSelectedReminder(notification);
       return;
     }

@@ -1,5 +1,18 @@
 import { supabase } from '../config/supabase.js';
 import { AppError } from '../utils/errors.js';
+import { processUpcomingReminders } from './appointmentReminderService.js';
+
+const formatDateStr = (d) => {
+  if (!d) return 'Fecha a convenir';
+  const dateObj = new Date(d);
+  if (isNaN(dateObj.getTime())) return String(d);
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const year = dateObj.getFullYear();
+  const hours = String(dateObj.getHours()).padStart(2, '0');
+  const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+  return `${day}/${month}/${year} ${hours}:${minutes} hs`;
+};
 
 const formatCurrency = (val) => {
   if (val === null || val === undefined) return '$0';
@@ -23,6 +36,13 @@ const formatAvailability = (date, time) => {
  * @returns {Promise<Object>} { data, meta }
  */
 export const getNotifications = async (userId, page = 1, limit = 10) => {
+  // Disparar procesamiento de recordatorios próximos para el cliente de manera segura
+  try {
+    await processUpcomingReminders({ targetClientId: userId });
+  } catch (err) {
+    console.warn('[getNotifications] Error al verificar recordatorios automáticos:', err);
+  }
+
   const offset = (page - 1) * limit;
 
   // 1. Get the total count of notifications for pagination meta
@@ -145,23 +165,91 @@ export const getNotifications = async (userId, page = 1, limit = 10) => {
     }
   }
 
+  // 3b. Enriquecer notificaciones de recordatorio (turnos) con datos reales de la BD
+  const apptIds = (data || [])
+    .filter(n => (n.tipo === 'reminder' || n.tipo === 'appointment_reminder' || n.related_entity_type === 'appointment') && n.related_entity_id)
+    .map(n => n.related_entity_id);
+
+  let apptsMap = {};
+  if (apptIds.length > 0) {
+    const { data: appointments } = await supabase
+      .from('appointments')
+      .select('id, offer_id, scheduled_at, status, notes')
+      .in('id', apptIds);
+
+    if (appointments && appointments.length > 0) {
+      const offerIdsForAppts = [...new Set(appointments.map(a => a.offer_id).filter(Boolean))];
+      const { data: apptOffers } = await supabase
+        .from('offers')
+        .select('id, professional_id, request_id')
+        .in('id', offerIdsForAppts);
+
+      if (apptOffers && apptOffers.length > 0) {
+        const profIds = [...new Set(apptOffers.map(o => o.professional_id).filter(Boolean))];
+        const reqIds = [...new Set(apptOffers.map(o => o.request_id).filter(Boolean))];
+
+        const [{ data: profs }, { data: reqs }] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('id, first_name, last_name, avatar_url')
+            .in('id', profIds),
+          supabase
+            .from('requests')
+            .select('id, title')
+            .in('id', reqIds)
+        ]);
+
+        const profMap = (profs || []).reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
+        const reqMap = (reqs || []).reduce((acc, r) => ({ ...acc, [r.id]: r }), {});
+        const offerMap = (apptOffers || []).reduce((acc, o) => ({ ...acc, [o.id]: o }), {});
+
+        appointments.forEach(appt => {
+          const offer = offerMap[appt.offer_id];
+          const prof = offer ? profMap[offer.professional_id] : null;
+          const req = offer ? reqMap[offer.request_id] : null;
+          const profName = prof ? `${prof.first_name || ''} ${prof.last_name || ''}`.trim() : 'Profesional';
+          const parts = profName.split(' ').filter(Boolean);
+          const profInitials = parts.length >= 2 ? `${parts[0][0]}${parts[1][0]}`.toUpperCase() : profName.slice(0, 2).toUpperCase();
+
+          apptsMap[appt.id] = {
+            professionalName: profName,
+            professionalInitials: profInitials,
+            avatarUrl: prof?.avatar_url || null,
+            professionalAvatarUrl: prof?.avatar_url || null,
+            serviceName: req?.title || 'Servicio acordado',
+            status: (appt.status === 'confirmed' ? 'CONFIRMADO' : (appt.status || 'CONFIRMADO')).toUpperCase(),
+            date: formatDateStr(appt.scheduled_at),
+            timeAgo: 'Hoy',
+            href: '/client/agenda'
+          };
+        });
+      }
+    }
+  }
+
   // 4. Mapear datos con toda la información necesaria para el modal y la card
   const formattedData = (data || []).map((notification) => {
     const resolvedOfferData = offersMap[notification.related_entity_id] || defaultClientOffer || {};
+    const resolvedApptData = apptsMap[notification.related_entity_id] || {};
     const finalMetadata = {
       ...resolvedOfferData,
+      ...resolvedApptData,
       ...(notification.metadata || {})
     };
 
+    let mappedTipo = notification.tipo;
+    if (notification.tipo === 'nueva_oferta') mappedTipo = 'new_offer';
+    if (notification.tipo === 'appointment_reminder') mappedTipo = 'reminder';
+
     return {
       id: notification.id,
-      tipo: notification.tipo === 'nueva_oferta' ? 'new_offer' : notification.tipo,
+      tipo: mappedTipo,
       titulo: notification.titulo,
       descripcion: notification.descripcion,
       fecha: notification.created_at,
       timestamp: new Date(notification.created_at).getTime(),
       isNew: !notification.is_read,
-      href: notification.href,
+      href: notification.href || finalMetadata.href || '/client/agenda',
       relatedEntityId: notification.related_entity_id,
       relatedEntityType: notification.related_entity_type,
       metadata: finalMetadata,

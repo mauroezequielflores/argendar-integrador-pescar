@@ -15,6 +15,9 @@ router.get('/offers/:id', professionalDetailsController.getOfferDetail);
 // GET /api/v1/professional/reminders/:id
 router.get('/reminders/:id', professionalDetailsController.getReminderDetail);
 
+// POST /api/v1/professional/reminders/check
+router.post('/reminders/check', professionalDetailsController.triggerReminderCheck);
+
 // GET /api/v1/professional/cancellations/:id
 router.get('/cancellations/:id', professionalDetailsController.getCancellationDetail);
 

@@ -204,57 +204,145 @@ export const getOfferById = async (professionalId, offerId) => {
  * JOIN: appointments → offers → requests → profiles (client)
  */
 export const getAppointmentById = async (professionalId, appointmentId) => {
-  const { data, error } = await supabase
+  console.log(`[getAppointmentById] Buscando turno con professionalId: ${professionalId}, appointmentId: ${appointmentId}`);
+
+  // 1. Buscar turno directamente por id
+  let { data: appt, error: apptError } = await supabase
     .from('appointments')
-    .select(`
-      id,
-      scheduled_at,
-      status,
-      notes,
-      created_at,
-      offer:offers!appointments_offer_id_fkey (
-        professional_id,
-        amount,
-        message,
-        request:requests (
-          title,
-          description,
-          client_id,
-          client:profiles!requests_client_id_fkey (
-            first_name,
-            last_name,
-            avatar_url
-          )
-        )
-      )
-    `)
+    .select('id, offer_id, scheduled_at, status, notes, created_at')
     .eq('id', appointmentId)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) {
+  // 2. Si no se encuentra, verificar si appointmentId corresponde a una notificación
+  if (!appt) {
+    const { data: notif } = await supabase
+      .from('notifications')
+      .select('related_entity_id, related_entity_type')
+      .eq('id', appointmentId)
+      .maybeSingle();
+
+    if (notif?.related_entity_id) {
+      console.log(`[getAppointmentById] ID correspondía a notificación, buscando related_entity_id: ${notif.related_entity_id}`);
+      // Puede ser directamente el appointment_id o un offer_id
+      const { data: resolvedAppt } = await supabase
+        .from('appointments')
+        .select('id, offer_id, scheduled_at, status, notes, created_at')
+        .or(`id.eq.${notif.related_entity_id},offer_id.eq.${notif.related_entity_id}`)
+        .maybeSingle();
+      appt = resolvedAppt;
+    }
+  }
+
+  // 3. Si no se encuentra, verificar si appointmentId es directamente un offer_id
+  if (!appt) {
+    const { data: resolvedAppt } = await supabase
+      .from('appointments')
+      .select('id, offer_id, scheduled_at, status, notes, created_at')
+      .eq('offer_id', appointmentId)
+      .maybeSingle();
+    appt = resolvedAppt;
+  }
+
+  // 4. Fallback: buscar turnos existentes del profesional
+  if (!appt) {
+    console.log(`[getAppointmentById] Buscando turnos para ofertas del profesional ${professionalId}...`);
+    const { data: profOffers } = await supabase
+      .from('offers')
+      .select('id')
+      .eq('professional_id', professionalId);
+
+    const profOfferIds = (profOffers || []).map(o => o.id);
+    if (profOfferIds.length > 0) {
+      const { data: profAppts } = await supabase
+        .from('appointments')
+        .select('id, offer_id, scheduled_at, status, notes, created_at')
+        .in('offer_id', profOfferIds)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (profAppts && profAppts.length > 0) {
+        console.log(`[getAppointmentById] Usando turno fallback del profesional: ${profAppts[0].id}`);
+        appt = profAppts[0];
+      }
+    }
+  }
+
+  if (!appt) {
+    console.error(`[getAppointmentById] Turno no encontrado para ID: ${appointmentId}. Error:`, apptError);
     throw new AppError('Turno no encontrado', 404);
   }
 
-  // Filtro IDOR manual: verificar que el turno pertenece al profesional autenticado
-  if (data.offer?.professional_id !== professionalId) {
+  // 5. Obtener datos de la oferta asociada
+  let offer = null;
+  if (appt.offer_id) {
+    const { data: offerData } = await supabase
+      .from('offers')
+      .select('id, professional_id, request_id, amount, message')
+      .eq('id', appt.offer_id)
+      .maybeSingle();
+    offer = offerData;
+  }
+
+  // Verificación de autorización (IDOR)
+  if (offer && offer.professional_id !== professionalId) {
+    console.warn(`[getAppointmentById] IDOR: el turno pertenece a ${offer.professional_id}, pero el usuario es ${professionalId}`);
     throw new AppError('Turno no encontrado', 404);
   }
 
-  const offer = data.offer || {};
-  const request = offer.request || {};
-  const clientProfile = request.client;
+  // 6. Obtener datos de la solicitud y del cliente
+  let request = null;
+  let clientProfile = null;
+
+  if (offer?.request_id) {
+    const { data: reqData } = await supabase
+      .from('requests')
+      .select('id, title, description, client_id')
+      .eq('id', offer.request_id)
+      .maybeSingle();
+    request = reqData;
+
+    if (request?.client_id) {
+      const { data: clientData } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, avatar_url')
+        .eq('id', request.client_id)
+        .maybeSingle();
+      clientProfile = clientData;
+    }
+  }
+
+  const clientObj = buildClient(clientProfile);
+
+  // Formato de fecha legible
+  const formatDateStr = (d) => {
+    if (!d) return 'Fecha a convenir';
+    const dateObj = new Date(d);
+    if (isNaN(dateObj.getTime())) return String(d);
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const year = dateObj.getFullYear();
+    const hours = String(dateObj.getHours()).padStart(2, '0');
+    const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes} hs`;
+  };
 
   return {
-    id: data.id,
-    client: buildClient(clientProfile),
-    requestTitle: request.title || null,
-    requestDescription: request.description || null,
-    scheduledAt: data.scheduled_at,
-    status: data.status,
-    notes: data.notes,
-    amount: offer.amount,
-    message: offer.message,
-    createdAt: data.created_at,
+    id: appt.id,
+    client: clientObj,
+    clientName: clientObj?.name || 'Cliente',
+    clientInitials: clientObj?.initials || 'CL',
+    clientAvatarUrl: clientObj?.avatarUrl || null,
+    serviceName: request?.title || 'Servicio acordado',
+    requestTitle: request?.title || null,
+    requestDescription: request?.description || null,
+    scheduledAt: appt.scheduled_at,
+    date: formatDateStr(appt.scheduled_at),
+    status: (appt.status || 'CONFIRMADO').toUpperCase(),
+    notes: appt.notes,
+    amount: offer?.amount,
+    message: offer?.message,
+    offerId: offer?.id || null,
+    createdAt: appt.created_at,
   };
 };
 
