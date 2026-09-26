@@ -56,3 +56,20 @@ Se implementó la arquitectura de 3 capas (`routes`, `controllers`, `services`) 
 3. Se añadió el endpoint `POST /api/v1/client/reminders/check` en `clientNotificationRoutes.js` y `clientNotificationController.js`.
 **Pendiente:** Probar visualmente en frontend cuando el cliente abra sus notificaciones o cuando se indique avanzar con la UI.
 **Decisiones:** Se aseguró compatibilidad mapeando internamente `appointment_reminder` a `reminder` para el cliente de modo que coincida con las expectativas de la UI y los componentes existentes (`ReminderSummary.jsx`).
+
+## [25/09/2026] (Parte 2)
+**Hecho:** Conexión de punta a punta del flujo de calificación de servicio (Reviews) y finalización de turnos:
+1. `clientReviewService.js`: Se robusteció la validación desacoplada y se agregó resolución de `appointmentId` tanto desde `metadata.appointmentId` como desde `related_entity_id`, marcando la notificación como leída tras insertar la calificación.
+2. `clientNotificationService.js`: Se integró el enriquecimiento de notificaciones de tipo `rating` para inyectar datos del profesional y turno al modal de calificación del cliente (`RatingModal`).
+3. `NotificationsPage.jsx`: Se conectó `submitReviewMutation.mutate(reviewData)` al evento `onSubmitSuccess` del `RatingModal`.
+4. `professionalDetailsRoutes.js` y `professionalDetailsService.js`: Se implementó el endpoint `POST /api/v1/professional/appointments/:id/complete` que finaliza el turno (`status = 'completed'`) y genera en simultáneo la alerta de "Trabajo finalizado" (`job_finished`) para el profesional y "¡Calificá tu experiencia!" (`rating`) para el cliente.
+
+## [25/09/2026] (Parte 3)
+**Hecho:** Implementación de la notificación y detalle de calificación para el profesional (`review_received`):
+1. `backend/src/services/clientReviewService.js`: Al insertar una calificación desde el cliente (`createReview`), se genera automáticamente una notificación de tipo `review_received` para el profesional con los metadatos completos (`clientName`, `serviceName`, `rating`, `tags`, `comment`, `appointmentId`, `reviewId`).
+2. `backend/src/services/professionalDetailsService.js`: Se robusteció `getReviewById` con consultas desacopladas seguras a Supabase, resolución por ID de reseña o notificación, soporte de tags, título del servicio asociado e ID de oferta para navegación, protegiendo con validación IDOR.
+3. `frontend/src/features/notifications/services/professionalNotificationService.js`: Se agregó el método `getReviewDetail(reviewId)` para consumir `GET /api/v1/professional/reviews/:id`.
+4. `frontend/src/features/notifications/hooks/useProfessionalNotifications.js`: Se implementó la clave de query `PROF_NOTIFICATIONS_KEYS.reviewDetail`, el mapper `mapReviewDetail` y el hook `useProfessionalReviewDetailQuery(reviewId)` con stale time de 5 minutos.
+5. `frontend/src/features/notifications/pages/ReviewDetailsPage.jsx`: Se reemplazaron los datos mockeados por el hook real `useProfessionalReviewDetailQuery`, implementando los 4 estados de la interfaz (Loading, Error, Empty, Success), renderizado dinámico de avatar, estrellas, comentario, chips de etiquetas/tags y navegación contextual.
+**Pendiente:** Ninguno. Flujo completo de calificación cliente-profesional integrado de extremo a extremo.
+**Decisiones:** Se respetó estrictamente la arquitectura de 3 capas en backend y las pautas de reemplazo de mocks en frontend sin alterar componentes reutilizables ni alterar dependencias.

@@ -32,4 +32,9 @@ export const professionalNotificationService = {
     const { data } = await api.get(`/professional/reminders/${reminderId}`);
     return data?.data;
   },
+
+  getReviewDetail: async (reviewId) => {
+    const { data } = await api.get(`/professional/reviews/${reviewId}`);
+    return data?.data || data;
+  },
 };

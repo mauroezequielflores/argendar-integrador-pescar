@@ -25,6 +25,7 @@ export const PROF_NOTIFICATIONS_KEYS = {
   detail: (id) => [...PROF_NOTIFICATIONS_KEYS.all, 'detail', id],
   offerDetail: (id) => [...PROF_NOTIFICATIONS_KEYS.all, 'offer-detail', id],
   reminderDetail: (id) => [...PROF_NOTIFICATIONS_KEYS.all, 'reminder-detail', id],
+  reviewDetail: (id) => [...PROF_NOTIFICATIONS_KEYS.all, 'review-detail', id],
 };
 
 /**
@@ -202,6 +203,39 @@ export const useProfessionalReminderDetailQuery = (reminderId) => {
       return mapReminderDetail(data);
     },
     enabled: Boolean(reminderId),
+    staleTime: 1000 * 60 * 5, // 5 min
+  });
+};
+
+const mapReviewDetail = (data) => {
+  if (!data) return null;
+  const client = data.client || {};
+  const createdAt = data.createdAt ? dayjs(data.createdAt) : dayjs();
+
+  return {
+    id: data.id,
+    clientName: client.name || data.clientName || 'Cliente',
+    clientInitials: client.initials || 'CL',
+    clientAvatarUrl: client.avatarUrl || data.clientAvatarUrl || null,
+    appointmentTitle: data.appointmentTitle || data.serviceName || 'Servicio realizado',
+    rating: typeof data.rating === 'number' ? data.rating : 5,
+    reviewText: data.comment || data.reviewText || '',
+    tags: Array.isArray(data.tags) ? data.tags : [],
+    date: createdAt.format('DD/MM/YYYY'),
+    time: createdAt.format('HH:mm'),
+    offerId: data.offerId || null,
+    appointmentId: data.appointmentId || null,
+  };
+};
+
+export const useProfessionalReviewDetailQuery = (reviewId) => {
+  return useQuery({
+    queryKey: PROF_NOTIFICATIONS_KEYS.reviewDetail(reviewId),
+    queryFn: async () => {
+      const data = await professionalNotificationService.getReviewDetail(reviewId);
+      return mapReviewDetail(data);
+    },
+    enabled: Boolean(reviewId),
     staleTime: 1000 * 60 * 5, // 5 min
   });
 };

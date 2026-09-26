@@ -74,3 +74,16 @@ export const triggerReminderCheck = async (req, res, next) => {
     next(error);
   }
 };
+
+// ─── POST /professional/appointments/:id/complete ─────────────────────────────
+// Finaliza el turno y genera notificaciones para el profesional y para el cliente
+export const completeAppointment = async (req, res, next) => {
+  try {
+    const professionalId = req.user.id;
+    const { id } = req.params;
+    const result = await professionalDetailsService.completeAppointment(professionalId, id);
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};

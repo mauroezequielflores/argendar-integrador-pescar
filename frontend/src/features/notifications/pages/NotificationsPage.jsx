@@ -270,7 +270,7 @@ export default function NotificationsPage() {
             navigate(selectedRating.href || ROUTES.CLIENT_AGENDA);
           }}
           onSubmitSuccess={(reviewData) => {
-            console.log("Calificación enviada:", reviewData);
+            submitReviewMutation.mutate(reviewData);
           }}
         />
       )}

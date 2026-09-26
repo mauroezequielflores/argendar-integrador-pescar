@@ -422,32 +422,277 @@ export const getPaymentById = async (professionalId, paymentId) => {
  * JOIN: reviews → profiles (reviewer/client)
  */
 export const getReviewById = async (professionalId, reviewId) => {
-  const { data, error } = await supabase
+  // 1. Buscar la reseña directamente por id
+  let { data: review } = await supabase
     .from('reviews')
     .select(`
       id,
       rating,
       comment,
-      created_at,
-      reviewer:profiles!reviews_reviewer_id_fkey (
-        first_name,
-        last_name,
-        avatar_url
-      )
+      tags,
+      appointment_id,
+      reviewee_id,
+      reviewer_id,
+      created_at
     `)
     .eq('id', reviewId)
-    .eq('reviewee_id', professionalId)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) {
+  // 2. Si no se encuentra, verificar si reviewId corresponde al ID de una notificación
+  if (!review) {
+    const { data: notif } = await supabase
+      .from('notifications')
+      .select('id, related_entity_id, user_id')
+      .eq('id', reviewId)
+      .eq('user_id', professionalId)
+      .maybeSingle();
+
+    if (notif?.related_entity_id) {
+      const { data: resolvedReview } = await supabase
+        .from('reviews')
+        .select(`
+          id,
+          rating,
+          comment,
+          tags,
+          appointment_id,
+          reviewee_id,
+          reviewer_id,
+          created_at
+        `)
+        .eq('id', notif.related_entity_id)
+        .maybeSingle();
+      review = resolvedReview;
+    }
+  }
+
+  // IDOR check: verificar que exista y pertenezca al profesional autenticado
+  if (!review || review.reviewee_id !== professionalId) {
     throw new AppError('Reseña no encontrada', 404);
   }
 
+  // 3. Obtener datos del cliente (reviewer)
+  let reviewerProfile = null;
+  if (review.reviewer_id) {
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('first_name, last_name, avatar_url')
+      .eq('id', review.reviewer_id)
+      .maybeSingle();
+    reviewerProfile = prof;
+  }
+
+  // 4. Obtener datos del turno y de la solicitud asociada
+  let appointmentTitle = 'Servicio realizado';
+  let offerId = null;
+
+  if (review.appointment_id) {
+    const { data: appt } = await supabase
+      .from('appointments')
+      .select('id, offer_id')
+      .eq('id', review.appointment_id)
+      .maybeSingle();
+
+    if (appt?.offer_id) {
+      offerId = appt.offer_id;
+      const { data: offer } = await supabase
+        .from('offers')
+        .select('id, request_id')
+        .eq('id', appt.offer_id)
+        .maybeSingle();
+
+      if (offer?.request_id) {
+        const { data: req } = await supabase
+          .from('requests')
+          .select('id, title')
+          .eq('id', offer.request_id)
+          .maybeSingle();
+
+        if (req?.title) {
+          appointmentTitle = req.title;
+        }
+      }
+    }
+  }
+
   return {
-    id: data.id,
-    client: buildClient(data.reviewer),
-    rating: data.rating,
-    comment: data.comment,
-    createdAt: data.created_at,
+    id: review.id,
+    client: buildClient(reviewerProfile),
+    rating: review.rating,
+    comment: review.comment,
+    tags: review.tags || [],
+    appointmentId: review.appointment_id,
+    appointmentTitle,
+    offerId,
+    createdAt: review.created_at,
+  };
+};
+
+/**
+ * Marca un turno como completado / finalizado, actualiza la solicitud asociada
+ * y genera automáticamente las notificaciones:
+ * 1. Para el profesional: 'job_finished' (Trabajo finalizado, maleta negra).
+ * 2. Para el cliente: 'rating' (¡Calificá tu experiencia!, estrella dorada).
+ * 
+ * @param {string} professionalId - UUID del profesional autenticado
+ * @param {string} appointmentId - UUID del appointment (o id de notificación)
+ * @returns {Promise<Object>} { success: true, appointmentId, status: 'completed' }
+ */
+export const completeAppointment = async (professionalId, appointmentId) => {
+  // 1. Resolver el turno
+  let appt = null;
+  const { data: directAppt } = await supabase
+    .from('appointments')
+    .select('id, offer_id, scheduled_at, status, notes')
+    .eq('id', appointmentId)
+    .maybeSingle();
+
+  if (directAppt) {
+    appt = directAppt;
+  } else {
+    // Si vino el ID de la notificación
+    const { data: notif } = await supabase
+      .from('notifications')
+      .select('related_entity_id')
+      .eq('id', appointmentId)
+      .maybeSingle();
+
+    if (notif?.related_entity_id) {
+      const { data: resolvedAppt } = await supabase
+        .from('appointments')
+        .select('id, offer_id, scheduled_at, status, notes')
+        .or(`id.eq.${notif.related_entity_id},offer_id.eq.${notif.related_entity_id}`)
+        .maybeSingle();
+      appt = resolvedAppt;
+    }
+  }
+
+  if (!appt) {
+    throw new AppError('Turno no encontrado', 404);
+  }
+
+  // 2. Obtener oferta y validar IDOR
+  const { data: offer } = await supabase
+    .from('offers')
+    .select('id, professional_id, request_id')
+    .eq('id', appt.offer_id)
+    .maybeSingle();
+
+  if (!offer || offer.professional_id !== professionalId) {
+    throw new AppError('Turno no encontrado', 404);
+  }
+
+  // 3. Obtener solicitud y cliente
+  const { data: request } = await supabase
+    .from('requests')
+    .select('id, title, client_id')
+    .eq('id', offer.request_id)
+    .maybeSingle();
+
+  const clientId = request?.client_id;
+  const serviceName = request?.title || 'Servicio completado';
+  const formattedDate = formatDate(appt.scheduled_at);
+
+  // 4. Obtener perfiles
+  const userIds = [professionalId, clientId].filter(Boolean);
+  let profProfile = null;
+  let clientProfile = null;
+
+  if (userIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, avatar_url')
+      .in('id', userIds);
+
+    profProfile = profiles?.find((p) => p.id === professionalId) || null;
+    clientProfile = profiles?.find((p) => p.id === clientId) || null;
+  }
+
+  const profName = profProfile ? `${profProfile.first_name || ''} ${profProfile.last_name || ''}`.trim() : 'Profesional';
+  const profParts = profName.split(' ').filter(Boolean);
+  const profInitials = profParts.length >= 2 ? `${profParts[0][0]}${profParts[1][0]}`.toUpperCase() : profName.slice(0, 2).toUpperCase();
+
+  const clientName = clientProfile ? `${clientProfile.first_name || ''} ${clientProfile.last_name || ''}`.trim() : 'Cliente';
+
+  // 5. Actualizar estado del appointment y de la request
+  await supabase
+    .from('appointments')
+    .update({ status: 'completed' })
+    .eq('id', appt.id);
+
+  if (request?.id) {
+    await supabase
+      .from('requests')
+      .update({ status: 'completed' })
+      .eq('id', request.id);
+  }
+
+  // 6. Notificación para el Profesional (job_finished)
+  const { data: existingProfNotif } = await supabase
+    .from('notifications')
+    .select('id')
+    .eq('user_id', professionalId)
+    .eq('related_entity_id', appt.id)
+    .eq('type', 'job_finished')
+    .maybeSingle();
+
+  if (!existingProfNotif) {
+    await supabase.from('notifications').insert({
+      user_id: professionalId,
+      type: 'job_finished',
+      title: 'Trabajo finalizado',
+      description: 'Has completado el servicio con éxito.',
+      href: '/professional/agenda',
+      related_entity_id: appt.id,
+      related_entity_type: 'appointment',
+      is_read: false,
+      metadata: {
+        clientName,
+        serviceName,
+        status: 'FINALIZADO',
+        date: formattedDate,
+      },
+    });
+  }
+
+  // 7. Notificación para el Cliente (rating)
+  if (clientId) {
+    const { data: existingClientNotif } = await supabase
+      .from('notifications')
+      .select('id')
+      .eq('user_id', clientId)
+      .eq('related_entity_id', appt.id)
+      .eq('type', 'rating')
+      .maybeSingle();
+
+    if (!existingClientNotif) {
+      await supabase.from('notifications').insert({
+        user_id: clientId,
+        type: 'rating',
+        title: '¡Calificá tu experiencia!',
+        description: `¿Cómo fue el servicio con ${profName}?`,
+        href: '/client/agenda',
+        related_entity_id: appt.id,
+        related_entity_type: 'appointment',
+        is_read: false,
+        metadata: {
+          professionalName: profName,
+          professionalInitials: profInitials,
+          avatarUrl: profProfile?.avatar_url || null,
+          professionalAvatarUrl: profProfile?.avatar_url || null,
+          serviceName,
+          status: 'FINALIZADO',
+          date: formattedDate,
+          timeAgo: 'Hoy',
+          appointmentId: appt.id,
+        },
+      });
+    }
+  }
+
+  return {
+    success: true,
+    appointmentId: appt.id,
+    status: 'completed',
   };
 };

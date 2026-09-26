@@ -165,10 +165,10 @@ export const getNotifications = async (userId, page = 1, limit = 10) => {
     }
   }
 
-  // 3b. Enriquecer notificaciones de recordatorio (turnos) con datos reales de la BD
+  // 3b. Enriquecer notificaciones de recordatorio y calificación (turnos) con datos reales de la BD
   const apptIds = (data || [])
-    .filter(n => (n.tipo === 'reminder' || n.tipo === 'appointment_reminder' || n.related_entity_type === 'appointment') && n.related_entity_id)
-    .map(n => n.related_entity_id);
+    .filter(n => (n.tipo === 'reminder' || n.tipo === 'appointment_reminder' || n.tipo === 'rating' || n.related_entity_type === 'appointment') && (n.related_entity_id || n.metadata?.appointmentId))
+    .map(n => n.related_entity_id || n.metadata?.appointmentId);
 
   let apptsMap = {};
   if (apptIds.length > 0) {
@@ -210,6 +210,8 @@ export const getNotifications = async (userId, page = 1, limit = 10) => {
           const profName = prof ? `${prof.first_name || ''} ${prof.last_name || ''}`.trim() : 'Profesional';
           const parts = profName.split(' ').filter(Boolean);
           const profInitials = parts.length >= 2 ? `${parts[0][0]}${parts[1][0]}`.toUpperCase() : profName.slice(0, 2).toUpperCase();
+          const isCompleted = ['completed', 'finalizado', 'COMPLETED', 'FINALIZADO'].includes(appt.status);
+          const displayStatus = isCompleted ? 'FINALIZADO' : (appt.status === 'confirmed' ? 'CONFIRMADO' : (appt.status || 'CONFIRMADO')).toUpperCase();
 
           apptsMap[appt.id] = {
             professionalName: profName,
@@ -217,9 +219,10 @@ export const getNotifications = async (userId, page = 1, limit = 10) => {
             avatarUrl: prof?.avatar_url || null,
             professionalAvatarUrl: prof?.avatar_url || null,
             serviceName: req?.title || 'Servicio acordado',
-            status: (appt.status === 'confirmed' ? 'CONFIRMADO' : (appt.status || 'CONFIRMADO')).toUpperCase(),
+            status: displayStatus,
             date: formatDateStr(appt.scheduled_at),
             timeAgo: 'Hoy',
+            appointmentId: appt.id,
             href: '/client/agenda'
           };
         });
@@ -230,7 +233,7 @@ export const getNotifications = async (userId, page = 1, limit = 10) => {
   // 4. Mapear datos con toda la información necesaria para el modal y la card
   const formattedData = (data || []).map((notification) => {
     const resolvedOfferData = offersMap[notification.related_entity_id] || defaultClientOffer || {};
-    const resolvedApptData = apptsMap[notification.related_entity_id] || {};
+    const resolvedApptData = apptsMap[notification.related_entity_id] || apptsMap[notification.metadata?.appointmentId] || {};
     const finalMetadata = {
       ...resolvedOfferData,
       ...resolvedApptData,
