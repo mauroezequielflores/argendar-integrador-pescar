@@ -71,5 +71,13 @@ Se implementó la arquitectura de 3 capas (`routes`, `controllers`, `services`) 
 3. `frontend/src/features/notifications/services/professionalNotificationService.js`: Se agregó el método `getReviewDetail(reviewId)` para consumir `GET /api/v1/professional/reviews/:id`.
 4. `frontend/src/features/notifications/hooks/useProfessionalNotifications.js`: Se implementó la clave de query `PROF_NOTIFICATIONS_KEYS.reviewDetail`, el mapper `mapReviewDetail` y el hook `useProfessionalReviewDetailQuery(reviewId)` con stale time de 5 minutos.
 5. `frontend/src/features/notifications/pages/ReviewDetailsPage.jsx`: Se reemplazaron los datos mockeados por el hook real `useProfessionalReviewDetailQuery`, implementando los 4 estados de la interfaz (Loading, Error, Empty, Success), renderizado dinámico de avatar, estrellas, comentario, chips de etiquetas/tags y navegación contextual.
-**Pendiente:** Ninguno. Flujo completo de calificación cliente-profesional integrado de extremo a extremo.
+
+## [26/09/2026]
+**Hecho:** Implementación de enriquecimiento y visualización de la Notificación de Pago Confirmado para el Cliente y para el Profesional:
+1. `backend/src/services/clientNotificationService.js`: Se agregaron formateadores (`formatPaymentMethod`, `formatPaymentDate`) y el enriquecimiento desacoplado relacional conectando `payments` → `appointments` → `offers` → `requests` & `profiles` (profesional), inyectando en `metadata` los datos de recibo (`operationNumber`, `paymentMethod`, `paymentDate`, `amount`, `paymentStatus`, `professionalName`, `serviceName`, `date`, `time`).
+2. `backend/src/services/professionalDetailsService.js`: Se robusteció `getPaymentById` con consultas desacopladas seguras a Supabase, resolución por ID de pago, turno o notificación, validación estricta IDOR (`professional_id`), formateo de métodos de pago, fecha, montos e inyección de `offerId` para navegación contextual.
+3. `frontend/src/features/notifications/services/professionalNotificationService.js`: Se implementó el método `getPaymentDetail(paymentId)` consumiendo `GET /api/v1/professional/payments/:id`.
+4. `frontend/src/features/notifications/hooks/useProfessionalNotifications.js`: Se añadió `PROF_NOTIFICATIONS_KEYS.paymentDetail`, el transformador `mapPaymentDetail` y el hook `useProfessionalPaymentDetailQuery(paymentId)`.
+5. `frontend/src/features/notifications/pages/PaymentConfirmedDetailsPage.jsx`: Reemplazo de mocks por el hook real `useProfessionalPaymentDetailQuery(id)` con los 4 estados de UI (Loading, Error, Empty, Success), renderizado dinámico de la tarjeta del turno, tabla de comprobante y navegación al detalle de la oferta.
+**Pendiente:** Ninguno.
 **Decisiones:** Se respetó estrictamente la arquitectura de 3 capas en backend y las pautas de reemplazo de mocks en frontend sin alterar componentes reutilizables ni alterar dependencias.

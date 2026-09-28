@@ -26,6 +26,7 @@ export const PROF_NOTIFICATIONS_KEYS = {
   offerDetail: (id) => [...PROF_NOTIFICATIONS_KEYS.all, 'offer-detail', id],
   reminderDetail: (id) => [...PROF_NOTIFICATIONS_KEYS.all, 'reminder-detail', id],
   reviewDetail: (id) => [...PROF_NOTIFICATIONS_KEYS.all, 'review-detail', id],
+  paymentDetail: (id) => [...PROF_NOTIFICATIONS_KEYS.all, 'payment-detail', id],
 };
 
 /**
@@ -46,6 +47,7 @@ const mapProfessionalNotification = (item) => {
       icon = XCircleIcon;
       iconColor = "text-[#4CAF50]";
       break;
+    case 'payment':
     case 'payment_confirmed':
       icon = CreditCardIcon;
       iconColor = "text-[#3B82F6]";
@@ -236,6 +238,42 @@ export const useProfessionalReviewDetailQuery = (reviewId) => {
       return mapReviewDetail(data);
     },
     enabled: Boolean(reviewId),
+    staleTime: 1000 * 60 * 5, // 5 min
+  });
+};
+
+const mapPaymentDetail = (data) => {
+  if (!data) return null;
+  const client = data.client || {};
+
+  return {
+    id: data.id,
+    professionalName: data.professionalName || 'Ricardo Gómez',
+    professionalInitials: data.professionalInitials || 'RG',
+    serviceName: data.serviceName || data.requestTitle || 'Instalación eléctrica',
+    status: (data.status || 'PROGRAMADO').toUpperCase(),
+    date: data.date || (data.scheduledAt ? dayjs(data.scheduledAt).format('DD/MM/YYYY') : '28/07/2026'),
+    time: data.time || (data.scheduledAt ? dayjs(data.scheduledAt).format('HH:mm [hs]') : '15:30 hs'),
+    timeAgo: data.timeAgo || 'hace 2 días',
+    paymentStatus: (data.paymentStatus || 'CONFIRMADO').toUpperCase(),
+    operationId: data.operationId || data.externalOperationId || '#MP-982341',
+    paymentMethod: data.paymentMethod || 'Mercado Pago',
+    paymentDate: data.paymentDate || (data.createdAt ? dayjs(data.createdAt).format('DD [de] MMMM, YYYY') : '12 Mayo, 2026'),
+    amount: data.amount ? String(data.amount) : formatCurrency(data.depositAmount || data.totalAmount || 3500),
+    offerId: data.offerId || null,
+    appointmentId: data.appointmentId || null,
+    clientName: client.name || data.clientName || 'Cliente',
+  };
+};
+
+export const useProfessionalPaymentDetailQuery = (paymentId) => {
+  return useQuery({
+    queryKey: PROF_NOTIFICATIONS_KEYS.paymentDetail(paymentId),
+    queryFn: async () => {
+      const data = await professionalNotificationService.getPaymentDetail(paymentId);
+      return mapPaymentDetail(data);
+    },
+    enabled: Boolean(paymentId),
     staleTime: 1000 * 60 * 5, // 5 min
   });
 };

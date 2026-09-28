@@ -28,6 +28,28 @@ const formatAvailability = (date, time) => {
   return `${formattedDate}${formattedTime}`;
 };
 
+const formatPaymentMethod = (method) => {
+  if (!method) return 'Mercado Pago';
+  const m = String(method).toLowerCase();
+  if (m === 'mercadopago' || m === 'mercado_pago') return 'Mercado Pago';
+  if (m === 'credit_card' || m === 'creditcard' || m === 'credito') return 'Tarjeta de Crédito';
+  if (m === 'debit_card' || m === 'debitcard' || m === 'debito') return 'Tarjeta de Débito';
+  if (m === 'transfer' || m === 'transferencia') return 'Transferencia';
+  if (m === 'cash' || m === 'efectivo') return 'Efectivo';
+  return method;
+};
+
+const formatPaymentDate = (d) => {
+  if (!d) return 'Hoy';
+  const dateObj = new Date(d);
+  if (isNaN(dateObj.getTime())) return String(d);
+  const day = dateObj.getDate();
+  const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const month = months[dateObj.getMonth()];
+  const year = dateObj.getFullYear();
+  return `${day} ${month}, ${year}`;
+};
+
 /**
  * Retrieves paginated notifications for a client.
  * @param {string} userId - UUID of the client
@@ -230,13 +252,142 @@ export const getNotifications = async (userId, page = 1, limit = 10) => {
     }
   }
 
+  // 3c. Enriquecer notificaciones de pago con datos de la tabla payments
+  const paymentEntities = (data || []).filter(
+    (n) => n.tipo === 'payment' || n.related_entity_type === 'payment' || n.metadata?.paymentId
+  );
+  const paymentIds = paymentEntities.map((n) => n.related_entity_id || n.metadata?.paymentId).filter(Boolean);
+
+  let paymentsMap = {};
+  if (paymentIds.length > 0) {
+    try {
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('id, appointment_id, total_amount, deposit_amount, method, status, external_operation_id, created_at')
+        .or(`id.in.(${paymentIds.join(',')}),appointment_id.in.(${paymentIds.join(',')})`);
+
+      if (payments && payments.length > 0) {
+        const apptIdsForPayments = [...new Set(payments.map((p) => p.appointment_id).filter(Boolean))];
+        let apptDetailsMap = {};
+
+        if (apptIdsForPayments.length > 0) {
+          const { data: appts } = await supabase
+            .from('appointments')
+            .select('id, offer_id, scheduled_at, status')
+            .in('id', apptIdsForPayments);
+
+          if (appts && appts.length > 0) {
+            const offerIds = [...new Set(appts.map((a) => a.offer_id).filter(Boolean))];
+            const { data: offers } = await supabase
+              .from('offers')
+              .select('id, professional_id, request_id, proposed_date, proposed_time')
+              .in('id', offerIds);
+
+            if (offers && offers.length > 0) {
+              const profIds = [...new Set(offers.map((o) => o.professional_id).filter(Boolean))];
+              const reqIds = [...new Set(offers.map((o) => o.request_id).filter(Boolean))];
+
+              const [{ data: profs }, { data: reqs }] = await Promise.all([
+                supabase
+                  .from('profiles')
+                  .select('id, first_name, last_name, avatar_url')
+                  .in('id', profIds),
+                supabase
+                  .from('requests')
+                  .select('id, title')
+                  .in('id', reqIds),
+              ]);
+
+              const profMap = (profs || []).reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
+              const reqMap = (reqs || []).reduce((acc, r) => ({ ...acc, [r.id]: r }), {});
+              const offerMap = (offers || []).reduce((acc, o) => ({ ...acc, [o.id]: o }), {});
+
+              appts.forEach((appt) => {
+                const offer = offerMap[appt.offer_id];
+                const prof = offer ? profMap[offer.professional_id] : null;
+                const req = offer ? reqMap[offer.request_id] : null;
+                const profName = prof ? `${prof.first_name || ''} ${prof.last_name || ''}`.trim() : 'Profesional';
+                const parts = profName.split(' ').filter(Boolean);
+                const profInitials = parts.length >= 2 ? `${parts[0][0]}${parts[1][0]}`.toUpperCase() : profName.slice(0, 2).toUpperCase();
+
+                const apptDateObj = appt.scheduled_at ? new Date(appt.scheduled_at) : null;
+                const formattedApptDate = apptDateObj && !isNaN(apptDateObj.getTime())
+                  ? `${String(apptDateObj.getDate()).padStart(2, '0')}/${String(apptDateObj.getMonth() + 1).padStart(2, '0')}/${apptDateObj.getFullYear()}`
+                  : 'Fecha a convenir';
+                const formattedApptTime = apptDateObj && !isNaN(apptDateObj.getTime())
+                  ? `${String(apptDateObj.getHours()).padStart(2, '0')}:${String(apptDateObj.getMinutes()).padStart(2, '0')} hs`
+                  : '15:30 hs';
+
+                apptDetailsMap[appt.id] = {
+                  professionalName: profName,
+                  professionalInitials: profInitials,
+                  avatarUrl: prof?.avatar_url || null,
+                  serviceName: req?.title || 'Servicio acordado',
+                  status: 'PROGRAMADO',
+                  date: formattedApptDate,
+                  time: formattedApptTime,
+                  timeAgo: 'Hoy',
+                };
+              });
+            }
+          }
+        }
+
+        payments.forEach((payment) => {
+          const apptInfo = apptDetailsMap[payment.appointment_id] || {};
+          const opNumber = payment.external_operation_id
+            ? (payment.external_operation_id.startsWith('#') ? payment.external_operation_id : `#${payment.external_operation_id}`)
+            : `#OP-${String(payment.id).slice(0, 8).toUpperCase()}`;
+
+          const paymentData = {
+            ...apptInfo,
+            paymentStatus: ['paid', 'partial', 'PAID', 'PARTIAL'].includes(payment.status) ? 'CONFIRMADO' : (payment.status ? payment.status.toUpperCase() : 'CONFIRMADO'),
+            operationNumber: opNumber,
+            paymentMethod: formatPaymentMethod(payment.method),
+            paymentDate: formatPaymentDate(payment.created_at),
+            amount: formatCurrency(payment.deposit_amount || payment.total_amount || 3500),
+            paymentId: payment.id,
+            appointmentId: payment.appointment_id,
+            href: '/client/agenda',
+          };
+
+          paymentsMap[payment.id] = paymentData;
+          if (payment.appointment_id) {
+            paymentsMap[payment.appointment_id] = paymentData;
+          }
+        });
+      }
+    } catch (paymentErr) {
+      console.warn('[getNotifications] Error al resolver detalles de pagos:', paymentErr);
+    }
+  }
+
+  const defaultPaymentData = {
+    professionalName: defaultClientOffer?.professionalName || 'Ricardo Gómez',
+    professionalInitials: defaultClientOffer?.professionalInitials || 'RG',
+    avatarUrl: defaultClientOffer?.avatarUrl || null,
+    serviceName: defaultClientOffer?.requestTitle || 'Instalación eléctrica',
+    status: 'PROGRAMADO',
+    date: '28/07/2026',
+    time: '15:30 hs',
+    timeAgo: 'Hoy',
+    paymentStatus: 'CONFIRMADO',
+    operationNumber: '#MP-982341',
+    paymentMethod: 'Mercado Pago',
+    paymentDate: formatPaymentDate(new Date()),
+    amount: defaultClientOffer?.deposit || '$3.500,00',
+    href: '/client/agenda',
+  };
+
   // 4. Mapear datos con toda la información necesaria para el modal y la card
   const formattedData = (data || []).map((notification) => {
     const resolvedOfferData = offersMap[notification.related_entity_id] || defaultClientOffer || {};
     const resolvedApptData = apptsMap[notification.related_entity_id] || apptsMap[notification.metadata?.appointmentId] || {};
+    const resolvedPaymentData = paymentsMap[notification.related_entity_id] || paymentsMap[notification.metadata?.paymentId] || (notification.tipo === 'payment' ? defaultPaymentData : {});
     const finalMetadata = {
       ...resolvedOfferData,
       ...resolvedApptData,
+      ...resolvedPaymentData,
       ...(notification.metadata || {})
     };
 

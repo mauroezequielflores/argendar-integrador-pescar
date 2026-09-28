@@ -37,4 +37,9 @@ export const professionalNotificationService = {
     const { data } = await api.get(`/professional/reviews/${reviewId}`);
     return data?.data || data;
   },
+
+  getPaymentDetail: async (paymentId) => {
+    const { data } = await api.get(`/professional/payments/${paymentId}`);
+    return data?.data || data;
+  },
 };
