@@ -38,7 +38,8 @@ class OffersController {
   async getPendingProfessionalOffers(req, res, next) {
     try {
       const professionalId = req.user.id;
-      const offers = await OffersService.getPendingProfessionalOffers(professionalId);
+      const { sort } = req.query;
+      const offers = await OffersService.getPendingProfessionalOffers(professionalId, sort);
       
       return res.status(200).json({
         success: true,

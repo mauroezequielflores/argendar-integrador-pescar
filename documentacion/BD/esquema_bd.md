@@ -11,14 +11,14 @@ El proyecto Argendar es una plataforma que conecta clientes con profesionales de
 #### `profiles`
 Tabla principal de usuarios que se vincula con la tabla `auth.users` de Supabase.
 - **Campos clave:** `id`, `role` (enum: `client`, `professional`, `administrator`), `first_name`, `last_name`, `status` (enum: `active`, `disabled`, `deleted`).
-- **Verificaciones y datos personales:** `dni`, `phone`, `location`, `dni_verified`, `phone_verified`.
+- **Verificaciones y datos personales:** `dni`, `phone`, `location`, `latitude`, `longitude`, `dni_verified`, `phone_verified`.
 - **Configuraciones:** `email_alerts`, `phone_alerts`.
 
 #### `professional_profiles`
 Información detallada exclusiva para usuarios con rol `professional`.
 - **Campos clave:** `profile_id` (FK a `profiles.id`), `category_id` (FK a `service_categories.id`).
 - **Detalles laborales:** `hourly_rate`, `headline`, `skills` (JSONB), `license_number`.
-- **Métricas y alcance:** `service_area`, `coverage_radius_km`, `rating_avg`, `reviews_count`, `is_verified`.
+- **Métricas y alcance:** `service_area`, `coverage_radius_km`, `latitude`, `longitude`, `rating_avg`, `reviews_count`, `is_verified`.
 
 #### `professional_availability`
 Disponibilidad horaria de los profesionales.
@@ -79,6 +79,16 @@ Calificaciones y comentarios dejados de un usuario a otro (generalmente de clien
 Sistema de alertas in-app para los usuarios.
 - **Campos clave:** `user_id`, `type`, `title`, `description`, `is_read`.
 - **Relaciones dinámicas:** `related_entity_id`, `related_entity_type`, `metadata` (JSONB).
+
+### 6. Funciones de Base de Datos (RPC)
+
+#### `calculate_distance`
+Calcula la distancia en kilómetros entre dos puntos geográficos usando la fórmula de Haversine.
+- **Parámetros:** `lat1`, `lon1`, `lat2`, `lon2` (numeric)
+
+#### `get_marketplace_requests`
+Retorna las solicitudes abiertas (`published`) filtradas para un profesional específico, devolviendo únicamente aquellas cuyo `latitude` y `longitude` se encuentren dentro del `coverage_radius_km` de dicho profesional.
+- **Parámetros:** `p_professional_id`, `p_limit`, `p_offset`, `p_search`, `p_categories`
 
 ---
 

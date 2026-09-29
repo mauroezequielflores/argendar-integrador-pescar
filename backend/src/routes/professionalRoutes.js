@@ -20,6 +20,8 @@ router.patch('/profile/settings', validateRequest(updateProfessionalSettingsSche
 
 router.get('/appointments', validateRequest(getAgendaAppointmentsSchema), AppointmentsController.list);
 
+router.get('/appointments/:id', AppointmentsController.getById);
+
 router.post(
   '/appointments/:id/confirm-completion',
   AppointmentsController.confirmCompletion

@@ -103,7 +103,9 @@ class OffersService {
     return appointmentId;
   }
 
-  async getPendingProfessionalOffers(professionalId) {
+  async getPendingProfessionalOffers(professionalId, sort = 'newest') {
+    const ascending = sort === 'oldest';
+    
     const { data, error } = await supabase
       .from('offers')
       .select(`
@@ -117,7 +119,7 @@ class OffersService {
       `)
       .eq('professional_id', professionalId)
       .eq('status', 'pending')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending });
 
     if (error) {
       throw new AppError(`Error al obtener ofertas pendientes: ${error.message}`, 500, 'DB_ERROR');

@@ -1,6 +1,6 @@
--- MIGRATION 003: Location & Radius Filtering
+/* MIGRATION 003: Location & Radius Filtering */
 
--- 1. Agregar latitude y longitude a PROFILES si no existen
+/* 1. Agregar latitude y longitude a PROFILES si no existen */
 DO $$ 
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='profiles' AND column_name='latitude') THEN
@@ -11,7 +11,7 @@ BEGIN
     END IF;
 END $$;
 
--- 2. Asegurarse de que professional_profiles tenga coverage_radius_km y latitude/longitude si hiciera falta.
+/* 2. Asegurarse de que professional_profiles tenga coverage_radius_km y latitude/longitude si hiciera falta. */
 DO $$ 
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='professional_profiles' AND column_name='coverage_radius_km') THEN
@@ -27,7 +27,7 @@ BEGIN
     END IF;
 END $$;
 
--- 3. Crear Función de Haversine para calcular distancia (Devuelve KM)
+/* 3. Crear Función de Haversine para calcular distancia (Devuelve KM) */
 CREATE OR REPLACE FUNCTION public.calculate_distance(
     lat1 numeric, 
     lon1 numeric, 
@@ -37,7 +37,7 @@ CREATE OR REPLACE FUNCTION public.calculate_distance(
 RETURNS numeric 
 LANGUAGE plpgsql IMMUTABLE AS $$
 DECLARE
-    radius_earth numeric := 6371; -- Radio de la tierra en KM
+    radius_earth numeric := 6371; /* Radio de la tierra en KM */
     rad_lat1 numeric;
     rad_lat2 numeric;
     delta_lat numeric;
@@ -49,13 +49,13 @@ BEGIN
         RETURN NULL;
     END IF;
 
-    -- Convertir a radianes
+    /* Convertir a radianes */
     rad_lat1 := radians(lat1);
     rad_lat2 := radians(lat2);
     delta_lat := radians(lat2 - lat1);
     delta_lon := radians(lon2 - lon1);
 
-    -- Fórmula de Haversine
+    /* Fórmula de Haversine */
     a := sin(delta_lat/2.0)^2 + cos(rad_lat1) * cos(rad_lat2) * sin(delta_lon/2.0)^2;
     c := 2.0 * asin(sqrt(a));
     
@@ -63,8 +63,8 @@ BEGIN
 END;
 $$;
 
--- 4. Crear Función RPC para filtrar Requests por distancia (Marketplace)
--- Devuelve las requests que caen dentro del 'coverage_radius_km' del profesional pasado por parámetro
+/* 4. Crear Función RPC para filtrar Requests por distancia (Marketplace) */
+/* Devuelve las requests que caen dentro del coverage_radius_km del profesional */
 CREATE OR REPLACE FUNCTION public.get_marketplace_requests(
     p_professional_id uuid,
     p_limit int DEFAULT 20,
@@ -92,13 +92,13 @@ DECLARE
     prof_lon numeric;
     prof_radius numeric;
 BEGIN
-    -- Obtener datos del profesional
+    /* Obtener datos del profesional */
     SELECT latitude, longitude, coverage_radius_km 
     INTO prof_lat, prof_lon, prof_radius
     FROM public.professional_profiles
     WHERE profile_id = p_professional_id;
 
-    -- Si el profesional no tiene coordenadas o radio, retorna vacio
+    /* Si el profesional no tiene coordenadas o radio, retorna vacio */
     IF prof_lat IS NULL OR prof_lon IS NULL OR prof_radius IS NULL THEN
         RETURN;
     END IF;
@@ -120,7 +120,7 @@ BEGIN
     FROM public.requests r
     JOIN public.profiles p ON p.id = r.client_id
     JOIN public.service_categories cat ON cat.id = r.category_id
-    WHERE r.status = 'published' -- En MarketplaceService se usa REQUEST_STATUS.PUBLISHED que usualmente es 'published' o 'open'. Hay que usar la de la DB.
+    WHERE r.status = 'open' /* En MarketplaceService se usa REQUEST_STATUS.PUBLISHED que usualmente es 'published' o 'open'. */
       AND r.client_id != p_professional_id 
       AND (p_categories IS NULL OR cat.name = ANY(p_categories))
       AND (p_search IS NULL OR r.title ILIKE '%' || p_search || '%' OR r.description ILIKE '%' || p_search || '%')

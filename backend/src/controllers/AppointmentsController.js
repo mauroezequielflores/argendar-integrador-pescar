@@ -22,10 +22,11 @@ class AppointmentsController {
 
   async getById(req, res, next) {
     try {
-      const clientId = req.user.id;
+      const userId = req.user.id;
+      const role = req.user.role;
       const { id } = req.params;
 
-      const result = await AppointmentsService.getAppointmentById(clientId, id);
+      const result = await AppointmentsService.getAppointmentById(userId, id, role);
 
       return res.status(200).json(result);
     } catch (error) {

@@ -12,8 +12,12 @@ export const createRequestStep1Schema = z.object({
 });
 
 export const createRequestStep2Schema = z.object({
-  address: z.string().min(5, "Debes ingresar una dirección válida"),
+  address: z.string().min(5, "Debes seleccionar una dirección válida"),
   apartment: z.string().optional(),
   zipCode: z.string().optional(),
   additionalDetails: z.string().min(1, "Debes agregar alguna indicación"),
+  latitude: z.number({ invalid_type_error: "Debes seleccionar una ubicación del mapa" }).nullable().refine((val) => val !== null, "Ubicación inválida"),
+  longitude: z.number({ invalid_type_error: "Debes seleccionar una ubicación del mapa" }).nullable().refine((val) => val !== null, "Ubicación inválida"),
+  city: z.string().optional(),
+  neighborhood: z.string().optional(),
 });

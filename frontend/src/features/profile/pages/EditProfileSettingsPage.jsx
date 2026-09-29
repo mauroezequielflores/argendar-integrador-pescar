@@ -10,6 +10,7 @@ import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import InfoAlert from "../../../components/ui/InfoAlert";
 import Loader from "../../../components/ui/Loader";
 import Button from "../../../components/ui/Button";
+import AddressAutocomplete from "../../../components/ui/AddressAutocomplete";
 import { api } from "../../../libs/axios";
 
 const PROFESIONES = ["Plomería", "Electricidad", "Frigorista"];
@@ -203,6 +204,9 @@ export default function EditProfileSettingsPage() {
     lastName: "",
     dni: "",
     location: "",
+    latitude: null,
+    longitude: null,
+    coverageRadiusKm: 10,
     phone: "",
     email: "",
     emailAlerts: true,
@@ -224,6 +228,9 @@ export default function EditProfileSettingsPage() {
         lastName: personalInfo?.lastName || "",
         dni: personalInfo?.dni || "",
         location: loc?.address || "",
+        latitude: loc?.latitude || null,
+        longitude: loc?.longitude || null,
+        coverageRadiusKm: loc?.coverageRadiusKm || 10,
         email: accountData?.email || "",
         phone: accountData?.phone || "",
         emailAlerts: true, // Valores por defecto o del API si existen
@@ -243,10 +250,16 @@ export default function EditProfileSettingsPage() {
       lastName: form.lastName,
       dni: form.dni,
       location: form.location,
+      latitude: form.latitude,
+      longitude: form.longitude,
       phone: form.phone,
       emailAlerts: form.emailAlerts,
       phoneAlerts: form.phoneAlerts
     };
+    
+    if (role === "professional") {
+      payload.coverageRadiusKm = form.coverageRadiusKm;
+    }
 
     updateSettingsMutation.mutate({ role, payload }, {
       onSuccess: () => {
@@ -349,24 +362,45 @@ export default function EditProfileSettingsPage() {
         {/* CA03 — Ubicación */}
         <div className="flex flex-col gap-4">
           <SectionHeader
-            title="Ubicación"
-            description="Seleccionar una ubicación en nuestro mapa:"
-            action={
-              <button
-                type="button"
-                title="Editar ubicación (futura integración Google Maps)"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] border border-[#3a3a3a] bg-[#323232] text-[#A8A8AA] transition-colors hover:border-[#F78736] hover:text-white"
-              >
-                <PencilSquareIcon className="h-4 w-4" />
-              </button>
-            }
+            title="Ubicación Base"
+            description="Buscá y seleccioná tu dirección exacta en el mapa."
           />
-          <EditableField
-            label="Dirección"
-            value={form.location}
-            onChange={set("location")}
-            placeholder="Ej: Buenos Aires, Argentina"
+          <AddressAutocomplete
+            label=""
+            defaultValue={form.location}
+            onAddressSelect={({ address, lat, lng }) => {
+              set("location")(address);
+              set("latitude")(lat);
+              set("longitude")(lng);
+            }}
+            showMap={true}
           />
+          
+          {prefix === "/professional" && (
+            <div className="flex flex-col gap-2 mt-4 rounded-[6px] border border-[#3a3a3a] bg-[#292929] p-5">
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm font-medium text-white">Radio de Cobertura</label>
+                <span className="text-sm font-bold text-[#F78736] bg-[#F78736]/10 px-2 py-0.5 rounded">
+                  {form.coverageRadiusKm} km
+                </span>
+              </div>
+              <p className="text-xs text-[#A8A8AA] mb-4">Definí hasta qué distancia estás dispuesto a viajar para brindar servicios.</p>
+              <input 
+                type="range" 
+                min="1" 
+                max="100" 
+                step="1"
+                value={form.coverageRadiusKm}
+                onChange={(e) => set("coverageRadiusKm")(parseInt(e.target.value, 10))}
+                className="w-full h-2 bg-[#3a3a3a] rounded-lg appearance-none cursor-pointer accent-[#F78736]"
+              />
+              <div className="flex justify-between text-[10px] text-[#A8A8AA] mt-1 font-medium">
+                <span>1 km</span>
+                <span>50 km</span>
+                <span>100 km</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* CA04 — Información profesional (SOLO PARA PROFESIONALES) */}

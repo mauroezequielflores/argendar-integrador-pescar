@@ -11,6 +11,17 @@ import {
 } from "@heroicons/react/24/outline";
 
 export default function TurnoCard({ turno, onVerDetalle }) {
+  let formattedFecha = turno.fecha;
+  let formattedHorario = turno.horario;
+  
+  if (turno.fecha && turno.fecha.includes('T')) {
+    const d = new Date(turno.fecha);
+    const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    formattedFecha = `${days[d.getDay()]} ${d.getDate()} de ${months[d.getMonth()]}`;
+    formattedHorario = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}hs`;
+  }
+
   return (
     <Card className="p-4 flex flex-col gap-4 border border-[#3a3a3a]">
       {/* Top Row */}
@@ -52,7 +63,7 @@ export default function TurnoCard({ turno, onVerDetalle }) {
           <div className="flex items-center gap-2">
             <CalendarDaysIcon className="h-4 w-4" />
             <span>Programado :</span>
-            <span className="text-white font-medium">{turno.fecha} • {turno.horario}</span>
+            <span className="text-white font-medium">{formattedFecha} {formattedHorario ? `• ${formattedHorario}` : ''}</span>
           </div>
           <span className="text-[#3a3a3a]">•</span>
           <Badge className="uppercase">{turno.categoria}</Badge>

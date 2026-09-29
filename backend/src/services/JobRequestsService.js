@@ -52,10 +52,41 @@ class JobRequestsService {
 
     // Inserción de fotos si existen
     if (photos && photos.length > 0) {
-      const photosData = photos.map((photoPath, index) => ({
-        request_id: newRequest.id,
-        storage_path: photoPath,
-        position: index
+      const photosData = await Promise.all(photos.map(async (photoBase64, index) => {
+        let finalStoragePath = photoBase64; // Fallback
+
+        // Check if it's a valid Base64 URL format
+        const matches = photoBase64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        
+        if (matches && matches.length === 3) {
+          try {
+            const mimeType = matches[1];
+            const base64Data = matches[2];
+            const buffer = Buffer.from(base64Data, 'base64');
+            const ext = mimeType.split('/')[1] || 'jpg';
+            const filename = `requests/${newRequest.id}_${index}_${Date.now()}.${ext}`;
+            
+            const { data: uploadData, error: uploadError } = await supabase
+              .storage
+              .from('request-photos')
+              .upload(filename, buffer, {
+                contentType: mimeType,
+                upsert: false
+              });
+              
+            if (!uploadError && uploadData) {
+              finalStoragePath = uploadData.path;
+            }
+          } catch (e) {
+            console.error("Error procesando imagen para storage:", e);
+          }
+        }
+
+        return {
+          request_id: newRequest.id,
+          storage_path: finalStoragePath,
+          position: index
+        };
       }));
 
       const { error: photosError } = await supabase

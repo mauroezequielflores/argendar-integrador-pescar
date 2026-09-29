@@ -71,7 +71,7 @@ function TabNav({ active, onChange }) {
   );
 }
 
-function FilterBar({ count, label }) {
+function FilterBar({ count, label, sort, onSortChange }) {
   return (
     <div className="flex items-center justify-between">
       <p className="text-sm text-white">
@@ -79,22 +79,26 @@ function FilterBar({ count, label }) {
       </p>
       <div className="flex items-center gap-2 text-sm text-[#A8A8AA]">
         Ordenar por:
-        <span className="rounded-[6px] border border-[#323232] bg-[#292929] px-3 py-1 text-white text-xs">
-          Más nuevo
-        </span>
+        <select
+          value={sort}
+          onChange={(e) => onSortChange(e.target.value)}
+          className="rounded-[6px] border border-[#323232] bg-[#292929] px-3 py-1 text-white text-xs focus:outline-none focus:border-[#F78736] appearance-none"
+        >
+          <option value="newest">Más nuevo</option>
+          <option value="oldest">Más antiguo</option>
+        </select>
       </div>
     </div>
   );
 }
 
-function FilterChips() {
+function FilterChips({ sort }) {
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs text-[#A8A8AA]">Filtros</span>
       <span className="text-xs text-[#A8A8AA]">|</span>
       <span className="flex items-center gap-1 rounded-[6px] bg-[#323232] px-2 py-1 text-xs text-white">
-        Más nuevo
-        <XMarkIcon className="h-3 w-3 text-[#A8A8AA]" />
+        {sort === "oldest" ? "Más antiguo" : "Más nuevo"}
       </span>
     </div>
   );
@@ -104,14 +108,16 @@ function FilterChips() {
 
 // ─── Paneles ─────────────────────────────────────────────────────────────────
 
-function PanelProximosTurnos({ items, onVerDetalle }) {
+function PanelProximosTurnos({ items, onVerDetalle, sort, onSortChange }) {
   return (
     <div className="flex flex-col gap-3">
       <FilterBar
         count={items.length}
-        label={items.length === 1 ? "turno encontrado" : "turnos encontradas"}
+        label={items.length === 1 ? "turno encontrado" : "turnos encontrados"}
+        sort={sort}
+        onSortChange={onSortChange}
       />
-      <FilterChips />
+      <FilterChips sort={sort} />
       <div className="rounded-[6px] border-0">
         {items.length === 0 ? (
           <EmptyState
@@ -131,7 +137,7 @@ function PanelProximosTurnos({ items, onVerDetalle }) {
   );
 }
 
-function PanelOfertas({ items, onVerDetalle, onVerMiOferta }) {
+function PanelOfertas({ items, onVerDetalle, onVerMiOferta, sort, onSortChange }) {
   const navigate = useNavigate();
 
   return (
@@ -139,8 +145,10 @@ function PanelOfertas({ items, onVerDetalle, onVerMiOferta }) {
       <FilterBar
         count={items.length}
         label={items.length === 1 ? "oferta pendiente" : "ofertas pendientes"}
+        sort={sort}
+        onSortChange={onSortChange}
       />
-      <FilterChips />
+      <FilterChips sort={sort} />
       {items.length === 0 ? (
         <div className="rounded-[6px] border border-[#323232] bg-[#292929]">
           <EmptyState
@@ -180,6 +188,7 @@ export default function ProfessionalAgendaPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState(location.state?.activeTab || "turnos");
+  const [sortOrder, setSortOrder] = useState("newest");
 
   // States for Agenda data
   const [selectedTurno, setSelectedTurno] = useState(null);
@@ -199,10 +208,10 @@ export default function ProfessionalAgendaPage() {
 
   // Fetch appointments (Próximos turnos e Historial)
   const { data: turnosData, isLoading: isLoadingTurnos } = useQuery({
-    queryKey: ["professional-appointments", activeTab],
+    queryKey: ["professional-appointments", activeTab, sortOrder],
     queryFn: async () => {
       const tabParam = activeTab === "turnos" ? "proximos" : activeTab;
-      const response = await api.get(`/professional/appointments?tab=${tabParam}`);
+      const response = await api.get(`/professional/appointments?tab=${tabParam}&sort=${sortOrder}`);
       return response.data;
     },
     enabled: activeTab === "turnos" || activeTab === "historial",
@@ -212,9 +221,9 @@ export default function ProfessionalAgendaPage() {
 
   // Fetch ofertas pendientes
   const { data: pendingOffersData, isLoading: isLoadingOffers } = useQuery({
-    queryKey: ["professional-pending-offers"],
+    queryKey: ["professional-pending-offers", sortOrder],
     queryFn: async () => {
-      const response = await api.get("/offers/professional/pending");
+      const response = await api.get(`/offers/professional/pending?sort=${sortOrder}`);
       return response.data;
     },
     enabled: activeTab === "ofertas",
@@ -330,6 +339,8 @@ export default function ProfessionalAgendaPage() {
           <PanelProximosTurnos
             items={turnos.filter(t => t.estado !== "FINALIZADO")}
             onVerDetalle={handleVerDetalle}
+            sort={sortOrder}
+            onSortChange={setSortOrder}
           />
         )
       )}
@@ -341,6 +352,8 @@ export default function ProfessionalAgendaPage() {
             items={ofertasPendientes}
             onVerDetalle={handleVerDetalleOferta}
             onVerMiOferta={handleVerMiOferta}
+            sort={sortOrder}
+            onSortChange={setSortOrder}
           />
         )
       )}
@@ -351,6 +364,8 @@ export default function ProfessionalAgendaPage() {
           <PanelProximosTurnos
             items={turnos}
             onVerDetalle={handleVerDetalle}
+            sort={sortOrder}
+            onSortChange={setSortOrder}
           />
         )
       )}

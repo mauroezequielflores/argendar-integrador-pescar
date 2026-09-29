@@ -25,14 +25,14 @@ BEGIN
     IF v_plomeria_id IS NOT NULL THEN
         INSERT INTO requests (
             client_id, category_id, title, description, status, date_preference, 
-            address, neighborhood, city, is_emergency, has_materials, 
+            address, neighborhood, city, latitude, longitude, is_emergency, has_materials, 
             installation_age, time_preference
         ) VALUES (
             v_client_id, v_plomeria_id, 
             'Reparación de pérdida en caño principal', 
             'Hay una pérdida constante de agua debajo de la mesada de la cocina. El agua se filtra por el mueble y está empezando a dañar la madera. Parece ser el caño principal que conecta con la red del edificio. Necesito un profesional con herramientas para soldar termofusión si fuera necesario.',
             'open', 'flexible',
-            'Av. Rivadavia 4500', 'Caballito', 'CABA',
+            'Av. Rivadavia 4500', 'Caballito', 'CABA', -34.6131500, -58.4418000,
             true, false, 'No estoy seguro', 'Lo antes posible'
         );
     END IF;
@@ -41,14 +41,14 @@ BEGIN
     IF v_electricidad_id IS NOT NULL THEN
         INSERT INTO requests (
             client_id, category_id, title, description, status, date_preference, 
-            address, neighborhood, city, is_emergency, has_materials, 
+            address, neighborhood, city, latitude, longitude, is_emergency, has_materials, 
             installation_age, time_preference
         ) VALUES (
             v_client_id, v_electricidad_id, 
             'Cortocircuito en tablero principal', 
             'Saltó la térmica principal y no puedo volver a dar luz. Hay olor a quemado cerca del tablero. Necesito alguien que lo revise de urgencia.',
             'open', 'urgent',
-            'Corrientes 1234', 'San Nicolás', 'CABA',
+            'Corrientes 1234', 'San Nicolás', 'CABA', -34.6037000, -58.3816000,
             true, false, 'Más de 10 años', 'Cualquier horario'
         );
     END IF;

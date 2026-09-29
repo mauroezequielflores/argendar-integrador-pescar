@@ -26,3 +26,8 @@ Se implementó la arquitectura de 3 capas (`routes`, `controllers`, `services`) 
 **Pendiente:** Conectar el Frontend restante.
 **Decisiones:** Se usaron RPCs de Postgres para realizar las escrituras multi-tabla garantizando atomicidad y consistencia en el backend. Las distancias (Google Maps) se envían de forma simulada/mock matemática hasta que se provea una API KEY oficial.
 - (Añadido) Se implementaron los endpoints correspondientes a la historia de usuario `US-client-agenda.md` bajo la ruta `/api/v1/appointments`, manejando las solapas de "solicitudes", "próximos" e "historial".
+
+## 2026-09-23
+**Hecho:** Filtro de radio para marketplace. Creación de migración 004_marketplace_requests_filter para modificar la RPC get_marketplace_requests, e integración frontend/backend para visualizar requests fuera del rango con su respectiva etiqueta visual.
+**Pendiente:** Nada pendiente sobre esta feature.
+**Decisiones:** Se modificó la RPC existente y se actualizó ProfessionalMarketplacePage.jsx y MarketplaceService.js manteniendo las 3 capas requeridas.

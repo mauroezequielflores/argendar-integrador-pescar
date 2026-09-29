@@ -4,12 +4,14 @@ import Modal from "../../../components/ui/Modal";
 import Loader from "../../../components/ui/Loader";
 import { MapPinIcon, ClockIcon, UserIcon } from "@heroicons/react/24/outline";
 
-export default function SolicitudDetailModal({ isOpen, onClose, solicitudId }) {
+export default function SolicitudDetailModal({ isOpen, onClose, solicitudId, preloadedData, readOnly = false }) {
   const navigate = useNavigate();
 
-  const { data: resultData, isLoading, isError } = useRequestDetail(isOpen ? solicitudId : null);
+  const { data: resultData, isLoading, isError } = useRequestDetail(
+    isOpen && !preloadedData ? solicitudId : null
+  );
 
-  const detail = resultData?.data;
+  const detail = preloadedData || resultData?.data;
 
   const handleCreateOffer = () => {
     navigate(`/professional/marketplace/${solicitudId}/create-offer`);
@@ -19,11 +21,11 @@ export default function SolicitudDetailModal({ isOpen, onClose, solicitudId }) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Detalle de la solicitud">
-      {isLoading ? (
+      {isLoading && !preloadedData ? (
         <div className="flex justify-center p-8">
           <Loader />
         </div>
-      ) : isError || !detail ? (
+      ) : (isError && !preloadedData) || !detail ? (
         <div className="text-red-400 p-8 text-center bg-[#292929] rounded-[6px]">
           Ocurrió un error al cargar los detalles.
         </div>
@@ -104,20 +106,22 @@ export default function SolicitudDetailModal({ isOpen, onClose, solicitudId }) {
           )}
 
           {/* Botones de acción */}
-          <div className="flex items-center justify-between gap-3 pt-4">
-            <button
-              onClick={onClose}
-              className="flex-1 bg-[#323232] text-[#A8A8AA] font-semibold py-3 rounded-[6px] transition-colors hover:bg-[#3f3f3f]"
-            >
-              Cancelar oferta
-            </button>
-            <button
-              onClick={handleCreateOffer}
-              className="flex-1 bg-[#F78736] text-white font-semibold py-3 rounded-[6px] transition-colors hover:bg-orange-500"
-            >
-              Crear una Oferta
-            </button>
-          </div>
+          {!readOnly && (
+            <div className="flex items-center justify-between gap-3 pt-4">
+              <button
+                onClick={onClose}
+                className="flex-1 bg-[#323232] text-[#A8A8AA] font-semibold py-3 rounded-[6px] transition-colors hover:bg-[#3f3f3f]"
+              >
+                Cancelar oferta
+              </button>
+              <button
+                onClick={handleCreateOffer}
+                className="flex-1 bg-[#F78736] text-white font-semibold py-3 rounded-[6px] transition-colors hover:bg-orange-500"
+              >
+                Crear una Oferta
+              </button>
+            </div>
+          )}
         </div>
       )}
     </Modal>

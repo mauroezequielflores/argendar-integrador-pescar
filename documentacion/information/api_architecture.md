@@ -86,7 +86,7 @@ Este documento sirve como referencia rápida para entender cómo se conectan los
 ## 6. Módulo de Marketplace Profesional
 - **Propósito**: Visualizar solicitudes para ofertar y proponer cotizaciones.
 - **Rutas**: `routes/professionalRoutes.js` (`/api/v1/professional`)
-  - `GET /marketplace/requests`: Listado de solicitudes con cálculo de distancias (Google Maps mock) y paginado.
+  - `GET /marketplace/requests`: Listado de solicitudes con cálculo de distancias (vía función RPC `get_marketplace_requests` en Supabase con filtro de radio Haversine) y paginado.
   - `GET /marketplace/requests/:id`: Detalle de solicitud para postulación.
   - `POST /offers`: Enviar una oferta con seña a una solicitud.
 - **Controlador**: `controllers/requestController.js` (reutilizado), `controllers/offerController.js`

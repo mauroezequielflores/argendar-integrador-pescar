@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useCrearSolicitud } from "../hooks/useAgendaQueries";
 import { 
   MapPinIcon, 
   WrenchScrewdriverIcon, 
@@ -21,9 +21,8 @@ import { useCreateRequest } from "../context/CreateRequestContext";
 import { api } from "../../../libs/axios";
 export default function CreateRequestRevisionPage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { requestData, clearRequestData } = useCreateRequest();
-  const [isPublishing, setIsPublishing] = useState(false);
+  const { mutateAsync: publicarSolicitud, isPending: isPublishing } = useCrearSolicitud();
 
   const handleEdit = (stepPath) => {
     navigate(`/client/agenda/create-request${stepPath}`);
@@ -40,24 +39,38 @@ export default function CreateRequestRevisionPage() {
 
   const handlePublish = async () => {
     try {
-      setIsPublishing(true);
+      const toBase64 = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+      });
+
+      const photosBase64 = await Promise.all(
+        (requestData.photos || []).map(async (file) => {
+          if (typeof file === 'string') return file;
+          return await toBase64(file);
+        })
+      );
+
       const payload = {
         categoryId: Number(requestData.categoryId || 1),
         title: requestData.title || "Nueva Solicitud",
         description: requestData.description + (requestData.additionalDetails ? `\n\nDetalles: ${requestData.additionalDetails}` : ''),
-        datePreference: "flexible",
-        isEmergency: requestData.isEmergency === "Sí",
-        hasMaterials: requestData.hasMaterials === "Sí",
+        datePreference: requestData.date || "flexible",
+        timePreference: requestData.time || "flexible",
+        installationAge: Number(requestData.age) || null,
+        isEmergency: requestData.isEmergency === "SI",
+        hasMaterials: requestData.hasMaterials === "SI",
         address: requestData.address || "Sin especificar",
-        neighborhood: requestData.zipCode || "Centro",
-        city: "Capital",
-        photos: requestData.photos || []
+        neighborhood: requestData.neighborhood || "",
+        city: requestData.city || "",
+        latitude: requestData.latitude || null,
+        longitude: requestData.longitude || null,
+        photos: photosBase64
       };
 
-      await api.post("/job-requests", payload);
-      
-      // Invalidar la caché para que AgendaPage vuelva a pedir los datos
-      queryClient.invalidateQueries({ queryKey: ["job-requests"] });
+      await publicarSolicitud(payload);
       
       alert("¡Solicitud publicada exitosamente en el Marketplace!");
       clearRequestData();
@@ -65,8 +78,6 @@ export default function CreateRequestRevisionPage() {
     } catch (error) {
       console.error("Error al publicar la solicitud:", error);
       alert("Ocurrió un error al intentar publicar la solicitud.");
-    } finally {
-      setIsPublishing(false);
     }
   };
 
@@ -201,11 +212,13 @@ export default function CreateRequestRevisionPage() {
             <div className="flex-1 flex flex-col gap-4 mt-1">
               <span className="text-[10px] text-[#A8A8AA] font-bold tracking-widest uppercase">FOTOS</span>
               <div className="flex flex-wrap gap-4">
-                {[1, 2, 3].map((item, idx) => (
+                {(requestData.photos && requestData.photos.length > 0) ? requestData.photos.map((file, idx) => (
                   <div key={idx} className="w-20 h-20 bg-[#323232] rounded-[8px] flex items-center justify-center overflow-hidden border border-[#3f3f3f]">
-                     <PhotoIcon className="h-8 w-8 text-[#555]" />
+                     <img src={file.preview || (typeof file === 'string' ? file : '')} alt="Preview" className="w-full h-full object-cover" />
                   </div>
-                ))}
+                )) : (
+                  <div className="text-xs text-[#A8A8AA]">Sin fotos adjuntas</div>
+                )}
               </div>
             </div>
             <button 

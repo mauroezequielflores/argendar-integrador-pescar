@@ -35,4 +35,9 @@ export const registerSchema = z.object({
   aceptarTerminos: z
     .boolean()
     .refine((val) => val === true, { message: MESSAGES.ACCEPT_TERMS }),
+    
+  location: z.string().optional(),
+  latitude: z.number({ invalid_type_error: "Ubicación inválida" }).nullable().refine((val) => val !== null, "Debes seleccionar una ubicación válida"),
+  longitude: z.number({ invalid_type_error: "Ubicación inválida" }).nullable().refine((val) => val !== null, "Debes seleccionar una ubicación válida"),
+  coverageRadiusKm: z.number().min(1, "El radio debe ser de al menos 1km").max(100, "El radio máximo es de 100km").optional(),
 });

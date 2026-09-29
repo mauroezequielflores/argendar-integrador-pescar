@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { api } from "../../../libs/axios";
+import { useTurnos, useSolicitudes } from "../hooks/useAgendaQueries";
 import {
   DocumentTextIcon,
   CalendarIcon,
@@ -20,6 +20,9 @@ import FilterBar from "../../../components/ui/FilterBar";
 import EmptyState from "../../../components/ui/EmptyState";
 import SolicitudCard from "../components/SolicitudCard";
 import OfertasRecibidasModal from "../components/OfertasRecibidasModal";
+import SolicitudDetailModal from "../../marketplace/components/SolicitudDetailModal";
+import TurnoCard from "../components/TurnoCard";
+import TurnoDetalleModal from "../components/TurnoDetalleModal";
 
 // The icons for tabs
 const TABS = [
@@ -33,24 +36,15 @@ export default function AgendaPage() {
   const [sortOrder, setSortOrder] = useState("newest");
   const [isOfertasModalOpen, setIsOfertasModalOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState(null);
+  const [isSolicitudDetalleOpen, setIsSolicitudDetalleOpen] = useState(false);
+  const [selectedSolicitud, setSelectedSolicitud] = useState(null);
+  
+  const [isTurnoDetalleOpen, setIsTurnoDetalleOpen] = useState(false);
+  const [selectedTurno, setSelectedTurno] = useState(null);
   const navigate = useNavigate();
 
-  const { data: solicitudes = [], isLoading: isLoadingSolicitudes, isError: isErrorSolicitudes, refetch: refetchSolicitudes } = useQuery({
-    queryKey: ["job-requests"],
-    queryFn: async () => {
-      const response = await api.get("/job-requests");
-      return response.data;
-    }
-  });
-
-  const { data: appointmentsData, isLoading: isLoadingAppointments, isError: isErrorAppointments, refetch: refetchAppointments } = useQuery({
-    queryKey: ["appointments", activeTab],
-    queryFn: async () => {
-      const response = await api.get(`/appointments?tab=${activeTab}`);
-      return response.data;
-    },
-    enabled: activeTab === "proximos" || activeTab === "historial",
-  });
+  const { data: solicitudes = [], isLoading: isLoadingSolicitudes, isError: isErrorSolicitudes, refetch: refetchSolicitudes } = useSolicitudes();
+  const { data: appointmentsData, isLoading: isLoadingAppointments, isError: isErrorAppointments } = useTurnos(activeTab);
 
   const appointments = appointmentsData?.appointments || [];
 
@@ -108,6 +102,16 @@ export default function AgendaPage() {
     setIsOfertasModalOpen(true);
   };
 
+  const handleVerDetalle = (solicitud) => {
+    setSelectedSolicitud(solicitud);
+    setIsSolicitudDetalleOpen(true);
+  };
+
+  const handleVerDetalleTurno = (turno) => {
+    setSelectedTurno(turno);
+    setIsTurnoDetalleOpen(true);
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case "solicitudes":
@@ -130,7 +134,7 @@ export default function AgendaPage() {
                 <SolicitudCard 
                   key={sol.id} 
                   solicitud={sol} 
-                  onVerDetalle={() => {}} 
+                  onVerDetalle={() => handleVerDetalle(sol)} 
                   onVerOfertas={() => handleVerOfertas(sol.id)}
                 />
               ))}
@@ -168,34 +172,11 @@ export default function AgendaPage() {
           return (
             <div className="flex flex-col gap-4">
               {sortedAppointments.map((app) => (
-                <div key={app.id} className="bg-[#292929] border border-[#3a3a3a] rounded-[8px] p-6 flex flex-col gap-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-lg font-bold text-white">{app.titulo}</h3>
-                      <p className="text-sm text-[#A8A8AA] mt-1">{app.ubicacion}</p>
-                    </div>
-                    <span className="text-xs font-semibold px-2 py-1 rounded bg-[#323232] text-white">
-                      {app.estado}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-[#A8A8AA]">
-                    <CalendarDaysIcon className="h-5 w-5" />
-                    <span>Fecha: <strong className="text-white">{new Date(app.fecha).toLocaleString()}</strong></span>
-                  </div>
-                  <div className="flex gap-4 items-center mt-2 border-t border-[#3a3a3a] pt-4">
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-[#202020] shrink-0">
-                      <img 
-                        src={app.persona?.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(app.persona?.nombre || 'User')}&background=random&color=fff`} 
-                        alt="Avatar" 
-                        className="w-full h-full object-cover" 
-                      />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-white">{app.persona?.nombre}</h4>
-                      <p className="text-xs text-[#A8A8AA]">Profesional</p>
-                    </div>
-                  </div>
-                </div>
+                <TurnoCard 
+                  key={app.id} 
+                  turno={app} 
+                  onVerDetalle={() => handleVerDetalleTurno(app)} 
+                />
               ))}
             </div>
           );
@@ -277,8 +258,44 @@ export default function AgendaPage() {
           requestId={selectedRequestId}
           onOfertaAceptada={() => {
             setIsOfertasModalOpen(false);
-            refetch(); // Refrescar las solicitudes
+            refetchSolicitudes(); // Refrescar las solicitudes
           }}
+        />
+      )}
+
+      {isSolicitudDetalleOpen && selectedSolicitud && (
+        <SolicitudDetailModal
+          isOpen={isSolicitudDetalleOpen}
+          onClose={() => setIsSolicitudDetalleOpen(false)}
+          solicitudId={selectedSolicitud.id}
+          preloadedData={{
+            id: selectedSolicitud.id,
+            cliente: { nombre: userProfile.firstName, inicial: "" },
+            categoria: selectedSolicitud.category?.name || "General",
+            titulo: selectedSolicitud.title || "",
+            descripcion: selectedSolicitud.description || "",
+            cuestionario: {
+              tieneMateriales: selectedSolicitud.has_materials,
+              esUrgencia: selectedSolicitud.is_emergency,
+              cuandoLoNecesita: selectedSolicitud.date_preference,
+              antiguedad: selectedSolicitud.installation_age
+            },
+            ubicacion: [selectedSolicitud.neighborhood, selectedSolicitud.city].filter(Boolean).join(", "),
+            horarioPreferencia: selectedSolicitud.time_preference || "",
+            imagenesUrl: selectedSolicitud.photos?.map(p => p.storage_path) || []
+          }}
+          readOnly={true}
+        />
+      )}
+
+      {isTurnoDetalleOpen && selectedTurno && (
+        <TurnoDetalleModal
+          isOpen={isTurnoDetalleOpen}
+          turno={selectedTurno}
+          onClose={() => setIsTurnoDetalleOpen(false)}
+          onConfirmarPago={() => {}}
+          onReprogramar={() => {}}
+          onFinalizar={() => {}}
         />
       )}
     </div>

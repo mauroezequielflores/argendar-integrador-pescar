@@ -4,68 +4,46 @@ import { REQUEST_STATUS } from '../utils/constants.js';
 
 class MarketplaceService {
   async getRequests(professionalId, filters) {
-    const { search, categories, page = 1, limit = 20, lat, lng } = filters;
+    const { search, categories, withinRadius, page = 1, limit = 20 } = filters;
     const offset = (page - 1) * limit;
+    
+    const categoriesArray = categories ? categories.split(',').map(c => c.trim()) : null;
+    const isWithinRadius = withinRadius === 'true' || withinRadius === true;
 
-    let query = supabase
-      .from('requests')
-      .select('*, profiles(first_name, last_name), service_categories!inner(name)', { count: 'exact' })
-      .eq('status', REQUEST_STATUS.PUBLISHED)
-      .neq('client_id', professionalId) // Excluir solicitudes propias
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
-
-    if (search) {
-      query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
-    }
-
-    if (categories) {
-      const categoriesArray = categories.split(',').map(c => c.trim());
-      // Filtrar por el nombre de la categoría usando la relación
-      query = query.in('service_categories.name', categoriesArray);
-    }
-
-    const { data, count, error } = await query;
+    // Usar la función RPC para filtrar por radio usando la fórmula de Haversine en la base de datos
+    const { data, count, error } = await supabase.rpc('get_marketplace_requests', {
+      p_professional_id: professionalId,
+      p_limit: limit,
+      p_offset: offset,
+      p_search: search || null,
+      p_categories: categoriesArray,
+      p_within_radius: isWithinRadius,
+      p_sort: filters.sort || 'newest'
+    }, { count: 'exact' });
 
     if (error) {
       throw new AppError(`Error al obtener solicitudes: ${error.message}`, 500, 'DB_ERROR');
     }
 
-    // Calcular distancias simuladas o reales aquí (mock por ahora)
-    const processedData = data.map(req => {
-      let distanceKm = null;
-      if (lat && lng && req.latitude && req.longitude) {
-        // Cálculo básico Haversine como fallback o mock
-        const R = 6371; 
-        const dLat = (req.latitude - lat) * (Math.PI / 180);
-        const dLon = (req.longitude - lng) * (Math.PI / 180);
-        const a = 
-          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos(lat * (Math.PI / 180)) * Math.cos(req.latitude * (Math.PI / 180)) * 
-          Math.sin(dLon / 2) * Math.sin(dLon / 2); 
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); 
-        distanceKm = Number((R * c).toFixed(1));
-      }
-
-      return {
-        id: req.id,
-        titulo: req.title,
-        descripcion: req.description,
-        categoria: req.service_categories?.name || 'General',
-        ubicacion: req.address ? `${req.neighborhood || ''}, ${req.city || ''}` : '',
-        distanciaKm: distanceKm,
-        fecha: req.created_at,
-        cliente: req.profiles ? `${req.profiles.first_name} ${req.profiles.last_name.charAt(0)}.` : 'Cliente'
-      };
-    });
+    const processedData = (data || []).map(req => ({
+      id: req.request_id,
+      titulo: req.title,
+      descripcion: req.description,
+      categoria: req.category_name || 'General',
+      ubicacion: [req.neighborhood, req.city].filter(Boolean).join(', '),
+      distanciaKm: req.distance_km ? Number(req.distance_km).toFixed(1) : null,
+      isOutOfRange: req.is_out_of_range || false,
+      fecha: req.created_at,
+      cliente: `${req.client_first_name} ${req.client_last_name ? req.client_last_name.charAt(0) + '.' : ''}`.trim() || 'Cliente'
+    }));
 
     return {
       data: processedData,
       meta: {
-        totalCount: count,
+        totalCount: count || processedData.length, // Si la BD no soporta exact count en este RPC, mandamos longitud
         page: Number(page),
         limit: Number(limit),
-        totalPages: Math.ceil(count / limit)
+        totalPages: count ? Math.ceil(count / limit) : (processedData.length === limit ? Number(page) + 1 : Number(page))
       }
     };
   }
@@ -111,7 +89,7 @@ class MarketplaceService {
         cuandoLoNecesita: data.date_preference,
         antiguedad: data.installation_age
       },
-      ubicacion: data.address ? `${data.neighborhood || ''}, ${data.city || ''}` : '',
+      ubicacion: [data.neighborhood, data.city].filter(Boolean).join(', '),
       horarioPreferencia: data.time_preference, // O de algun metadata
       imagenesUrl: data.request_photos?.map(p => p.storage_path) || []
     };

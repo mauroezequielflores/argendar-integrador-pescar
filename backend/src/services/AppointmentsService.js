@@ -117,7 +117,7 @@ class AppointmentsService {
             titulo: req?.title,
             fecha: app.scheduled_at,
             categoria: req?.category_id,
-            persona: persona // Se envía 'persona' genérico en lugar de 'profesional' o 'cliente'
+            persona: persona
           };
         }),
         total: count,
@@ -129,7 +129,7 @@ class AppointmentsService {
     throw new AppError('Tab inválido', 400, 'VALIDATION_ERROR');
   }
 
-  async getAppointmentById(clientId, appointmentId) {
+  async getAppointmentById(userId, appointmentId, userRole = 'client') {
     const { data, error } = await supabase
       .from('appointments')
       .select(`
@@ -141,7 +141,13 @@ class AppointmentsService {
           amount,
           proposed_deposit,
           professional_id,
-          profiles:professional_id (first_name, last_name, phone),
+          profiles:professional_id (
+            first_name, 
+            last_name, 
+            phone, 
+            avatar_url,
+            professional_profiles (category_id, headline)
+          ),
           requests!inner (
             id,
             client_id,
@@ -150,7 +156,15 @@ class AppointmentsService {
             category_id,
             address,
             neighborhood,
-            city
+            city,
+            date_preference,
+            time_preference,
+            is_emergency,
+            has_materials,
+            installation_age,
+            request_photos (storage_path),
+            service_categories (name),
+            profiles:client_id (first_name, last_name, phone, avatar_url)
           )
         ),
         payments (
@@ -169,14 +183,39 @@ class AppointmentsService {
     }
 
     // Validar ownership
-    if (data.offers.requests.client_id !== clientId) {
-      throw new AppError('Turno no encontrado', 404, 'RECURSO_NO_ENCONTRADO'); // Regla de 404
+    if (userRole === 'professional' && data.offers.professional_id !== userId) {
+      throw new AppError('Turno no encontrado', 404, 'RECURSO_NO_ENCONTRADO');
+    } else if (userRole === 'client' && data.offers.requests.client_id !== userId) {
+      throw new AppError('Turno no encontrado', 404, 'RECURSO_NO_ENCONTRADO');
     }
 
     const offer = data.offers;
     const req = offer.requests;
     const prof = offer.profiles;
+    const client = req.profiles;
     const payment = data.payments && data.payments.length > 0 ? data.payments[0] : null;
+
+    let persona = null;
+    if (userRole === 'professional') {
+      persona = {
+        nombre: `${client.first_name} ${client.last_name}`,
+        telefono: client.phone || '',
+        foto: client.avatar_url || null,
+        calificacion: 5.0
+      };
+    } else {
+      const profProfile = Array.isArray(prof.professional_profiles) 
+        ? prof.professional_profiles[0] 
+        : prof.professional_profiles;
+        
+      persona = {
+        nombre: `${prof.first_name} ${prof.last_name}`,
+        telefono: prof.phone || '',
+        foto: prof.avatar_url || null,
+        profesion: profProfile?.headline || '',
+        calificacion: 5.0
+      };
+    }
 
     return {
       id: data.id,
@@ -186,14 +225,22 @@ class AppointmentsService {
       titulo: req.title,
       fecha: data.scheduled_at,
       categoria: req.category_id,
-      profesional: {
-        nombre: `${prof.first_name} ${prof.last_name}`,
-        telefono: prof.phone || '',
-        calificacion: 5.0
-      },
+      preferencia: req.date_preference,
+      persona: persona,
       solicitud: {
+        id: req.id,
         titulo: req.title,
-        descripcion: req.description
+        descripcion: req.description,
+        categoria: req.service_categories?.name || 'General',
+        cuestionario: {
+          tieneMateriales: req.has_materials,
+          esUrgencia: req.is_emergency,
+          cuandoLoNecesita: req.date_preference,
+          antiguedad: req.installation_age
+        },
+        ubicacion: [req.neighborhood, req.city].filter(Boolean).join(', '),
+        horarioPreferencia: req.time_preference,
+        imagenesUrl: req.request_photos?.map(p => p.storage_path) || []
       },
       pago: payment ? {
         estado: payment.status,
@@ -201,7 +248,13 @@ class AppointmentsService {
         senia: payment.deposit_amount,
         saldo: payment.total_amount - payment.deposit_amount,
         total: payment.total_amount
-      } : null
+      } : {
+        estado: 'PENDIENTE',
+        metodo: 'Acordar con profesional',
+        senia: offer.proposed_deposit || 0,
+        saldo: (offer.amount || 0) - (offer.proposed_deposit || 0),
+        total: offer.amount || 0
+      }
     };
   }
 

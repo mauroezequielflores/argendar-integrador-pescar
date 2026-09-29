@@ -67,6 +67,7 @@ export default function CreateRequestPage() {
       hasMaterials: requestData.hasMaterials || "",
       date: requestData.date || "",
       time: requestData.time || "",
+      photos: requestData.photos || []
     }
   });
 
@@ -246,7 +247,17 @@ export default function CreateRequestPage() {
         <section>
           <h2 className="text-lg font-bold mb-1">Adjuntá fotografías</h2>
           <p className="text-xs text-[#A8A8AA] mb-6">Las imágenes ayudarán al Profesional a comprender mejor el problema.</p>
-          <FileUpload maxFiles={3} maxSizeMB={5} onFilesChange={(files) => console.log('Files:', files)} />
+          <Controller
+            name="photos"
+            control={control}
+            render={({ field }) => (
+              <FileUpload 
+                maxFiles={3} 
+                maxSizeMB={5} 
+                onFilesChange={(files) => field.onChange(files)} 
+              />
+            )}
+          />
         </section>
 
         {/* Action Buttons */}
