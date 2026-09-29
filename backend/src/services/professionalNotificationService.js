@@ -13,6 +13,7 @@ const resolveHref = (n) => {
     case 'appointment_reminder':
       return `/professional/reminders/${n.related_entity_id}/details`;
     case 'appointment_cancelled':
+    case 'cancellation':
       return `/professional/cancellations/${n.related_entity_id}/details`;
     case 'payment':
     case 'payment_confirmed':

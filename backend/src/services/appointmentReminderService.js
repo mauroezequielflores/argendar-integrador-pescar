@@ -117,15 +117,15 @@ export const processUpcomingReminders = async (options = null) => {
     // ─── 4. Generar recordatorio para el PROFESIONAL ─────────────────────────────
     const shouldProcessProf = profId && (!targetProfessionalId || profId === targetProfessionalId);
     if (shouldProcessProf) {
-      const { data: existingProfNotif } = await supabase
+      const { data: existingProfNotifs } = await supabase
         .from('notifications')
         .select('id')
         .eq('user_id', profId)
         .eq('related_entity_id', appt.id)
-        .eq('type', 'appointment_reminder')
-        .maybeSingle();
+        .in('type', ['reminder', 'appointment_reminder'])
+        .limit(1);
 
-      if (!existingProfNotif) {
+      if (!existingProfNotifs || existingProfNotifs.length === 0) {
         const profPayload = {
           user_id: profId,
           type: 'appointment_reminder',
@@ -159,15 +159,15 @@ export const processUpcomingReminders = async (options = null) => {
     // ─── 5. Generar recordatorio para el CLIENTE ─────────────────────────────────
     const shouldProcessClient = clientId && (!targetClientId || clientId === targetClientId);
     if (shouldProcessClient) {
-      const { data: existingClientNotif } = await supabase
+      const { data: existingClientNotifs } = await supabase
         .from('notifications')
         .select('id')
         .eq('user_id', clientId)
         .eq('related_entity_id', appt.id)
         .in('type', ['reminder', 'appointment_reminder'])
-        .maybeSingle();
+        .limit(1);
 
-      if (!existingClientNotif) {
+      if (!existingClientNotifs || existingClientNotifs.length === 0) {
         const clientPayload = {
           user_id: clientId,
           type: 'reminder',

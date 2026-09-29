@@ -187,9 +187,9 @@ export const getNotifications = async (userId, page = 1, limit = 10) => {
     }
   }
 
-  // 3b. Enriquecer notificaciones de recordatorio y calificación (turnos) con datos reales de la BD
+  // 3b. Enriquecer notificaciones de recordatorio, cancelación y calificación (turnos) con datos reales de la BD
   const apptIds = (data || [])
-    .filter(n => (n.tipo === 'reminder' || n.tipo === 'appointment_reminder' || n.tipo === 'rating' || n.related_entity_type === 'appointment') && (n.related_entity_id || n.metadata?.appointmentId))
+    .filter(n => (n.tipo === 'reminder' || n.tipo === 'appointment_reminder' || n.tipo === 'rating' || n.tipo === 'cancellation' || n.related_entity_type === 'appointment') && (n.related_entity_id || n.metadata?.appointmentId))
     .map(n => n.related_entity_id || n.metadata?.appointmentId);
 
   let apptsMap = {};
@@ -232,8 +232,18 @@ export const getNotifications = async (userId, page = 1, limit = 10) => {
           const profName = prof ? `${prof.first_name || ''} ${prof.last_name || ''}`.trim() : 'Profesional';
           const parts = profName.split(' ').filter(Boolean);
           const profInitials = parts.length >= 2 ? `${parts[0][0]}${parts[1][0]}`.toUpperCase() : profName.slice(0, 2).toUpperCase();
+
+          const isCancelled = ['cancelled', 'cancelado', 'CANCELLED', 'CANCELADO'].includes(appt.status);
           const isCompleted = ['completed', 'finalizado', 'COMPLETED', 'FINALIZADO'].includes(appt.status);
-          const displayStatus = isCompleted ? 'FINALIZADO' : (appt.status === 'confirmed' ? 'CONFIRMADO' : (appt.status || 'CONFIRMADO')).toUpperCase();
+          const displayStatus = isCancelled ? 'CANCELADO' : (isCompleted ? 'FINALIZADO' : (appt.status === 'confirmed' ? 'CONFIRMADO' : (appt.status || 'CONFIRMADO')).toUpperCase());
+
+          const apptDateObj = appt.scheduled_at ? new Date(appt.scheduled_at) : null;
+          const formattedDate = apptDateObj && !isNaN(apptDateObj.getTime())
+            ? `${String(apptDateObj.getDate()).padStart(2, '0')}/${String(apptDateObj.getMonth() + 1).padStart(2, '0')}/${apptDateObj.getFullYear()}`
+            : 'Fecha a convenir';
+          const formattedTime = apptDateObj && !isNaN(apptDateObj.getTime())
+            ? `${String(apptDateObj.getHours()).padStart(2, '0')}:${String(apptDateObj.getMinutes()).padStart(2, '0')} hs`
+            : '14:00 hs';
 
           apptsMap[appt.id] = {
             professionalName: profName,
@@ -242,8 +252,10 @@ export const getNotifications = async (userId, page = 1, limit = 10) => {
             professionalAvatarUrl: prof?.avatar_url || null,
             serviceName: req?.title || 'Servicio acordado',
             status: displayStatus,
-            date: formatDateStr(appt.scheduled_at),
+            date: formattedDate,
+            time: formattedTime,
             timeAgo: 'Hoy',
+            cancellationReason: appt.notes || 'El profesional ha cancelado tu turno programado.',
             appointmentId: appt.id,
             href: '/client/agenda'
           };

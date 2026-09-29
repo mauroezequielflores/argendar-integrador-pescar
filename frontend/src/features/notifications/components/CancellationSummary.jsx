@@ -1,4 +1,4 @@
-﻿import { useEffect } from "react";
+import { useEffect } from "react";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import ServiceSummaryCard from "../../../components/ui/ServiceSummaryCard";
 import InfoAlert from "../../../components/ui/InfoAlert";
@@ -47,7 +47,7 @@ export default function CancellationSummary({ cancellation, onClose, onViewDetai
         <div className="flex flex-col gap-2 border-b border-[#323232] px-6 py-4">
           <h2 className="text-lg font-bold text-white">Turno cancelado</h2>
           <p className="text-xs text-[#A8A8AA]">
-            El profesional cancelo tu turno programado para el {cancellation.date} a las {cancellation.time}.
+            El profesional canceló tu turno programado para el {cancellation.date || 'Fecha a convenir'} a las {cancellation.time || '14:00 hs'}.
           </p>
         </div>
 
@@ -56,31 +56,31 @@ export default function CancellationSummary({ cancellation, onClose, onViewDetai
 
           {/* Texto introductorio */}
           <p className="text-sm font-bold text-white">
-            El profesional {cancellation.professionalName} ha cancelado tu turno.
+            El profesional {cancellation.professionalName || 'el profesional'} ha cancelado tu turno.
           </p>
 
           {/* Tarjeta de resumen del servicio (componente reutilizable) */}
           <ServiceSummaryCard
-            professionalName={cancellation.professionalName}
-            professionalInitials={cancellation.professionalInitials}
-            avatarUrl={cancellation.avatarUrl}
-            serviceName={cancellation.serviceName}
-            status={cancellation.status}
-            date={cancellation.date}
-            time={cancellation.time}
-            timeAgo={cancellation.timeAgo}
+            professionalName={cancellation.professionalName || 'Profesional'}
+            professionalInitials={cancellation.professionalInitials || 'PR'}
+            avatarUrl={cancellation.avatarUrl || cancellation.professionalAvatarUrl || null}
+            serviceName={cancellation.serviceName || 'Servicio acordado'}
+            status={cancellation.status || 'CANCELADO'}
+            date={cancellation.date || 'Fecha a convenir'}
+            time={cancellation.time || '14:00 hs'}
+            timeAgo={cancellation.timeAgo || 'Hoy'}
             onViewDetails={onViewDetails}
           />
 
           {/* Motivo de cancelacion */}
           <h3 className="text-sm font-bold text-white mt-2">
-            Motivo de Cancelacion.
+            Motivo de Cancelación.
           </h3>
 
           {/* Recuadro de texto con el motivo */}
           <div className="rounded-[6px] border border-[#323232] bg-[#292929] p-4">
             <p className="text-sm text-[#A8A8AA] leading-relaxed">
-              {cancellation.cancellationReason}
+              {cancellation.cancellationReason || cancellation.notes || cancellation.reason || 'El profesional ha cancelado tu turno programado.'}
             </p>
           </div>
 

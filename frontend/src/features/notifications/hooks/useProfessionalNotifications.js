@@ -27,6 +27,7 @@ export const PROF_NOTIFICATIONS_KEYS = {
   reminderDetail: (id) => [...PROF_NOTIFICATIONS_KEYS.all, 'reminder-detail', id],
   reviewDetail: (id) => [...PROF_NOTIFICATIONS_KEYS.all, 'review-detail', id],
   paymentDetail: (id) => [...PROF_NOTIFICATIONS_KEYS.all, 'payment-detail', id],
+  cancellationDetail: (id) => [...PROF_NOTIFICATIONS_KEYS.all, 'cancellation-detail', id],
 };
 
 /**
@@ -274,6 +275,38 @@ export const useProfessionalPaymentDetailQuery = (paymentId) => {
       return mapPaymentDetail(data);
     },
     enabled: Boolean(paymentId),
+    staleTime: 1000 * 60 * 5, // 5 min
+  });
+};
+
+const mapCancellationDetail = (data) => {
+  if (!data) return null;
+  const client = data.client || {};
+
+  return {
+    id: data.id,
+    clientName: data.clientName || client.name || 'Cliente',
+    clientInitials: data.clientInitials || client.initials || 'CL',
+    clientAvatarUrl: data.clientAvatarUrl || client.avatarUrl || null,
+    serviceName: data.serviceName || data.requestTitle || 'Servicio acordado',
+    status: (data.status || 'CANCELADO').toUpperCase(),
+    date: data.date ? data.date.split(' ')[0] : (data.scheduledAt ? dayjs(data.scheduledAt).format('DD/MM/YYYY') : '28/07/2026'),
+    time: data.time || (data.scheduledAt ? dayjs(data.scheduledAt).format('HH:mm [hs]') : '15:30 hs'),
+    timeAgo: data.timeAgo || (data.createdAt ? dayjs(data.createdAt).fromNow() : 'Recientemente'),
+    reason: data.notes || data.reason || 'El cliente ha cancelado el turno programado.',
+    offerId: data.offerId || null,
+    appointmentId: data.id || null,
+  };
+};
+
+export const useProfessionalCancellationDetailQuery = (cancellationId) => {
+  return useQuery({
+    queryKey: PROF_NOTIFICATIONS_KEYS.cancellationDetail(cancellationId),
+    queryFn: async () => {
+      const data = await professionalNotificationService.getCancellationDetail(cancellationId);
+      return mapCancellationDetail(data);
+    },
+    enabled: Boolean(cancellationId),
     staleTime: 1000 * 60 * 5, // 5 min
   });
 };

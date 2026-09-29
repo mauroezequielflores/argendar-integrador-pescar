@@ -42,4 +42,9 @@ export const professionalNotificationService = {
     const { data } = await api.get(`/professional/payments/${paymentId}`);
     return data?.data || data;
   },
+
+  getCancellationDetail: async (cancellationId) => {
+    const { data } = await api.get(`/professional/cancellations/${cancellationId}`);
+    return data?.data || data;
+  },
 };
