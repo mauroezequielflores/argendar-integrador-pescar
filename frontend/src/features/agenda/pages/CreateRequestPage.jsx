@@ -21,9 +21,9 @@ import { useCreateRequest } from "../context/CreateRequestContext";
 import { createRequestStep1Schema } from "../../../validations/request.schema";
 
 const CATEGORIES = [
-  { id: "plomeria", title: "Plomería", description: "Reparaciones de cañerías, grifería y mucho más.", icon: WrenchScrewdriverIcon },
-  { id: "electricidad", title: "Electricidad", description: "Instalaciones, cortocircuitos, tableros.", icon: BoltIcon },
-  { id: "climatizacion", title: "Climatización", description: "Aire acondicionado, estufas, calderas.", icon: FireIcon },
+  { id: 1, title: "Plomería", description: "Reparaciones de cañerías, grifería y mucho más.", icon: WrenchScrewdriverIcon },
+  { id: 2, title: "Electricidad", description: "Instalaciones, cortocircuitos, tableros.", icon: BoltIcon },
+  { id: 3, title: "Climatización", description: "Aire acondicionado, estufas, calderas.", icon: FireIcon },
 ];
 
 const YES_NO_OPTIONS = [

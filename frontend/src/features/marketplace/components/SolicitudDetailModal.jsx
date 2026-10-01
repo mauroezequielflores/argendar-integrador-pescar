@@ -1,11 +1,15 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRequestDetail } from "../hooks/useMarketplaceQueries";
 import Modal from "../../../components/ui/Modal";
 import Loader from "../../../components/ui/Loader";
 import { MapPinIcon, ClockIcon, UserIcon } from "@heroicons/react/24/outline";
+import { formatDatePreference, getSupabasePublicUrl } from "../../../utils/formatters";
+import ImagePreviewModal from "../../../components/ui/ImagePreviewModal";
 
 export default function SolicitudDetailModal({ isOpen, onClose, solicitudId, preloadedData, readOnly = false }) {
   const navigate = useNavigate();
+  const [selectedImage, setSelectedImage] = useState(null);
 
   const { data: resultData, isLoading, isError } = useRequestDetail(
     isOpen && !preloadedData ? solicitudId : null
@@ -71,7 +75,7 @@ export default function SolicitudDetailModal({ isOpen, onClose, solicitudId, pre
             </div>
             <div className="bg-[#323232] rounded-[6px] p-3 flex flex-col justify-center">
               <span className="text-[10px] font-bold text-[#A8A8AA] uppercase tracking-wide">¿CUÁNDO LO NECESITA?</span>
-              <span className="text-sm font-semibold capitalize">{detail.cuestionario.cuandoLoNecesita?.replace(/_/g, ' ') || 'Soy flexible'}</span>
+              <span className="text-sm font-semibold capitalize">{formatDatePreference(detail.cuestionario.cuandoLoNecesita)}</span>
             </div>
           </div>
 
@@ -97,8 +101,15 @@ export default function SolicitudDetailModal({ isOpen, onClose, solicitudId, pre
               <p className="text-xs text-[#A8A8AA] font-bold mb-2 uppercase">Fotos adjuntas</p>
               <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
                 {detail.imagenesUrl.map((url, i) => (
-                  <div key={i} className="h-20 w-24 shrink-0 rounded-[6px] bg-[#323232] overflow-hidden border border-[#292929]">
-                    <img src={url} alt="Problema" className="h-full w-full object-cover" />
+                  <div 
+                    key={i} 
+                    className="h-28 w-28 shrink-0 rounded-[6px] bg-[#323232] overflow-hidden border border-[#292929] cursor-pointer hover:border-[#F78736] transition-colors relative group"
+                    onClick={() => setSelectedImage(getSupabasePublicUrl(url))}
+                  >
+                    <img src={getSupabasePublicUrl(url)} alt="Problema" className="h-full w-full object-cover group-hover:opacity-80 transition-opacity" />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-white text-xs font-semibold">Ver</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -124,6 +135,11 @@ export default function SolicitudDetailModal({ isOpen, onClose, solicitudId, pre
           )}
         </div>
       )}
+      <ImagePreviewModal 
+        isOpen={!!selectedImage} 
+        onClose={() => setSelectedImage(null)} 
+        imageUrl={selectedImage} 
+      />
     </Modal>
   );
 }

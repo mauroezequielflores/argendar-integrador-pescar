@@ -21,6 +21,8 @@ import { useProfileSettings } from "../../profile/hooks/useProfileQueries";
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import AddressAutocomplete from "../../../components/ui/AddressAutocomplete";
+import { formatDatePreference, getSupabasePublicUrl } from "../../../utils/formatters";
 import {
   CATEGORIAS,
   UBICACION_ACTUAL,
@@ -79,6 +81,7 @@ function FilterPanel({
   onWithinRadiusChange,
   onApply,
   onClear,
+  onLocationChange,
   userAddress,
   onShowMap
 }) {
@@ -126,10 +129,12 @@ function FilterPanel({
       {/* Ubicación actual */}
       <div className="flex flex-col gap-3 rounded-[6px] bg-[#292929] p-4">
         <p className="text-xs font-semibold text-white">Ubicación actual</p>
-        <div className="flex items-center gap-2 rounded-[6px] border border-[#323232] bg-[#202020] px-3 py-2">
-          <MapPinIcon className="h-4 w-4 shrink-0 text-[#A8A8AA]" />
-          <span className="text-xs text-[#A8A8AA]">{userAddress || UBICACION_ACTUAL}</span>
-        </div>
+        <AddressAutocomplete
+          defaultValue={userAddress}
+          onAddressSelect={onLocationChange}
+          showMap={false}
+          label=""
+        />
         
         <label className="flex cursor-pointer items-center gap-2 text-xs text-[#A8A8AA] hover:text-white mt-2">
           <input
@@ -233,8 +238,12 @@ function SolicitudCard({ solicitud, onViewDetail }) {
       {/* Main Content Fila */}
       <div className="px-4 pt-4 pb-2 flex gap-4">
         {/* Avatar Placeholder */}
-        <div className="h-10 w-10 shrink-0 rounded-full bg-[#323232] flex items-center justify-center text-[#A8A8AA]">
-          <UserIcon className="h-5 w-5" />
+        <div className="h-10 w-10 shrink-0 rounded-full bg-[#323232] flex items-center justify-center overflow-hidden text-[#A8A8AA]">
+          {solicitud.foto ? (
+            <img src={getSupabasePublicUrl(solicitud.foto, 'avatars')} alt="avatar" className="h-full w-full object-cover" />
+          ) : (
+            <UserIcon className="h-5 w-5" />
+          )}
         </div>
         
         {/* Título y Descripción */}
@@ -251,7 +260,7 @@ function SolicitudCard({ solicitud, onViewDetail }) {
         <div className="flex items-center gap-3 text-[10px] font-bold text-[#A8A8AA] uppercase tracking-wide">
           <span className="flex items-center gap-1">
             <CalendarIcon className="h-3 w-3" />
-            Preferencia: {solicitud.cuestionario?.cuandoLoNecesita || 'Soy flexible'}
+            Preferencia: {formatDatePreference(solicitud.cuestionario?.cuandoLoNecesita)}
           </span>
           <span className="h-1 w-1 rounded-full bg-[#A8A8AA]"></span>
           <span className="rounded-full bg-[#323232] px-2 py-0.5 text-[#F78736]">
@@ -299,26 +308,38 @@ export default function ProfessionalMarketplacePage() {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
 
-  const { data: profileSettings } = useProfileSettings('professional');
-  const userAddress = profileSettings?.location?.address;
-  const userLat = profileSettings?.location?.latitude;
-  const userLng = profileSettings?.location?.longitude;
+  const { data: profileSettings, isSuccess } = useProfileSettings('professional');
+  
+  const [profLocation, setProfLocation] = useState("");
+  const [profLat, setProfLat] = useState(null);
+  const [profLng, setProfLng] = useState(null);
+  const [isLocationInitialized, setIsLocationInitialized] = useState(false);
+
   const userRadius = profileSettings?.location?.coverageRadiusKm || 10;
 
   useEffect(() => {
-    if (isMapModalOpen && userLat && userLng && mapContainerRef.current) {
+    if (isSuccess && profileSettings?.location && !isLocationInitialized) {
+      setProfLocation(profileSettings.location.address || UBICACION_ACTUAL);
+      setProfLat(profileSettings.location.latitude || -34.603722);
+      setProfLng(profileSettings.location.longitude || -58.381592);
+      setIsLocationInitialized(true);
+    }
+  }, [isSuccess, profileSettings, isLocationInitialized]);
+
+  useEffect(() => {
+    if (isMapModalOpen && profLat && profLng && mapContainerRef.current) {
       if (!mapInstanceRef.current) {
         const map = L.map(mapContainerRef.current, {
           zoomControl: false,
-        }).setView([userLat, userLng], 13);
+        }).setView([profLat, profLng], 13);
         
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '&copy; OpenStreetMap'
         }).addTo(map);
 
-        L.marker([userLat, userLng], { icon: customIcon }).addTo(map);
+        L.marker([profLat, profLng], { icon: customIcon }).addTo(map);
 
-        const circle = L.circle([userLat, userLng], {
+        const circle = L.circle([profLat, profLng], {
           color: '#F78736',
           fillColor: '#F78736',
           fillOpacity: 0.1,
@@ -332,6 +353,25 @@ export default function ProfessionalMarketplacePage() {
           map.invalidateSize();
           map.fitBounds(circle.getBounds());
         }, 300);
+      } else {
+        mapInstanceRef.current.setView([profLat, profLng], 13);
+        
+        // Cleanup old layers and add new ones (this is simple for markers/circles)
+        mapInstanceRef.current.eachLayer((layer) => {
+          if (layer instanceof L.Marker || layer instanceof L.Circle) {
+            mapInstanceRef.current.removeLayer(layer);
+          }
+        });
+        
+        L.marker([profLat, profLng], { icon: customIcon }).addTo(mapInstanceRef.current);
+        const circle = L.circle([profLat, profLng], {
+          color: '#F78736',
+          fillColor: '#F78736',
+          fillOpacity: 0.1,
+          radius: userRadius * 1000
+        }).addTo(mapInstanceRef.current);
+        
+        mapInstanceRef.current.fitBounds(circle.getBounds());
       }
     }
 
@@ -341,7 +381,7 @@ export default function ProfessionalMarketplacePage() {
         mapInstanceRef.current = null;
       }
     };
-  }, [isMapModalOpen, userLat, userLng, userRadius]);
+  }, [isMapModalOpen, profLat, profLng, userRadius]);
 
   const handleCategoryToggle = (cat) => {
     setSelectedCategories((prev) =>
@@ -436,7 +476,16 @@ export default function ProfessionalMarketplacePage() {
           onWithinRadiusChange={setWithinRadius}
           onApply={handleApply}
           onClear={handleClear}
-          userAddress={userAddress}
+          userAddress={profLocation}
+          onLocationChange={(loc) => {
+            if (loc && loc.address) {
+              setProfLocation(loc.address);
+              if (loc.lat && loc.lng) {
+                setProfLat(loc.lat);
+                setProfLng(loc.lng);
+              }
+            }
+          }}
           onShowMap={() => setIsMapModalOpen(true)}
         />
 
@@ -523,12 +572,12 @@ export default function ProfessionalMarketplacePage() {
       <Modal isOpen={isMapModalOpen} onClose={() => setIsMapModalOpen(false)} title="Mi Radio de Trabajo">
         <div className="flex flex-col text-white pb-2">
           <p className="text-sm text-[#A8A8AA] mb-4">
-            Ubicación: <span className="text-white font-medium">{userAddress || UBICACION_ACTUAL}</span>
+            Ubicación: <span className="text-white font-medium">{profLocation || UBICACION_ACTUAL}</span>
             <br />
             Radio: <span className="text-white font-medium">{userRadius} km</span>
           </p>
           <div className="w-full h-64 bg-[#1e1e1e] rounded-[8px] overflow-hidden border border-[#3f3f3f] relative z-0">
-            {userLat && userLng ? (
+            {profLat && profLng ? (
               <div ref={mapContainerRef} className="absolute inset-0 h-full w-full" />
             ) : (
               <div className="flex items-center justify-center h-full text-[#A8A8AA] text-sm">

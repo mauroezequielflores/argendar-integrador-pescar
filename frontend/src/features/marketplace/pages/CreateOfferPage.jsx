@@ -15,6 +15,7 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
+import { formatDatePreference, getSupabasePublicUrl } from "../../../utils/formatters";
 
 // Modales Reutilizables
 function SuccessModal({ isOpen, onOffers, onHome }) {
@@ -302,7 +303,7 @@ export default function CreateOfferPage() {
                   <div className="flex items-center gap-3 text-[10px] font-bold text-[#A8A8AA] uppercase tracking-wide">
                     <span className="flex items-center gap-1">
                       <CalendarIcon className="h-3 w-3" />
-                      Preferencia: {reqDetail.cuestionario?.cuandoLoNecesita || 'Soy flexible'}
+                      Preferencia: {formatDatePreference(reqDetail.cuestionario?.cuandoLoNecesita)}
                     </span>
                     <span className="h-1 w-1 rounded-full bg-[#A8A8AA]"></span>
                     <span className="flex items-center gap-1 text-white">

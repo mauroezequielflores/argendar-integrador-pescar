@@ -6,12 +6,12 @@ import {
   ArrowLeftIcon,
   XMarkIcon
 } from "@heroicons/react/24/outline";
-import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import InfoAlert from "../../../components/ui/InfoAlert";
 import Loader from "../../../components/ui/Loader";
 import Button from "../../../components/ui/Button";
 import AddressAutocomplete from "../../../components/ui/AddressAutocomplete";
 import { api } from "../../../libs/axios";
+import StatusModal from "../../../components/ui/StatusModal";
 
 const PROFESIONES = ["Plomería", "Electricidad", "Frigorista"];
 
@@ -197,8 +197,8 @@ export default function EditProfileSettingsPage() {
   const prefix = match ? `/${match[1]}` : "";
   const role = match ? match[1] : "client";
   const fileInputRef = useRef(null);
-
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({ isOpen: false, title: "", description: "", type: "error" });
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -268,7 +268,13 @@ export default function EditProfileSettingsPage() {
       },
       onError: (error) => {
         console.error("Error al guardar configuraciones:", error);
-        alert(error.response?.data?.error?.message || error.response?.data?.message || "Ocurrió un error al guardar los cambios.");
+        setAlertConfig({
+          isOpen: true,
+          type: "error",
+          title: "Error al guardar",
+          description: error.response?.data?.error?.message || error.response?.data?.message || "Ocurrió un error al guardar los cambios.",
+          buttonText: "Intentar nuevamente"
+        });
       }
     });
   };
@@ -581,6 +587,15 @@ export default function EditProfileSettingsPage() {
       <ChangePasswordModal 
         isOpen={isPasswordModalOpen} 
         onClose={() => setIsPasswordModalOpen(false)} 
+      />
+
+      <StatusModal
+        isOpen={alertConfig.isOpen}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        description={alertConfig.description}
+        buttonText={alertConfig.buttonText || "Cerrar"}
+        onClose={() => setAlertConfig({ ...alertConfig, isOpen: false })}
       />
     </div>
   );

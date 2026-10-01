@@ -4,6 +4,7 @@ import {
   MapPinIcon,
   MapIcon,
 } from "@heroicons/react/24/outline";
+import AddressAutocomplete from "../../../components/ui/AddressAutocomplete";
 
 /**
  * MarketplaceFilterSidebar — Panel lateral de filtros para el Marketplace.
@@ -17,6 +18,7 @@ export default function MarketplaceFilterSidebar({
   selectedCategories = [],
   onCategoryToggle,
   location = "Av. Corrientes 1234, CABA",
+  onLocationChange,
   onApply,
   onClear,
   onOpenMap,
@@ -78,24 +80,12 @@ export default function MarketplaceFilterSidebar({
           <p className="text-xs text-[#A8A8AA]">Localidad o código postal.</p>
         )}
 
-        {isProfesionales ? (
-          <div className="flex items-center gap-2.5 rounded-[6px] border border-[#323232] bg-[#202020] px-3 py-2">
-            <MapPinIcon className="h-4 w-4 shrink-0 text-[#A8A8AA]" />
-            <div>
-              <span className="block text-[10px] font-semibold uppercase tracking-wider text-[#A8A8AA] leading-tight">
-                TU UBICACIÓN ES
-              </span>
-              <span className="block text-xs text-white">
-                Ubicación
-              </span>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2.5 rounded-[6px] border border-[#323232] bg-[#202020] px-3 py-2.5">
-            <MapPinIcon className="h-4 w-4 shrink-0 text-[#A8A8AA]" />
-            <span className="text-xs text-[#A8A8AA] truncate">{location}</span>
-          </div>
-        )}
+        <AddressAutocomplete
+          defaultValue={location}
+          onAddressSelect={onLocationChange}
+          showMap={false}
+          label=""
+        />
 
         <button
           type="button"

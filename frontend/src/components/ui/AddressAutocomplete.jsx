@@ -41,6 +41,11 @@ export default function AddressAutocomplete({
   const mapInstanceRef = useRef(null);
   const markerInstanceRef = useRef(null);
 
+  // Sincronizar query cuando defaultValue cambia desde props (ej: carga asíncrona)
+  useEffect(() => {
+    setQuery(defaultValue);
+  }, [defaultValue]);
+
   // Cerrar dropdown al hacer click afuera
   useEffect(() => {
     function handleClickOutside(event) {
