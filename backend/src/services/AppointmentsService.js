@@ -16,7 +16,7 @@ class AppointmentsService {
       // Devolver solicitudes del cliente en estado PUBLISHED u OFFERED
       const { data, count, error } = await supabase
         .from('requests')
-        .select('*, offers(id)', { count: 'exact' })
+        .select('*, offers(id), service_categories(name)', { count: 'exact' })
         .eq('client_id', userId)
         .in('status', [REQUEST_STATUS.PUBLISHED, REQUEST_STATUS.OFFERED])
         .order('created_at', { ascending })
@@ -32,7 +32,7 @@ class AppointmentsService {
           titulo: req.title,
           descripcion: req.description,
           ubicacion: req.address ? `${req.neighborhood || ''}, ${req.city || ''}` : '',
-          categoria: req.category_id,
+          categoria: req.service_categories?.name || req.category_id,
           ofertasCount: req.offers ? req.offers.length : 0,
           fecha: req.created_at,
           preferenciaTemporal: req.date_preference
@@ -65,6 +65,7 @@ class AppointmentsService {
               address,
               neighborhood,
               city,
+              service_categories(name),
               profiles:client_id (first_name, last_name, avatar_url)
             )
           )
@@ -116,7 +117,7 @@ class AppointmentsService {
             ubicacion: req?.address ? `${req.neighborhood || ''}, ${req.city || ''}` : '',
             titulo: req?.title,
             fecha: app.scheduled_at,
-            categoria: req?.category_id,
+            categoria: req?.service_categories?.name || req?.category_id,
             persona: persona
           };
         }),

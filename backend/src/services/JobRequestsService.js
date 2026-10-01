@@ -53,7 +53,7 @@ class JobRequestsService {
     // Inserción de fotos si existen
     if (photos && photos.length > 0) {
       const photosData = await Promise.all(photos.map(async (photoBase64, index) => {
-        let finalStoragePath = photoBase64; // Fallback
+        let finalStoragePath = null;
 
         // Check if it's a valid Base64 URL format
         const matches = photoBase64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
@@ -74,12 +74,23 @@ class JobRequestsService {
                 upsert: false
               });
               
-            if (!uploadError && uploadData) {
+            if (uploadError) {
+              throw new Error(uploadError.message);
+            }
+            if (uploadData) {
               finalStoragePath = uploadData.path;
             }
           } catch (e) {
             console.error("Error procesando imagen para storage:", e);
+            throw new AppError(`Error al subir imagen al storage: ${e.message}`, 500, 'STORAGE_ERROR');
           }
+        } else {
+          // Si no es base64, asumimos que es una URL o path ya existente (caso de fallback o mock)
+          finalStoragePath = photoBase64;
+        }
+
+        if (!finalStoragePath) {
+          throw new AppError("No se pudo obtener la ruta de la imagen subida", 500, 'STORAGE_ERROR');
         }
 
         return {

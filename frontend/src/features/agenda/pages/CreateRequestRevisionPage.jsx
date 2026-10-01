@@ -15,14 +15,18 @@ import {
 import Breadcrumbs from "../../../components/ui/Breadcrumbs";
 import Stepper from "../../../components/ui/Stepper";
 import Button from "../../../components/ui/Button";
-
-// Context
 import { useCreateRequest } from "../context/CreateRequestContext";
 import { api } from "../../../libs/axios";
+import { getSupabasePublicUrl } from "../../../utils/formatters";
+import ImagePreviewModal from "../../../components/ui/ImagePreviewModal";
+import StatusModal from "../../../components/ui/StatusModal";
+
 export default function CreateRequestRevisionPage() {
   const navigate = useNavigate();
   const { requestData, clearRequestData } = useCreateRequest();
   const { mutateAsync: publicarSolicitud, isPending: isPublishing } = useCrearSolicitud();
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [alertConfig, setAlertConfig] = useState({ isOpen: false, title: "", description: "", type: "success", onCloseAction: null });
 
   const handleEdit = (stepPath) => {
     navigate(`/client/agenda/create-request${stepPath}`);
@@ -53,13 +57,20 @@ export default function CreateRequestRevisionPage() {
         })
       );
 
+      const dateMap = {
+        "Esta semana": "this_week",
+        "Lo antes posible": "urgent",
+        "Este fin de semana": "this_month", // Usando this_month porque no existe this_weekend en el enum de la BD
+        "Soy Flexible": "flexible"
+      };
+
       const payload = {
-        categoryId: Number(requestData.categoryId || 1),
+        categoryId: Number(requestData.category || 1),
         title: requestData.title || "Nueva Solicitud",
         description: requestData.description + (requestData.additionalDetails ? `\n\nDetalles: ${requestData.additionalDetails}` : ''),
-        datePreference: requestData.date || "flexible",
+        datePreference: dateMap[requestData.date] || "flexible",
         timePreference: requestData.time || "flexible",
-        installationAge: Number(requestData.age) || null,
+        installationAge: requestData.age || null,
         isEmergency: requestData.isEmergency === "SI",
         hasMaterials: requestData.hasMaterials === "SI",
         address: requestData.address || "Sin especificar",
@@ -72,12 +83,27 @@ export default function CreateRequestRevisionPage() {
 
       await publicarSolicitud(payload);
       
-      alert("¡Solicitud publicada exitosamente en el Marketplace!");
-      clearRequestData();
-      navigate("/client/agenda");
+      setAlertConfig({
+        isOpen: true,
+        type: "success",
+        title: "¡Solicitud publicada!",
+        description: "La solicitud fue publicada exitosamente en el Marketplace.",
+        buttonText: "Volver a Mi agenda",
+        onCloseAction: () => {
+          clearRequestData();
+          navigate("/client/agenda");
+        }
+      });
     } catch (error) {
       console.error("Error al publicar la solicitud:", error);
-      alert("Ocurrió un error al intentar publicar la solicitud.");
+      const errorMessage = error.response?.data?.error?.message || "Ocurrió un error al intentar publicar la solicitud.";
+      setAlertConfig({
+        isOpen: true,
+        type: "error",
+        title: "Error al publicar",
+        description: errorMessage,
+        buttonText: "Intentar nuevamente"
+      });
     }
   };
 
@@ -212,11 +238,21 @@ export default function CreateRequestRevisionPage() {
             <div className="flex-1 flex flex-col gap-4 mt-1">
               <span className="text-[10px] text-[#A8A8AA] font-bold tracking-widest uppercase">FOTOS</span>
               <div className="flex flex-wrap gap-4">
-                {(requestData.photos && requestData.photos.length > 0) ? requestData.photos.map((file, idx) => (
-                  <div key={idx} className="w-20 h-20 bg-[#323232] rounded-[8px] flex items-center justify-center overflow-hidden border border-[#3f3f3f]">
-                     <img src={file.preview || (typeof file === 'string' ? file : '')} alt="Preview" className="w-full h-full object-cover" />
-                  </div>
-                )) : (
+                {(requestData.photos && requestData.photos.length > 0) ? requestData.photos.map((file, idx) => {
+                  const src = file.preview || (typeof file === 'string' ? getSupabasePublicUrl(file) : '');
+                  return (
+                    <div 
+                      key={idx} 
+                      className="w-28 h-28 shrink-0 bg-[#323232] rounded-[8px] flex items-center justify-center overflow-hidden border border-[#3f3f3f] cursor-pointer hover:border-[#F78736] transition-colors relative group"
+                      onClick={() => setSelectedImage(src)}
+                    >
+                       <img src={src} alt="Preview" className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" />
+                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                         <span className="text-white text-xs font-semibold">Ver</span>
+                       </div>
+                    </div>
+                  );
+                }) : (
                   <div className="text-xs text-[#A8A8AA]">Sin fotos adjuntas</div>
                 )}
               </div>
@@ -248,6 +284,26 @@ export default function CreateRequestRevisionPage() {
         </div>
 
       </div>
+
+      <ImagePreviewModal 
+        isOpen={!!selectedImage} 
+        onClose={() => setSelectedImage(null)} 
+        imageUrl={selectedImage} 
+      />
+
+      <StatusModal
+        isOpen={alertConfig.isOpen}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        description={alertConfig.description}
+        buttonText={alertConfig.buttonText}
+        onClose={() => {
+          setAlertConfig((prev) => ({ ...prev, isOpen: false }));
+          if (alertConfig.onCloseAction) {
+            alertConfig.onCloseAction();
+          }
+        }}
+      />
     </div>
   );
 }

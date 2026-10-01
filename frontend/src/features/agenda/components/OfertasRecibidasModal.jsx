@@ -6,10 +6,12 @@ import { XMarkIcon, CalendarDaysIcon, StarIcon as StarOutline } from "@heroicons
 import { StarIcon as StarSolid } from "@heroicons/react/24/solid";
 import Button from "../../../components/ui/Button";
 import Select from "../../../components/ui/Select";
+import StatusModal from "../../../components/ui/StatusModal";
 
 export default function OfertasRecibidasModal({ isOpen, onClose, requestId, onOfertaAceptada }) {
   const [show, setShow] = useState(false);
   const [sortOrder, setSortOrder] = useState("todos");
+  const [alertConfig, setAlertConfig] = useState({ isOpen: false, title: "", description: "", type: "error" });
   const navigate = useNavigate();
 
   // Fetch offers for the request
@@ -33,7 +35,13 @@ export default function OfertasRecibidasModal({ isOpen, onClose, requestId, onOf
     },
     onError: (error) => {
       console.error("Error aceptando la oferta:", error);
-      alert(error?.response?.data?.error?.message || "Ocurrió un error al aceptar la oferta.");
+      setAlertConfig({
+        isOpen: true,
+        type: "error",
+        title: "Error al aceptar oferta",
+        description: error?.response?.data?.error?.message || "Ocurrió un error al aceptar la oferta.",
+        buttonText: "Intentar nuevamente"
+      });
     }
   });
 
@@ -211,6 +219,15 @@ export default function OfertasRecibidasModal({ isOpen, onClose, requestId, onOf
           )}
         </div>
       </div>
+
+      <StatusModal
+        isOpen={alertConfig.isOpen}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        description={alertConfig.description}
+        buttonText={alertConfig.buttonText || "Cerrar"}
+        onClose={() => setAlertConfig({ ...alertConfig, isOpen: false })}
+      />
     </div>
   );
 }

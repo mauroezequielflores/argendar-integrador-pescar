@@ -34,6 +34,7 @@ class MarketplaceService {
       distanciaKm: req.distance_km ? Number(req.distance_km).toFixed(1) : null,
       isOutOfRange: req.is_out_of_range || false,
       fecha: req.created_at,
+      foto: req.client_avatar_url || null,
       cliente: `${req.client_first_name} ${req.client_last_name ? req.client_last_name.charAt(0) + '.' : ''}`.trim() || 'Cliente'
     }));
 
