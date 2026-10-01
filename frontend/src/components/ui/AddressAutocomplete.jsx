@@ -22,9 +22,9 @@ const customIcon = L.divIcon({
  * @param {String} error - Mensaje de error para mostrar (opcional)
  * @param {Boolean} showMap - Si es true, muestra un pequeño mapa debajo con la ubicación seleccionada
  */
-export default function AddressAutocomplete({ 
-  onAddressSelect, 
-  defaultValue = "", 
+export default function AddressAutocomplete({
+  onAddressSelect,
+  defaultValue = "",
   error,
   showMap = true,
   label = "Dirección"
@@ -34,7 +34,7 @@ export default function AddressAutocomplete({
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedCoords, setSelectedCoords] = useState(null);
-  
+
   const wrapperRef = useRef(null);
   const debounceRef = useRef(null);
   const mapContainerRef = useRef(null);
@@ -71,19 +71,19 @@ export default function AddressAutocomplete({
       // Agregar marcador con Tooltip moderno
       const marker = L.marker(selectedCoords, { icon: customIcon }).addTo(map);
       marker.bindTooltip(
-        `<div class='font-medium text-xs text-gray-800'>${query}</div>`, 
+        `<div class='font-medium text-xs text-gray-800'>${query}</div>`,
         { permanent: true, direction: "top", offset: [0, -32], className: 'shadow-md rounded-md' }
       ).openTooltip();
-      
+
       mapInstanceRef.current = map;
       markerInstanceRef.current = marker;
-      
+
       // Observer para corregir el bug de renderizado parcial (gray map) 
       const resizeObserver = new ResizeObserver(() => {
         map.invalidateSize();
       });
       resizeObserver.observe(mapContainerRef.current);
-      
+
       // Limpiar observer internamente
       map.on('unload', () => {
         resizeObserver.disconnect();
@@ -129,7 +129,7 @@ export default function AddressAutocomplete({
     const value = e.target.value;
     setQuery(value);
     setIsOpen(true);
-    
+
     if (selectedCoords) {
       setSelectedCoords(null);
       if (onAddressSelect) {
@@ -149,7 +149,7 @@ export default function AddressAutocomplete({
     const lng = item.coordenadas && item.coordenadas.x ? parseFloat(item.coordenadas.x) : null;
     const city = item.nombre_partido || "";
     const neighborhood = item.nombre_localidad || "";
-    
+
     setQuery(address);
     if (lat && lng) {
       setSelectedCoords([lat, lng]);
@@ -168,7 +168,7 @@ export default function AddressAutocomplete({
           {label}
         </label>
       )}
-      
+
       <div className="relative">
         <input
           type="text"
@@ -194,7 +194,7 @@ export default function AddressAutocomplete({
             ) : (
               <ul className="py-1">
                 {results.map((item, idx) => (
-                  <li 
+                  <li
                     key={idx}
                     onClick={() => handleSelect(item)}
                     className="cursor-pointer px-4 py-2 hover:bg-[#3f3f3f] flex flex-col"
@@ -212,14 +212,13 @@ export default function AddressAutocomplete({
       {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
 
       {/* Contenedor estático para Leaflet puro */}
-      <div 
-        className={`mt-3 w-full rounded-md overflow-hidden border border-[#3f3f3f] relative z-0 transition-all duration-300 ${
-          showMap && selectedCoords ? "h-48 opacity-100" : "h-0 opacity-0 border-none"
-        }`}
+      <div
+        className={`mt-3 w-full rounded-md overflow-hidden border border-[#3f3f3f] relative z-0 transition-all duration-300 ${showMap && selectedCoords ? "h-48 opacity-100" : "h-0 opacity-0 border-none"
+          }`}
       >
-        <div 
-          ref={mapContainerRef} 
-          className="absolute inset-0 h-full w-full bg-[#1e1e1e]" 
+        <div
+          ref={mapContainerRef}
+          className="absolute inset-0 h-full w-full bg-[#1e1e1e]"
         />
       </div>
     </div>
