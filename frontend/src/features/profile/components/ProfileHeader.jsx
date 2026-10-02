@@ -1,5 +1,5 @@
 ﻿import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   PencilSquareIcon,
   EnvelopeIcon,
@@ -16,9 +16,9 @@ import profileDefaultPhoto from "../../../assets/images/profile-default-photo.sv
  * Muestra:
  * 1. Portada con fallback a header-default-photo.svg
  * 2. Avatar superpuesto con fallback a profile-default-photo.svg e indicador activo (punto verde)
- * 3. Botón "Editar perfil público" alineado a la derecha con ruta parametrizable
+ * 3. Botón "Editar perfil público" alineado a la derecha con ruta correspondiente según el rol
  * 4. Nombre y apellido del usuario autenticado
- * 5. Rol ("Profesional" / "Cliente")
+ * 5. Rol ("Cliente" / "Profesional")
  * 6. Descripción "Sobre mí" con texto por defecto
  * 7. Fila horizontal de metadatos (Correo, Miembro desde, Ubicación)
  */
@@ -28,19 +28,24 @@ export default function ProfileHeader({
   role,
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Detectar automáticamente el rol basado en la ruta actual o en el prop
+  const isClientPath = location.pathname.startsWith("/client");
+  const defaultRole = role || (isClientPath ? "Cliente" : "Profesional");
+  const userRole = profile.role || profile.titulo || defaultRole;
+
+  // Resolver la ruta de edición correcta según el rol o la ruta actual
+  const resolvedEditRoute =
+    editRoute ||
+    (isClientPath || userRole?.toString().toLowerCase() === "cliente"
+      ? "/client/profile/edit-profile"
+      : "/professional/profile/edit-profile");
 
   const fullName =
     profile.firstName && profile.lastName
       ? `${profile.firstName} ${profile.lastName}`
       : profile.name || "Nombre Apellido";
-
-  const userRole = profile.role || profile.titulo || role || "Profesional";
-
-  const resolvedEditRoute =
-    editRoute ||
-    (userRole?.toLowerCase() === "cliente"
-      ? "/client/profile/edit-profile"
-      : "/professional/profile/edit-profile");
 
   const description =
     profile.description &&
@@ -57,7 +62,7 @@ export default function ProfileHeader({
       : profile.memberSince
     : "Enero 2021";
 
-  const location =
+  const locationText =
     profile.location && profile.location !== "-"
       ? profile.location
       : profile.baseLocation || "";
@@ -139,10 +144,12 @@ export default function ProfileHeader({
           </div>
 
           {/* Ubicación */}
-          <div className="flex items-center gap-1.5">
-            <MapPinIcon className="h-4 w-4 text-[#A8A8AA]" />
-            <span>{location}</span>
-          </div>
+          {locationText && (
+            <div className="flex items-center gap-1.5">
+              <MapPinIcon className="h-4 w-4 text-[#A8A8AA]" />
+              <span>{locationText}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import Breadcrumbs from "../../../components/ui/Breadcrumbs";
 import ProfileHeader from "../components/ProfileHeader";
 import PublicProfileTab from "../components/PublicProfileTab";
@@ -38,17 +38,22 @@ export default function ProfilePage() {
       <Breadcrumbs items={breadcrumbs} />
 
       {/* ── Encabezado del Perfil (CA01, CA02) ──────────────────────── */}
-      <ProfileHeader profile={profile} />
+      <ProfileHeader
+        profile={profile}
+        role="Cliente"
+        editRoute="/client/profile/edit-profile"
+      />
 
       {/* ── Pestañas de Navegación ──────────────────────────────────── */}
       <div className="border-b border-[#323232] flex items-center gap-8">
         <button
           type="button"
           onClick={() => setActiveTab("public")}
-          className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 cursor-pointer ${activeTab === "public"
+          className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 cursor-pointer ${
+            activeTab === "public"
               ? "border-[#F78736] text-white"
               : "border-transparent text-[#A8A8AA] hover:text-white"
-            }`}
+          }`}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -64,10 +69,11 @@ export default function ProfilePage() {
         <button
           type="button"
           onClick={() => setActiveTab("info")}
-          className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 cursor-pointer ${activeTab === "info"
+          className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 cursor-pointer ${
+            activeTab === "info"
               ? "border-[#F78736] text-white"
               : "border-transparent text-[#A8A8AA] hover:text-white"
-            }`}
+          }`}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
