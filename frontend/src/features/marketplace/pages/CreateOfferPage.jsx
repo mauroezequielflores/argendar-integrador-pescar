@@ -2,7 +2,10 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useAuth } from "../../../context/AuthContext";
 import { useRequestDetail, useCreateOffer } from "../hooks/useMarketplaceQueries";
+import { useProfessionalProfile } from "../../profile/hooks/useProfileQueries";
+import SolicitudDetailModal from "../components/SolicitudDetailModal";
 import { api } from "../../../libs/axios";
 import { createOfferFormSchema } from "../../../validations/offer.schema";
 import { ROUTES } from "../../../constants/routes";
@@ -14,6 +17,7 @@ import {
   ArrowLeftIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
+  ArrowRightIcon,
 } from "@heroicons/react/24/outline";
 import { formatDatePreference, getSupabasePublicUrl } from "../../../utils/formatters";
 
@@ -22,11 +26,11 @@ function SuccessModal({ isOpen, onOffers, onHome }) {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-      <div className="w-full max-w-sm rounded-[6px] bg-white p-6 text-center shadow-xl">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#292929]">
+      <div className="w-full max-w-sm rounded-[6px] border border-[#292929] bg-[#202020] p-6 text-center shadow-xl">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#323232]">
           <CheckCircleIcon className="h-8 w-8 text-white" />
         </div>
-        <p className="mb-6 text-sm text-gray-500">
+        <p className="mb-6 text-sm text-[#A8A8AA]">
           Tu oferta ha sido enviada al cliente. Te notificaremos cuando haya una respuesta.
         </p>
         <div className="flex flex-col gap-3">
@@ -38,7 +42,7 @@ function SuccessModal({ isOpen, onOffers, onHome }) {
           </button>
           <button
             onClick={onHome}
-            className="w-full rounded-[6px] border-2 border-gray-300 bg-white py-3 text-sm font-bold text-gray-400 hover:bg-gray-50 transition-colors"
+            className="w-full rounded-[6px] border border-[#404040] bg-transparent py-3 text-sm font-bold text-white hover:bg-[#323232] transition-colors"
           >
             Volver al inicio
           </button>
@@ -52,11 +56,11 @@ function ErrorModal({ isOpen, message, onRetry, onClose }) {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-      <div className="w-full max-w-sm rounded-[6px] bg-white p-6 text-center shadow-xl">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#292929]">
+      <div className="w-full max-w-sm rounded-[6px] border border-[#292929] bg-[#202020] p-6 text-center shadow-xl">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#323232]">
           <ExclamationTriangleIcon className="h-8 w-8 text-white" />
         </div>
-        <p className="mb-6 text-sm text-gray-500">
+        <p className="mb-6 text-sm text-[#A8A8AA]">
           {message || "Hubo un problema técnico al procesar tu solicitud. Por favor, intenta de nuevo en unos minutos."}
         </p>
         <div className="flex flex-col gap-3">
@@ -68,7 +72,7 @@ function ErrorModal({ isOpen, message, onRetry, onClose }) {
           </button>
           <button
             onClick={onClose}
-            className="w-full rounded-[6px] border-2 border-gray-300 bg-white py-3 text-sm font-bold text-gray-400 hover:bg-gray-50 transition-colors"
+            className="w-full rounded-[6px] border border-[#404040] bg-transparent py-3 text-sm font-bold text-white hover:bg-[#323232] transition-colors"
           >
             Cerrar
           </button>
@@ -103,10 +107,12 @@ function formatDateDisplay(dateString) {
 export default function CreateOfferPage() {
   const { solicitudId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   // Form Setup
   const {
@@ -129,6 +135,7 @@ export default function CreateOfferPage() {
 
   // Fetch Request Details
   const { data: requestData, isLoading: isLoadingRequest } = useRequestDetail(solicitudId);
+  const { data: profProfile } = useProfessionalProfile();
 
   const reqDetail = requestData?.data;
 
@@ -291,11 +298,19 @@ export default function CreateOfferPage() {
                   </div>
                 </div>
                 <div className="px-4 pt-4 pb-4 flex gap-4">
-                  <div className="h-10 w-10 shrink-0 rounded-full bg-[#A8A8AA]"></div>
+                  <div className="h-10 w-10 shrink-0 rounded-full bg-[#323232] flex items-center justify-center overflow-hidden">
+                    {reqDetail.cliente?.foto ? (
+                      <img src={getSupabasePublicUrl(reqDetail.cliente.foto, 'avatars')} alt="avatar" className="h-full w-full object-cover" />
+                    ) : (
+                      <UserIcon className="h-5 w-5 text-[#A8A8AA]" />
+                    )}
+                  </div>
                   <div className="flex-1 flex flex-col gap-1">
                     <h4 className="text-base font-bold text-white">{reqDetail.titulo}</h4>
                     <p className="text-xs text-[#A8A8AA] leading-relaxed line-clamp-2">
-                      {reqDetail.descripcion}
+                      {reqDetail.descripcion?.includes('Detalles:') 
+                        ? reqDetail.descripcion.split('Detalles:')[0].trim() 
+                        : reqDetail.descripcion}
                     </p>
                   </div>
                 </div>
@@ -311,7 +326,13 @@ export default function CreateOfferPage() {
                       ESPERANDO OFERTAS...
                     </span>
                   </div>
-                  <div className="text-xs font-semibold text-[#A8A8AA] border border-[#404040] px-2 py-1 rounded-[4px]">Ver detalle -&gt;</div>
+                  <button 
+                    type="button"
+                    onClick={() => setIsDetailModalOpen(true)}
+                    className="flex items-center gap-1 text-xs text-white bg-[#323232] px-3 py-1.5 rounded-[6px] hover:bg-[#3f3f3f] transition-colors font-medium pointer-events-auto"
+                  >
+                    Ver detalle <ArrowRightIcon className="h-3 w-3" />
+                  </button>
                 </div>
               </div>
             ) : null}
@@ -323,16 +344,20 @@ export default function CreateOfferPage() {
           <div className="sticky top-6 flex flex-col gap-4 rounded-[6px] border border-[#323232] bg-[#292929] p-6">
             <h3 className="text-lg font-bold">Resumen de tu oferta</h3>
             
-            {/* Header del profesional (Hardcodeado segun diseño) */}
+            {/* Header del profesional */}
             <div className="flex items-center gap-3 border border-[#404040] rounded-[6px] p-3 mt-2">
               <div className="h-10 w-10 shrink-0 rounded-full bg-[#323232] flex items-center justify-center overflow-hidden">
-                <UserIcon className="h-6 w-6 text-[#A8A8AA]" />
+                {user?.avatar_url ? (
+                  <img src={getSupabasePublicUrl(user.avatar_url, 'avatars')} alt="avatar" className="h-full w-full object-cover" />
+                ) : (
+                  <UserIcon className="h-6 w-6 text-[#A8A8AA]" />
+                )}
               </div>
               <div>
                 <p className="text-sm font-bold flex items-center gap-2">
-                  Ricardo Gómez <span className="text-[10px] tracking-wide text-white">★★★★☆</span>
+                  {user ? `${user.first_name} ${user.last_name}` : "Profesional"} <span className="text-[10px] tracking-wide text-white">★★★★☆</span>
                 </p>
-                <p className="text-[10px] text-[#A8A8AA] tracking-wider uppercase font-semibold">Electricista</p>
+                <p className="text-[10px] text-[#A8A8AA] tracking-wider uppercase font-semibold">{profProfile?.title || "Profesional"}</p>
               </div>
             </div>
 
@@ -405,6 +430,14 @@ export default function CreateOfferPage() {
           document.getElementById('offer-form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
         }} 
         onClose={() => setShowError(false)} 
+      />
+
+      <SolicitudDetailModal 
+        isOpen={isDetailModalOpen} 
+        onClose={() => setIsDetailModalOpen(false)} 
+        solicitudId={solicitudId} 
+        preloadedData={reqDetail} 
+        readOnly={true}
       />
     </div>
   );
