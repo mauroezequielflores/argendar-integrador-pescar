@@ -7,7 +7,7 @@ import NotificationDropdown from "../../features/notifications/components/Notifi
 export default function Header({
   logoLink = "/",
   logoText = "Argendar",
-  searchPlaceholder = "Buscar profesional o servicio",
+  searchPlaceholder = "Buscar profesional",
   onMobileMenuClick,
   onNotificationClick,
   onSettingsClick,

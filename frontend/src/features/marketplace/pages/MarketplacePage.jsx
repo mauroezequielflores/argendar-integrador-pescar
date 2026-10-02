@@ -4,9 +4,14 @@ import {
   BuildingStorefrontIcon,
   ChevronDownIcon,
 } from "@heroicons/react/24/outline";
+import { useEffect, useRef } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 // Componentes UI Compartidos
 import Breadcrumbs from "../../../components/ui/Breadcrumbs";
+import Modal from "../../../components/ui/Modal";
+import { useProfileSettings } from "../../profile/hooks/useProfileQueries";
 
 // Subcomponentes del Marketplace
 import MarketplaceFilterSidebar from "../components/MarketplaceFilterSidebar";
@@ -23,13 +28,76 @@ import {
   SORT_OPTIONS,
 } from "../data/mockClientMarketplace";
 
+const customIcon = L.divIcon({
+  className: "custom-leaflet-marker",
+  html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#F78736" class="w-8 h-8 -mt-8 -ml-4" style="filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.5));">
+          <path fill-rule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 00-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+         </svg>`,
+  iconSize: [0, 0],
+  iconAnchor: [0, 0],
+});
+
 /**
  * MarketplacePage — Pantalla principal del Marketplace (Cliente).
  * Ruta: /client/marketplace
  */
 export default function MarketplacePage() {
-  // Pestaña activa: "profesionales" | "solicitudes"
   const [activeTab, setActiveTab] = useState("profesionales");
+  
+  // ─── Estado de Ubicación ──────────────────────────────────────────────────
+  const { data: profileSettings, isSuccess } = useProfileSettings('client');
+  
+  const [clientLocation, setClientLocation] = useState("");
+  const [clientLat, setClientLat] = useState(null); 
+  const [clientLng, setClientLng] = useState(null);
+  const [isLocationInitialized, setIsLocationInitialized] = useState(false);
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  
+  const mapContainerRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+
+  // Inicializar location desde profile
+  useEffect(() => {
+    if (isSuccess && profileSettings?.location && !isLocationInitialized) {
+      setClientLocation(profileSettings.location.address || UBICACION_CLIENTE_DEFAULT);
+      setClientLat(profileSettings.location.latitude || -34.603722);
+      setClientLng(profileSettings.location.longitude || -58.381592);
+      setIsLocationInitialized(true);
+    }
+  }, [isSuccess, profileSettings, isLocationInitialized]);
+
+  // Inicializar Leaflet map (sin radio)
+  useEffect(() => {
+    if (isMapModalOpen && clientLat && clientLng && mapContainerRef.current) {
+      if (!mapInstanceRef.current) {
+        const map = L.map(mapContainerRef.current, {
+          zoomControl: false,
+        }).setView([clientLat, clientLng], 14);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        L.marker([clientLat, clientLng], { icon: customIcon }).addTo(map);
+
+        mapInstanceRef.current = map;
+        
+        setTimeout(() => {
+          map.invalidateSize();
+        }, 300);
+      } else {
+        mapInstanceRef.current.setView([clientLat, clientLng], 14);
+        L.marker([clientLat, clientLng], { icon: customIcon }).addTo(mapInstanceRef.current);
+      }
+    }
+
+    return () => {
+      if (!isMapModalOpen && mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, [isMapModalOpen, clientLat, clientLng]);
 
   // ─── Filtros para PROFESIONALES ───────────────────────────────────────────
   const [profSearch, setProfSearch] = useState("");
@@ -224,10 +292,19 @@ export default function MarketplacePage() {
               ? handleProfCategoryToggle
               : handleSolCategoryToggle
           }
-          location={UBICACION_CLIENTE_DEFAULT}
+          location={clientLocation}
+          onLocationChange={(loc) => {
+            if (loc && loc.address) {
+              setClientLocation(loc.address);
+              if (loc.lat && loc.lng) {
+                setClientLat(loc.lat);
+                setClientLng(loc.lng);
+              }
+            }
+          }}
           onApply={handleApplyFilters}
           onClear={handleClearFilters}
-          onOpenMap={() => { }}
+          onOpenMap={() => setIsMapModalOpen(true)}
         />
 
         {/* ── Área de Resultados ────────────────────────────────────────── */}
@@ -332,6 +409,29 @@ export default function MarketplacePage() {
           )}
         </div>
       </div>
+
+      <Modal isOpen={isMapModalOpen} onClose={() => setIsMapModalOpen(false)} title="Ubicación de búsqueda">
+        <div className="flex flex-col text-white pb-2">
+          <p className="text-sm text-[#A8A8AA] mb-4">
+            Ubicación: <span className="text-white font-medium">{clientLocation}</span>
+          </p>
+          <div className="w-full h-64 bg-[#1e1e1e] rounded-[8px] overflow-hidden border border-[#3f3f3f] relative z-0">
+            {clientLat && clientLng ? (
+              <div ref={mapContainerRef} className="absolute inset-0 h-full w-full" />
+            ) : (
+              <div className="flex items-center justify-center h-full text-[#A8A8AA] text-sm">
+                No tienes ubicación configurada
+              </div>
+            )}
+          </div>
+          <button 
+            onClick={() => setIsMapModalOpen(false)}
+            className="mt-6 w-full bg-[#323232] text-white py-2.5 rounded-[6px] hover:bg-[#3f3f3f] transition-colors font-medium text-sm"
+          >
+            Cerrar
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

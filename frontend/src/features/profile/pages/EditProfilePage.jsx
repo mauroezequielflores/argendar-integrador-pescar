@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { CameraIcon, PencilSquareIcon, UserCircleIcon } from "@heroicons/react/24/outline";
 import { StarIcon as SolidStarIcon } from "@heroicons/react/24/solid";
@@ -10,85 +10,98 @@ import InfoAlert from "../../../components/ui/InfoAlert";
 import EmptyState from "../../../components/ui/EmptyState";
 import RatingSummary from "../../../components/ui/RatingSummary";
 import Loader from "../../../components/ui/Loader";
-import { api } from "../../../libs/axios";
+import { useClientProfile, useUpdateClientProfile } from "../hooks/useProfileQueries";
 
+/**
+ * EditProfilePage — Pantalla de edición de perfil público (Cliente).
+ * Ruta: /client/profile/edit-profile
+ */
 export default function EditProfilePage() {
   const navigate = useNavigate();
-  const fileInputRef = useRef(null);
+  const avatarInputRef = useRef(null);
+  const coverInputRef = useRef(null);
 
-  // States
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  // Estados locales
   const [isSuccess, setIsSuccess] = useState(false);
-  const [profile, setProfile] = useState(null);
   const [bio, setBio] = useState("");
   
-  // Base64 states for preview and upload
+  // Previsualizaciones y Base64 para avatar y portada
   const [avatarBase64, setAvatarBase64] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
   const [coverBase64, setCoverBase64] = useState(null);
+  const [coverPreview, setCoverPreview] = useState(null);
+
+  const { data: profile, isLoading } = useClientProfile();
+  const updateProfileMutation = useUpdateClientProfile();
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await api.get('/client/profile');
-        setProfile(response.data);
-        setBio(response.data.description || "");
-      } catch (error) {
-        console.error("Error fetching profile", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchProfile();
-  }, []);
-
-  const handleCameraClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
+    if (profile?.description) {
+      setBio(profile.description);
     }
-  };
+    if (profile?.coverUrl || profile?.coverPhoto) {
+      setCoverPreview(profile.coverUrl || profile.coverPhoto);
+    }
+    if (profile?.avatarUrl || profile?.photo) {
+      setAvatarPreview(profile.avatarUrl || profile.photo);
+    }
+  }, [profile]);
 
-  const toBase64 = (file) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = (error) => reject(error);
-  });
+  const toBase64 = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
 
   const handleAvatarChange = async (e) => {
     if (e.target.files && e.target.files[0]) {
-      const base64 = await toBase64(e.target.files[0]);
+      const file = e.target.files[0];
+      const base64 = await toBase64(file);
       setAvatarBase64(base64);
+      setAvatarPreview(base64);
     }
   };
 
-  const handleSaveAndReturn = async () => {
-    setIsSaving(true);
-    try {
-      const payload = { description: bio };
-      if (avatarBase64) payload.avatarUrl = avatarBase64;
-      if (coverBase64) payload.coverUrl = coverBase64; // Cover is currently not mapped to a distinct input, we'll map both just in case
-
-      await api.patch('/client/profile', payload);
-      window.dispatchEvent(new CustomEvent('profileUpdated'));
-      navigate("/client/profile");
-    } catch (error) {
-      console.error("Error saving profile", error);
-      setIsSaving(false);
+  const handleCoverChange = async (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const base64 = await toBase64(file);
+      setCoverBase64(base64);
+      setCoverPreview(base64);
     }
   };
 
-  const handleSaveBio = async () => {
-    setIsSaving(true);
-    try {
-      await api.patch('/client/profile', { description: bio });
-      setIsSuccess(true);
-      setTimeout(() => setIsSuccess(false), 3000);
-    } catch (error) {
-      console.error("Error saving bio", error);
-    } finally {
-      setIsSaving(false);
-    }
+  const handleSaveAndReturn = () => {
+    const payload = { description: bio };
+    if (avatarBase64) payload.avatarUrl = avatarBase64;
+    if (coverBase64) payload.coverUrl = coverBase64;
+
+    updateProfileMutation.mutate(payload, {
+      onSuccess: () => {
+        window.dispatchEvent(new CustomEvent("profileUpdated"));
+        navigate("/client/profile");
+      },
+      onError: (error) => {
+        console.error("Error saving profile", error);
+      },
+    });
+  };
+
+  const handleSaveBio = () => {
+    const payload = { description: bio };
+    if (avatarBase64) payload.avatarUrl = avatarBase64;
+    if (coverBase64) payload.coverUrl = coverBase64;
+
+    updateProfileMutation.mutate(payload, {
+      onSuccess: () => {
+        setIsSuccess(true);
+        setTimeout(() => setIsSuccess(false), 3000);
+      },
+      onError: (error) => {
+        console.error("Error saving bio", error);
+      },
+    });
   };
 
   if (isLoading) {
@@ -100,42 +113,62 @@ export default function EditProfilePage() {
   }
 
   return (
-    <div className="flex-1 w-full max-w-[1200px] mx-auto p-4 md:p-6 lg:p-8">
+    <div className="flex-1 w-full max-w-[1200px] mx-auto p-4 md:p-6 lg:p-8 font-sans">
       {/* ─── Header: Cover, Avatar y Botón ────────────────────────────── */}
       <div className="relative mb-24">
         {/* Cover Image */}
-        <div 
+        <div
           className="relative h-48 w-full rounded-t-xl bg-[#202020] border border-[#3a3a3a] overflow-hidden flex items-center justify-center bg-cover bg-center"
-          style={{ backgroundImage: coverBase64 ? `url(${coverBase64})` : (profile?.coverUrl ? `url(${profile.coverUrl})` : 'none') }}
+          style={{
+            backgroundImage: coverPreview ? `url(${coverPreview})` : "none",
+          }}
         >
-          {/* Note: Para que funcione la cámara de la portada, idealmente se necesita otra ref/input. Omitido por simplicidad si no hay input de cover, pero se deja el handler. */}
+          {/* Botón de la cámara para la portada */}
           <button
-            onClick={() => {}} // TODO: Add a ref for cover input if needed
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#3a3a3a] text-white hover:bg-[#525252] transition-colors z-10"
+            type="button"
+            onClick={() => coverInputRef.current?.click()}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#3a3a3a] text-white hover:bg-[#525252] transition-colors z-10 cursor-pointer shadow-md"
             aria-label="Cambiar portada"
           >
             <CameraIcon className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Input file oculto para el avatar */}
-        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarChange} />
+        {/* Input file oculto para la portada */}
+        <input
+          type="file"
+          ref={coverInputRef}
+          className="hidden"
+          accept="image/*"
+          onChange={handleCoverChange}
+        />
 
-        {/* Avatar, Textos y Botón (1/4 dentro del cover, 3/4 fuera) */}
-        {/* Altura del avatar 100px -> -bottom-[75px] significa 75px fuera y 25px dentro */}
+        {/* Input file oculto para el avatar */}
+        <input
+          type="file"
+          ref={avatarInputRef}
+          className="hidden"
+          accept="image/*"
+          onChange={handleAvatarChange}
+        />
+
+        {/* Avatar, Textos y Botón */}
         <div className="absolute -bottom-[75px] left-0 w-full px-6 sm:px-8 flex items-end justify-between pointer-events-none">
           <div className="flex items-end gap-6 pointer-events-auto">
             <div className="relative">
-              <div 
+              <div
                 className="flex h-[100px] w-[100px] items-center justify-center rounded-full border-4 border-[#121212] bg-[#E5E7EB] overflow-hidden bg-cover bg-center"
-                style={{ backgroundImage: avatarBase64 ? `url(${avatarBase64})` : (profile?.avatarUrl ? `url(${profile.avatarUrl})` : 'none') }}
+                style={{
+                  backgroundImage: avatarPreview ? `url(${avatarPreview})` : "none",
+                }}
               >
-                 {!avatarBase64 && !profile?.avatarUrl && <UserCircleIcon className="h-12 w-12 text-gray-400" />}
+                {!avatarPreview && <UserCircleIcon className="h-12 w-12 text-gray-400" />}
               </div>
               {/* Botón cámara de Avatar */}
               <button
-                onClick={handleCameraClick}
-                className="absolute inset-0 m-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#3a3a3a] text-white opacity-90 hover:bg-[#525252] transition-colors"
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                className="absolute inset-0 m-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#3a3a3a] text-white opacity-90 hover:bg-[#525252] transition-colors cursor-pointer shadow-md"
                 aria-label="Cambiar foto de perfil"
               >
                 <CameraIcon className="h-5 w-5" />
@@ -150,19 +183,29 @@ export default function EditProfilePage() {
               </p>
             </div>
           </div>
-          
-          {/* Top-Right Botón "Guardar y volver a Mi perfil" reubicado debajo */}
+
+          {/* Botón "Guardar y volver a Mi perfil" */}
           <div className="mb-2 pointer-events-auto hidden sm:block">
-            <Button variant="secondary" onClick={handleSaveAndReturn} className="px-4">
+            <Button
+              variant="secondary"
+              onClick={handleSaveAndReturn}
+              isLoading={updateProfileMutation.isPending}
+              className="px-4"
+            >
               Guardar y volver a Mi perfil
             </Button>
           </div>
         </div>
       </div>
-      
-      {/* Botón en mobile si el espacio es reducido */}
+
+      {/* Botón en mobile */}
       <div className="mt-8 sm:hidden px-4">
-        <Button variant="secondary" onClick={handleSaveAndReturn} className="w-full">
+        <Button
+          variant="secondary"
+          onClick={handleSaveAndReturn}
+          isLoading={updateProfileMutation.isPending}
+          className="w-full"
+        >
           Guardar y volver a Mi perfil
         </Button>
       </div>
@@ -195,7 +238,12 @@ export default function EditProfilePage() {
                 <span className="text-sm text-green-500 font-medium">¡Cambios guardados!</span>
               )}
               <div className="w-auto">
-                <Button variant="primary" onClick={handleSaveBio} isLoading={isSaving} className="px-6">
+                <Button
+                  variant="primary"
+                  onClick={handleSaveBio}
+                  isLoading={updateProfileMutation.isPending}
+                  className="px-6"
+                >
                   Guardar cambios
                 </Button>
               </div>
@@ -206,18 +254,23 @@ export default function EditProfilePage() {
         {/* ─── Aviso Informativo ────────────────────────────────────────── */}
         <InfoAlert>
           Las calificaciones no se pueden modificar. Si sentís que hay algún error comunicate con Soporte en{" "}
-          <a href="mailto:soporte@argendar.com" className="underline hover:text-white transition-colors">
+          <a
+            href="mailto:soporte@argendar.com"
+            className="underline hover:text-white transition-colors"
+          >
             soporte@argendar.com
           </a>{" "}
           ó navega a nuestra sección de{" "}
-          <Link to="/client/help" className="underline hover:text-white transition-colors">
+          <Link
+            to="/client/help"
+            className="underline hover:text-white transition-colors"
+          >
             Ayuda
           </Link>.
         </InfoAlert>
 
         {/* ─── Grilla de Calificaciones ─────────────────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6">
-          
           {/* Resumen de Calificaciones */}
           <Card className="p-6 border border-[#3a3a3a] bg-[#292929] flex flex-col items-center">
             <h2 className="text-lg font-bold text-[#FFFFFF] mb-6 self-start">
@@ -242,7 +295,11 @@ export default function EditProfilePage() {
                 description="Tus opiniones a profesionales aparecerán aquí cuando comiences a calificar un servicio."
                 action={
                   <div className="w-auto">
-                    <Button variant="primary" onClick={() => navigate("/client/marketplace")} className="px-6">
+                    <Button
+                      variant="primary"
+                      onClick={() => navigate("/client/marketplace")}
+                      className="px-6"
+                    >
                       Solicitar servicio
                     </Button>
                   </div>
@@ -250,7 +307,6 @@ export default function EditProfilePage() {
               />
             </div>
           </Card>
-
         </div>
       </div>
     </div>

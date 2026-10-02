@@ -1,9 +1,28 @@
 import { CalendarIcon, MapPinIcon, ClockIcon, UserIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
 import Button from "../../../components/ui/Button";
 
+function timeSince(fechaISO) {
+  if (!fechaISO) return "hace poco";
+  const date = new Date(fechaISO);
+  const now = new Date();
+  const seconds = Math.floor((now - date) / 1000);
+  
+  let interval = Math.floor(seconds / 31536000);
+  if (interval >= 1) return `hace ${interval} año${interval === 1 ? '' : 's'}`;
+  interval = Math.floor(seconds / 2592000);
+  if (interval >= 1) return `hace ${interval} mes${interval === 1 ? '' : 'es'}`;
+  interval = Math.floor(seconds / 86400);
+  if (interval >= 1) return `hace ${interval} día${interval === 1 ? '' : 's'}`;
+  interval = Math.floor(seconds / 3600);
+  if (interval >= 1) return `hace ${interval} hora${interval === 1 ? '' : 's'}`;
+  interval = Math.floor(seconds / 60);
+  if (interval >= 1) return `hace ${interval} minuto${interval === 1 ? '' : 's'}`;
+  return "hace unos segundos";
+}
+
 export default function OfertaCard({ oferta, onVerDetalle, onVerMiOferta }) {
   // En un caso real, la data vendría de la prop "oferta".
-  // Usamos los valores fijos del diseño por ahora.
+  // Usamos los valores dinámicos
   
   return (
     <div className="relative overflow-hidden rounded-[6px] border border-[#323232] bg-[#292929]">
@@ -23,24 +42,28 @@ export default function OfertaCard({ oferta, onVerDetalle, onVerMiOferta }) {
             </span>
             <span className="flex items-center gap-1 rounded border border-[#323232] px-2.5 py-1 text-white">
               <MapPinIcon className="h-3.5 w-3.5 text-[#A8A8AA]" />
-              Caballito, CABA
+              {oferta?.ubicacion || "Ubicación no especificada"}
             </span>
           </div>
           <div className="flex items-center gap-1 text-xs text-[#A8A8AA] sm:pr-32">
             <ClockIcon className="h-4 w-4" />
-            Publicado hace 1 día
+            {timeSince(oferta?.fechaPublicacion)}
           </div>
         </div>
 
         {/* Medio: Avatar, Titulo, Desc */}
         <div className="mt-2 flex items-start gap-4">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#727272] text-white">
-            <UserIcon className="h-6 w-6" />
+            {oferta?.cliente?.inicial ? (
+              <span className="text-xl font-bold">{oferta.cliente.nombre.charAt(0)}{oferta.cliente.inicial.charAt(0)}</span>
+            ) : (
+              <UserIcon className="h-6 w-6" />
+            )}
           </div>
           <div>
-            <h3 className="text-xl font-bold text-white">Cambio de tablero principal</h3>
+            <h3 className="text-xl font-bold text-white">{oferta?.titulo || "Solicitud"}</h3>
             <p className="mt-2 text-sm leading-relaxed text-[#A8A8AA]">
-              Reemplazo de tablero eléctrico antiguo por uno nuevo con disyuntor y térmicas sectorizadas. Departamento de 3 ambientes.
+              {oferta?.descripcion || "Sin descripción"}
             </p>
           </div>
         </div>
@@ -53,12 +76,10 @@ export default function OfertaCard({ oferta, onVerDetalle, onVerMiOferta }) {
           <div className="flex flex-wrap items-center gap-3 text-xs text-[#A8A8AA]">
             <div className="flex items-center gap-1.5">
               <CalendarIcon className="h-4 w-4" />
-              Preferencia: <span className="font-semibold text-white">Soy flexible</span>
+              Tu oferta: <span className="font-semibold text-white">${oferta?.monto ? Number(oferta.monto).toLocaleString("es-AR") : "0"}</span>
             </div>
             <span className="text-[#323232]">·</span>
-            <span className="rounded border border-[#323232] px-2.5 py-1">ELECTRICIDAD</span>
-            <span className="text-[#323232]">·</span>
-            <span className="rounded border border-[#323232] px-2.5 py-1">3 Ofertas recibidas</span>
+            <span className="rounded border border-[#323232] px-2.5 py-1">{oferta?.servicio?.toUpperCase() || "GENERAL"}</span>
           </div>
           
           <div className="flex w-full items-center justify-end gap-3 sm:w-auto">

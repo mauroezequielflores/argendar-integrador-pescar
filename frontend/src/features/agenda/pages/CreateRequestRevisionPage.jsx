@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useCrearSolicitud } from "../hooks/useAgendaQueries";
 import { 
   MapPinIcon, 
   WrenchScrewdriverIcon, 
@@ -14,12 +15,18 @@ import {
 import Breadcrumbs from "../../../components/ui/Breadcrumbs";
 import Stepper from "../../../components/ui/Stepper";
 import Button from "../../../components/ui/Button";
-
-// Context
 import { useCreateRequest } from "../context/CreateRequestContext";
+import { api } from "../../../libs/axios";
+import { getSupabasePublicUrl } from "../../../utils/formatters";
+import ImagePreviewModal from "../../../components/ui/ImagePreviewModal";
+import StatusModal from "../../../components/ui/StatusModal";
+
 export default function CreateRequestRevisionPage() {
   const navigate = useNavigate();
   const { requestData, clearRequestData } = useCreateRequest();
+  const { mutateAsync: publicarSolicitud, isPending: isPublishing } = useCrearSolicitud();
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [alertConfig, setAlertConfig] = useState({ isOpen: false, title: "", description: "", type: "success", onCloseAction: null });
 
   const handleEdit = (stepPath) => {
     navigate(`/client/agenda/create-request${stepPath}`);
@@ -34,10 +41,70 @@ export default function CreateRequestRevisionPage() {
     navigate("/client/agenda");
   };
 
-  const handlePublish = () => {
-    alert("¡Solicitud publicada exitosamente en el Marketplace!");
-    clearRequestData();
-    navigate("/client/agenda");
+  const handlePublish = async () => {
+    try {
+      const toBase64 = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+      });
+
+      const photosBase64 = await Promise.all(
+        (requestData.photos || []).map(async (file) => {
+          if (typeof file === 'string') return file;
+          return await toBase64(file);
+        })
+      );
+
+      const dateMap = {
+        "Esta semana": "this_week",
+        "Lo antes posible": "urgent",
+        "Este fin de semana": "this_month", // Usando this_month porque no existe this_weekend en el enum de la BD
+        "Soy Flexible": "flexible"
+      };
+
+      const payload = {
+        categoryId: Number(requestData.category || 1),
+        title: requestData.title || "Nueva Solicitud",
+        description: requestData.description + (requestData.additionalDetails ? `\n\nDetalles: ${requestData.additionalDetails}` : ''),
+        datePreference: dateMap[requestData.date] || "flexible",
+        timePreference: requestData.time || "flexible",
+        installationAge: requestData.age || null,
+        isEmergency: requestData.isEmergency === "SI",
+        hasMaterials: requestData.hasMaterials === "SI",
+        address: requestData.address || "Sin especificar",
+        neighborhood: requestData.neighborhood || "",
+        city: requestData.city || "",
+        latitude: requestData.latitude || null,
+        longitude: requestData.longitude || null,
+        photos: photosBase64
+      };
+
+      await publicarSolicitud(payload);
+      
+      setAlertConfig({
+        isOpen: true,
+        type: "success",
+        title: "¡Solicitud publicada!",
+        description: "La solicitud fue publicada exitosamente en el Marketplace.",
+        buttonText: "Volver a Mi agenda",
+        onCloseAction: () => {
+          clearRequestData();
+          navigate("/client/agenda");
+        }
+      });
+    } catch (error) {
+      console.error("Error al publicar la solicitud:", error);
+      const errorMessage = error.response?.data?.error?.message || "Ocurrió un error al intentar publicar la solicitud.";
+      setAlertConfig({
+        isOpen: true,
+        type: "error",
+        title: "Error al publicar",
+        description: errorMessage,
+        buttonText: "Intentar nuevamente"
+      });
+    }
   };
 
   return (
@@ -171,11 +238,23 @@ export default function CreateRequestRevisionPage() {
             <div className="flex-1 flex flex-col gap-4 mt-1">
               <span className="text-[10px] text-[#A8A8AA] font-bold tracking-widest uppercase">FOTOS</span>
               <div className="flex flex-wrap gap-4">
-                {[1, 2, 3].map((item, idx) => (
-                  <div key={idx} className="w-20 h-20 bg-[#323232] rounded-[8px] flex items-center justify-center overflow-hidden border border-[#3f3f3f]">
-                     <PhotoIcon className="h-8 w-8 text-[#555]" />
-                  </div>
-                ))}
+                {(requestData.photos && requestData.photos.length > 0) ? requestData.photos.map((file, idx) => {
+                  const src = file.preview || (typeof file === 'string' ? getSupabasePublicUrl(file) : '');
+                  return (
+                    <div 
+                      key={idx} 
+                      className="w-28 h-28 shrink-0 bg-[#323232] rounded-[8px] flex items-center justify-center overflow-hidden border border-[#3f3f3f] cursor-pointer hover:border-[#F78736] transition-colors relative group"
+                      onClick={() => setSelectedImage(src)}
+                    >
+                       <img src={src} alt="Preview" className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" />
+                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                         <span className="text-white text-xs font-semibold">Ver</span>
+                       </div>
+                    </div>
+                  );
+                }) : (
+                  <div className="text-xs text-[#A8A8AA]">Sin fotos adjuntas</div>
+                )}
               </div>
             </div>
             <button 
@@ -198,13 +277,33 @@ export default function CreateRequestRevisionPage() {
             <Button type="button" variant="secondary" onClick={handleCancel} className="w-full sm:w-auto px-10 bg-[#727272] border-[#727272] text-white hover:bg-[#5f5f5f]">
               Cancelar
             </Button>
-            <Button type="button" variant="primary" onClick={handlePublish} className="w-full sm:w-auto px-10 bg-[#F78736] border-[#F78736] hover:bg-[#e0752b]">
-              Publicar Solicitud
+            <Button type="button" variant="primary" onClick={handlePublish} disabled={isPublishing} className="w-full sm:w-auto px-10 bg-[#F78736] border-[#F78736] hover:bg-[#e0752b]">
+              {isPublishing ? "Publicando..." : "Publicar Solicitud"}
             </Button>
           </div>
         </div>
 
       </div>
+
+      <ImagePreviewModal 
+        isOpen={!!selectedImage} 
+        onClose={() => setSelectedImage(null)} 
+        imageUrl={selectedImage} 
+      />
+
+      <StatusModal
+        isOpen={alertConfig.isOpen}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        description={alertConfig.description}
+        buttonText={alertConfig.buttonText}
+        onClose={() => {
+          setAlertConfig((prev) => ({ ...prev, isOpen: false }));
+          if (alertConfig.onCloseAction) {
+            alertConfig.onCloseAction();
+          }
+        }}
+      />
     </div>
   );
 }

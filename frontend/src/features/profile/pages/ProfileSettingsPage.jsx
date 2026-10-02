@@ -15,26 +15,12 @@ import Button from "../../../components/ui/Button";
 import Loader from "../../../components/ui/Loader";
 import Breadcrumbs from "../../../components/ui/Breadcrumbs";
 import InfoRow from "../components/InfoRow";
-import { api } from "../../../libs/axios";
+import { useProfileSettings } from "../hooks/useProfileQueries";
 
 export default function ProfileSettingsPage() {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
-  const [settings, setSettings] = useState(null);
-
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const response = await api.get('/client/profile/settings');
-        setSettings(response.data);
-      } catch (error) {
-        console.error("Error al obtener configuraciones:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchSettings();
-  }, []);
+  
+  const { data: settings, isLoading } = useProfileSettings("client");
 
   const handleBack = () => {
     navigate("/client/profile");

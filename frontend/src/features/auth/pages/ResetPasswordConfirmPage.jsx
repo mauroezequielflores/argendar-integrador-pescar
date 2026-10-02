@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { resetPasswordConfirmSchema } from "../../../validations/resetPassword.schema";
-import { resetPasswordConfirm } from "../services/auth.service";
+import { useResetPasswordConfirm } from "../hooks/useAuthQueries";
 import { ROUTES } from "../../../constants/routes";
 
 import AuthCenteredCard from "../components/AuthCenteredCard";
@@ -22,9 +22,10 @@ export default function ResetPasswordConfirmPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") || "";
 
-  const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
+
+  const resetConfirmMutation = useResetPasswordConfirm();
 
   const {
     register,
@@ -35,24 +36,26 @@ export default function ResetPasswordConfirmPage() {
     defaultValues: { password: "", confirmPassword: "" },
   });
 
-  const onSubmit = async (data) => {
+  const onSubmit = (data) => {
     setServerError("");
-    setIsLoading(true);
-    try {
-      await resetPasswordConfirm({
+    resetConfirmMutation.mutate(
+      {
         token,
         password: data.password,
         confirmPassword: data.confirmPassword,
-      });
-      setIsSuccess(true);
-      setTimeout(() => {
-        navigate(ROUTES.LOGIN, { replace: true });
-      }, 1500);
-    } catch (error) {
-      setServerError(error.message || "No se pudo restablecer la contraseña.");
-    } finally {
-      setIsLoading(false);
-    }
+      },
+      {
+        onSuccess: () => {
+          setIsSuccess(true);
+          setTimeout(() => {
+            navigate(ROUTES.LOGIN, { replace: true });
+          }, 1500);
+        },
+        onError: (error) => {
+          setServerError(error.message || "No se pudo restablecer la contraseña.");
+        },
+      }
+    );
   };
 
   return (
@@ -110,7 +113,7 @@ export default function ResetPasswordConfirmPage() {
             <Button
               type="submit"
               variant="primary"
-              isLoading={isLoading}
+              isLoading={resetConfirmMutation.isPending}
               className="mt-1 font-semibold"
             >
               Restablecer contraseña
