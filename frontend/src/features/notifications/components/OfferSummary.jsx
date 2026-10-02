@@ -19,12 +19,21 @@ export default function OfferSummary({ offer, onClose, onViewProfile, onAccept }
                     <div className="rounded-[4px] border border-[#3a3a3a] bg-[#292929] p-3.5">
                         <div className="flex items-start justify-between gap-4">
                             <div className="flex min-w-0 items-center gap-3">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#A8A8AA] text-xs font-bold text-white">{offer.professionalInitials}</div>
+                                {offer.avatarUrl ? (
+                                    <img src={offer.avatarUrl} alt={offer.professionalName} className="h-10 w-10 shrink-0 rounded-full object-cover" />
+                                ) : (
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#A8A8AA] text-xs font-bold text-white">{offer.professionalInitials || "P"}</div>
+                                )}
                                 <div className="min-w-0">
                                     <div className="flex flex-wrap items-center gap-2">
                                         <h3 className="text-xs font-bold text-white">{offer.professionalName}</h3>
-                                        <span className="flex items-center gap-0.5" aria-label={`${offer.rating} estrellas`}>
-                                            {[1, 2, 3, 4, 5].map((star) => <StarIcon key={star} className={`h-3 w-3 ${star <= 4 ? "text-white" : "text-[#727272]"}`} />)}
+                                        <span className="flex items-center gap-0.5" aria-label={`${offer.rating || 5} estrellas`}>
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                <StarIcon
+                                                    key={star}
+                                                    className={`h-3 w-3 ${star <= Math.round(offer.rating || 5) ? "text-white" : "text-[#727272]"}`}
+                                                />
+                                            ))}
                                         </span>
                                     </div>
                                     <p className="mt-0.5 text-[9px] tracking-wide text-[#A8A8AA]">{offer.specialty}</p>

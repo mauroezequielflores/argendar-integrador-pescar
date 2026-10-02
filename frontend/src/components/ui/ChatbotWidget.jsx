@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { XMarkIcon, PaperAirplaneIcon, SparklesIcon, ClockIcon } from "@heroicons/react/24/outline";
 
@@ -34,6 +34,8 @@ export default function ChatbotWidget({ role = "client" }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [showQuestions, setShowQuestions] = useState(true);
+  const [inputText, setInputText] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const location = useLocation();
   const chatEndRef = useRef(null);
@@ -69,7 +71,7 @@ export default function ChatbotWidget({ role = "client" }) {
     if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, showQuestions]);
+  }, [messages, showQuestions, isLoading]);
 
   if (isExcluded()) {
     return null;
@@ -85,6 +87,54 @@ export default function ChatbotWidget({ role = "client" }) {
       { type: "user", text: faq.question },
       { type: "bot", text: faq.answer },
     ]);
+  };
+
+  const handleSendMessage = async (e) => {
+    if (e) e.preventDefault();
+    const queryText = inputText.trim();
+    if (!queryText || isLoading) return;
+
+    setShowQuestions(false);
+    setInputText("");
+    const newMessages = [...messages, { type: "user", text: queryText }];
+    setMessages(newMessages);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/v1/chatbot/message", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("access_token") || ""}`,
+        },
+        body: JSON.stringify({
+          message: queryText,
+          currentRoute: location.pathname,
+        }),
+      });
+
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        throw new Error(errJson?.error?.message || "Error al procesar la respuesta");
+      }
+
+      const data = await response.json();
+      setMessages([
+        ...newMessages,
+        { type: "bot", text: data.message || "No recibí una respuesta adecuada." },
+      ]);
+    } catch (err) {
+      console.error("Error chatbot backend:", err);
+      setMessages([
+        ...newMessages,
+        {
+          type: "bot",
+          text: err.message || "Lo siento, ocurrió un error al conectar con el servidor. Inténtalo más tarde.",
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -152,10 +202,19 @@ export default function ChatbotWidget({ role = "client" }) {
                           <span className="font-medium text-[#F78736]">Asistente</span>
                         </div>
                       )}
-                      <p>{msg.text}</p>
+                      <p className="whitespace-pre-wrap">{msg.text}</p>
                     </div>
                   </div>
                 ))}
+
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-transparent text-[#A8A8AA] text-xs flex items-center gap-2">
+                      <SparklesIcon className="h-4 w-4 animate-spin text-[#F78736]" />
+                      <span>Escribiendo respuesta...</span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -189,22 +248,29 @@ export default function ChatbotWidget({ role = "client" }) {
             <div ref={chatEndRef} />
           </div>
 
-          {/* Input bloqueado (MVP) */}
-          <div className="border-t border-[#323232] bg-[#292929] p-4">
+          {/* Input de mensajes activo */}
+          <form onSubmit={handleSendMessage} className="border-t border-[#323232] bg-[#292929] p-4">
             <div className="relative flex items-center">
               <input
                 type="text"
-                placeholder="Tu consulta aquí"
-                disabled
-                className="w-full rounded-lg border border-[#323232] bg-[#202020] px-4 py-3 pr-12 text-sm text-white placeholder-[#A8A8AA] outline-none opacity-80 cursor-not-allowed"
+                placeholder="Tu consulta aquí..."
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                disabled={isLoading}
+                className="w-full rounded-lg border border-[#323232] bg-[#202020] px-4 py-3 pr-12 text-sm text-white placeholder-[#A8A8AA] outline-none focus:border-[#3B82F6] transition-colors disabled:opacity-50"
               />
-              <button disabled className="absolute right-3 text-[#A8A8AA] opacity-50 cursor-not-allowed">
+              <button
+                type="submit"
+                disabled={isLoading || !inputText.trim()}
+                className="absolute right-3 text-[#F78736] hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              >
                 <PaperAirplaneIcon className="h-5 w-5" />
               </button>
             </div>
-          </div>
+          </form>
         </div>
       )}
     </>
   );
 }
+
