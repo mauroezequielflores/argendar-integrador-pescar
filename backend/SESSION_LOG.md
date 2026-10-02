@@ -49,7 +49,7 @@ Se implementó la arquitectura de 3 capas (`routes`, `controllers`, `services`) 
 **Pendiente:** Agregar endpoints de creación de ofertas y pagos para que puedan disparar notificaciones reales.
 **Decisiones:** Se montaron las rutas bajo el scope de `/professional`, utilizando el middleware de roles `requireRole('professional')`. Como la tabla `notifications` ya existía previamente para los clientes, se reutilizó la misma tabla sin necesidad de crear una nueva migración, dado que la estructura de la base de datos es compartida.
 
-## [25/09/2026]
+## [25/09/2026] 
 **Hecho:** Implementación del backend para notificaciones de recordatorio de turno dirigidas al cliente (1 día antes del turno confirmado):
 1. Se extendió `appointmentReminderService.js` para detectar turnos confirmados en ventana de 36 horas y generar notificaciones tanto para el profesional como para el cliente, utilizando consultas desacopladas seguras e idempotencia estricta para evitar duplicados.
 2. Se enriqueció `clientNotificationService.js` para resolver automáticamente datos del turno, del profesional y del servicio ante cualquier notificación de tipo `reminder` o `appointment_reminder`.
@@ -57,14 +57,14 @@ Se implementó la arquitectura de 3 capas (`routes`, `controllers`, `services`) 
 **Pendiente:** Probar visualmente en frontend cuando el cliente abra sus notificaciones o cuando se indique avanzar con la UI.
 **Decisiones:** Se aseguró compatibilidad mapeando internamente `appointment_reminder` a `reminder` para el cliente de modo que coincida con las expectativas de la UI y los componentes existentes (`ReminderSummary.jsx`).
 
-## [25/09/2026] (Parte 2)
+## [25/09/2026] (Parte 2) 
 **Hecho:** Conexión de punta a punta del flujo de calificación de servicio (Reviews) y finalización de turnos:
 1. `clientReviewService.js`: Se robusteció la validación desacoplada y se agregó resolución de `appointmentId` tanto desde `metadata.appointmentId` como desde `related_entity_id`, marcando la notificación como leída tras insertar la calificación.
 2. `clientNotificationService.js`: Se integró el enriquecimiento de notificaciones de tipo `rating` para inyectar datos del profesional y turno al modal de calificación del cliente (`RatingModal`).
 3. `NotificationsPage.jsx`: Se conectó `submitReviewMutation.mutate(reviewData)` al evento `onSubmitSuccess` del `RatingModal`.
 4. `professionalDetailsRoutes.js` y `professionalDetailsService.js`: Se implementó el endpoint `POST /api/v1/professional/appointments/:id/complete` que finaliza el turno (`status = 'completed'`) y genera en simultáneo la alerta de "Trabajo finalizado" (`job_finished`) para el profesional y "¡Calificá tu experiencia!" (`rating`) para el cliente.
 
-## [25/09/2026] (Parte 3)
+## [25/09/2026] (Parte 3) 
 **Hecho:** Implementación de la notificación y detalle de calificación para el profesional (`review_received`):
 1. `backend/src/services/clientReviewService.js`: Al insertar una calificación desde el cliente (`createReview`), se genera automáticamente una notificación de tipo `review_received` para el profesional con los metadatos completos (`clientName`, `serviceName`, `rating`, `tags`, `comment`, `appointmentId`, `reviewId`).
 2. `backend/src/services/professionalDetailsService.js`: Se robusteció `getReviewById` con consultas desacopladas seguras a Supabase, resolución por ID de reseña o notificación, soporte de tags, título del servicio asociado e ID de oferta para navegación, protegiendo con validación IDOR.
