@@ -81,3 +81,15 @@ Se implementó la arquitectura de 3 capas (`routes`, `controllers`, `services`) 
 5. `frontend/src/features/notifications/pages/PaymentConfirmedDetailsPage.jsx`: Reemplazo de mocks por el hook real `useProfessionalPaymentDetailQuery(id)` con los 4 estados de UI (Loading, Error, Empty, Success), renderizado dinámico de la tarjeta del turno, tabla de comprobante y navegación al detalle de la oferta.
 **Pendiente:** Ninguno.
 **Decisiones:** Se respetó estrictamente la arquitectura de 3 capas en backend y las pautas de reemplazo de mocks en frontend sin alterar componentes reutilizables ni alterar dependencias.
+
+## [30/09/2026]
+**Hecho:** Implementación del backend para el Chatbot asistido por IA (API Gemini REST con fetch nativo):
+1. `src/utils/constants.js`: Se añadió `SYSTEM_INSTRUCTION` (guardrails del dominio Argendar) y el código de error `GEMINI_SERVICE_ERROR`.
+2. `src/services/geminiService.js`: Integración desacoplada con la API REST de Gemini (v1beta) usando la función nativa `fetch` de Node.js (cero dependencias externas instaladas).
+3. `src/services/chatbotService.js`: Orquestador del mensaje, obtención del nombre de usuario desde la tabla `profiles` e inyección de contexto.
+4. `src/controllers/chatbotController.js`: Controlador delgado con validaciones de entrada (longitud de caracteres, mensaje no vacío).
+5. `src/routes/chatbotRoutes.js`: Ruta `POST /api/v1/chatbot/message` protegida con `authMiddleware`.
+6. `src/app.js`: Import y montaje del nuevo router de chatbot bajo `/api/v1/chatbot`.
+7. `.env` & `.env.example`: Se agregó la variable de entorno `GEMINI_API_KEY`.
+**Pendiente:** Configurar `GEMINI_API_KEY` en producción cuando esté disponible.
+**Decisiones:** Se utilizó `fetch` nativo para evitar instalar nuevos paquetes `npm` en `package.json`. No se modificó ningún archivo dentro de la carpeta `/frontend/`.
