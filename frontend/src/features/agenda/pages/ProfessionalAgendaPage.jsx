@@ -21,6 +21,8 @@ import TurnoCard from "../components/TurnoCard";
 import TurnoDetalleModal from "../components/TurnoDetalleModal";
 import RechazoFinalizarModal from "../components/RechazoFinalizarModal";
 import ExitoFinalizarModal from "../components/ExitoFinalizarModal";
+import ExitoPagoModal from "../components/ExitoPagoModal";
+import RechazoPagoModal from "../components/RechazoPagoModal";
 import OfertaCard from "../components/OfertaCard";
 import SolicitudDetalleModal from "../components/SolicitudDetalleModal";
 
@@ -197,6 +199,8 @@ export default function ProfessionalAgendaPage() {
   const [isDetalleOpen, setIsDetalleOpen] = useState(false);
   const [isRechazoOpen, setIsRechazoOpen] = useState(false);
   const [isExitoOpen, setIsExitoOpen] = useState(false);
+  const [isExitoPagoOpen, setIsExitoPagoOpen] = useState(false);
+  const [isRechazoPagoOpen, setIsRechazoPagoOpen] = useState(false);
 
   // States para Ofertas
   const [isSolicitudDetalleOpen, setIsSolicitudDetalleOpen] = useState(false);
@@ -250,9 +254,25 @@ export default function ProfessionalAgendaPage() {
     setIsSolicitudDetalleOpen(true);
   };
 
+  const { mutate: confirmarPago, isPending: isConfirmandoPago } = useMutation({
+    mutationFn: async (turnoId) => {
+      const response = await api.post(`/professional/appointments/${turnoId}/confirm-payment`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["professional-appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["appointment-details", selectedTurno?.id] });
+      setIsExitoPagoOpen(true);
+    },
+    onError: (error) => {
+      console.error("Error al confirmar pago:", error);
+      setIsRechazoPagoOpen(true);
+    }
+  });
+
   const handleConfirmarPago = () => {
-    if (!selectedTurno) return;
-    // Implementation needed for local state update if required
+    if (!selectedTurno || isConfirmandoPago) return;
+    confirmarPago(selectedTurno.id);
   };
 
   const handleReprogramar = () => {
@@ -261,13 +281,13 @@ export default function ProfessionalAgendaPage() {
 
   const queryClient = useQueryClient();
 
-  const { mutate: finalizarTurno, isLoading: isFinalizando } = useMutation({
+  const { mutate: finalizarTurno, isPending: isFinalizando } = useMutation({
     mutationFn: async (turnoId) => {
       const response = await api.post(`/professional/appointments/${turnoId}/confirm-completion`);
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["professional-appointments"]);
+      queryClient.invalidateQueries({ queryKey: ["professional-appointments"] });
       setIsDetalleOpen(false);
       setIsExitoOpen(true);
     },
@@ -376,8 +396,10 @@ export default function ProfessionalAgendaPage() {
         turno={selectedTurno}
         onClose={() => setIsDetalleOpen(false)}
         onConfirmarPago={handleConfirmarPago}
+        isConfirmandoPago={isConfirmandoPago}
         onReprogramar={handleReprogramar}
         onFinalizar={handleFinalizarClick}
+        isHistory={activeTab === "historial"}
       />
 
       <RechazoFinalizarModal
@@ -388,6 +410,16 @@ export default function ProfessionalAgendaPage() {
       <ExitoFinalizarModal
         isOpen={isExitoOpen}
         onClose={handleCloseRespuesta}
+      />
+
+      <ExitoPagoModal
+        isOpen={isExitoPagoOpen}
+        onClose={() => setIsExitoPagoOpen(false)}
+      />
+
+      <RechazoPagoModal
+        isOpen={isRechazoPagoOpen}
+        onClose={() => setIsRechazoPagoOpen(false)}
       />
 
       <SolicitudDetalleModal

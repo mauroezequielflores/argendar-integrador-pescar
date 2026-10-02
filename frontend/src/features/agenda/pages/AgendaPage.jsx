@@ -296,6 +296,7 @@ export default function AgendaPage() {
           onConfirmarPago={() => {}}
           onReprogramar={() => {}}
           onFinalizar={() => {}}
+          isHistory={activeTab === "historial"}
         />
       )}
     </div>

@@ -194,7 +194,9 @@ class AppointmentsService {
     const req = offer.requests;
     const prof = offer.profiles;
     const client = req.profiles;
-    const payment = data.payments && data.payments.length > 0 ? data.payments[0] : null;
+    const payment = Array.isArray(data.payments) 
+      ? (data.payments.length > 0 ? data.payments[0] : null) 
+      : (data.payments || null);
 
     let persona = null;
     if (userRole === 'professional') {
@@ -292,6 +294,50 @@ class AppointmentsService {
       type: 'appointment_cancelled',
       title: 'Turno Cancelado',
       description: `El cliente ha cancelado el turno. Motivo: ${reason || 'N/A'}`,
+      related_entity_id: appointmentId,
+      related_entity_type: 'appointment'
+    });
+
+    return appointmentId;
+  }
+
+  async confirmPayment(userId, appointmentId) {
+    // 1. Validar turno
+    const { data: app, error } = await supabase
+      .from('appointments')
+      .select('id, status, offers!inner(professional_id, requests!inner(client_id, id))')
+      .eq('id', appointmentId)
+      .single();
+
+    if (error || !app || app.offers.professional_id !== userId) {
+      throw new AppError('Turno no encontrado o sin permisos', 404, 'RECURSO_NO_ENCONTRADO');
+    }
+
+    // 2. Buscar el pago
+    const { data: payment, error: paymentError } = await supabase
+      .from('payments')
+      .select('id, status')
+      .eq('appointment_id', appointmentId)
+      .single();
+
+    if (paymentError || !payment) {
+      throw new AppError('Pago no encontrado', 404, 'RECURSO_NO_ENCONTRADO');
+    }
+
+    // 3. Actualizar estado del pago
+    const { error: updateError } = await supabase
+      .from('payments')
+      .update({ status: 'paid', method: 'cash' })
+      .eq('id', payment.id);
+
+    if (updateError) throw new AppError(`Error al confirmar pago: ${updateError.message}`, 500, 'ERROR_INTERNO');
+
+    // 4. Notificar al cliente
+    await supabase.from('notifications').insert({
+      user_id: app.offers.requests.client_id,
+      type: 'payment_confirmed',
+      title: 'Pago Confirmado',
+      description: 'El profesional ha confirmado la recepción del pago.',
       related_entity_id: appointmentId,
       related_entity_type: 'appointment'
     });

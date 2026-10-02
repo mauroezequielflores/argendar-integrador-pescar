@@ -23,6 +23,11 @@ router.get('/appointments', validateRequest(getAgendaAppointmentsSchema), Appoin
 router.get('/appointments/:id', AppointmentsController.getById);
 
 router.post(
+  '/appointments/:id/confirm-payment',
+  AppointmentsController.confirmPayment
+);
+
+router.post(
   '/appointments/:id/confirm-completion',
   AppointmentsController.confirmCompletion
 );

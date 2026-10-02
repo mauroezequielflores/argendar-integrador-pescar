@@ -52,6 +52,23 @@ class AppointmentsController {
     }
   }
 
+  async confirmPayment(req, res, next) {
+    try {
+      const userId = req.user.id;
+      const { id } = req.params;
+
+      await AppointmentsService.confirmPayment(userId, id);
+
+      return res.status(200).json({
+        message: 'El pago ha sido confirmado correctamente.',
+        appointmentId: id,
+        pagoEstado: 'paid'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async confirmCompletion(req, res, next) {
     try {
       const userId = req.user.id;
