@@ -1,5 +1,5 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+﻿import React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   PencilSquareIcon,
   EnvelopeIcon,
@@ -8,61 +8,96 @@ import {
 } from "@heroicons/react/24/outline";
 
 import headerDefaultPhoto from "../../../assets/images/header-default-photo.svg";
-import Avatar from "../../../components/ui/Avatar";
+import profileDefaultPhoto from "../../../assets/images/profile-default-photo.svg";
 
 /**
- * ProfileHeader — Encabezado principal del perfil de cliente (CA01, CA02).
- * Incluye portada, avatar superpuesto con estado, botón de edición,
- * nombre, rol, descripción y fila horizontal de datos clave con íconos.
+ * ProfileHeader — Encabezado reutilizable de perfil (Cliente / Profesional).
+ *
+ * Muestra:
+ * 1. Portada con fallback a header-default-photo.svg
+ * 2. Avatar superpuesto con fallback a profile-default-photo.svg e indicador activo (punto verde)
+ * 3. Botón "Editar perfil público" alineado a la derecha con ruta correspondiente según el rol
+ * 4. Nombre y apellido del usuario autenticado
+ * 5. Rol ("Cliente" / "Profesional")
+ * 6. Descripción "Sobre mí" con texto por defecto
+ * 7. Fila horizontal de metadatos (Correo, Miembro desde, Ubicación)
  */
-export default function ProfileHeader({ profile = {} }) {
+export default function ProfileHeader({
+  profile = {},
+  editRoute,
+  role,
+}) {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const fullName = profile.firstName && profile.lastName
-    ? `${profile.firstName} ${profile.lastName}`
-    : profile.name || "Nombre Apellido";
+  // Detectar automáticamente el rol basado en la ruta actual o en el prop
+  const isClientPath = location.pathname.startsWith("/client");
+  const defaultRole = role || (isClientPath ? "Cliente" : "Profesional");
+  const userRole = profile.role || profile.titulo || defaultRole;
+
+  // Resolver la ruta de edición correcta según el rol o la ruta actual
+  const resolvedEditRoute =
+    editRoute ||
+    (isClientPath || userRole?.toString().toLowerCase() === "cliente"
+      ? "/client/profile/edit-profile"
+      : "/professional/profile/edit-profile");
+
+  const fullName =
+    profile.firstName && profile.lastName
+      ? `${profile.firstName} ${profile.lastName}`
+      : profile.name || "Nombre Apellido";
 
   const description =
-    profile.description && profile.description !== "Descripción.pendiente."
+    profile.description &&
+      profile.description !== "Descripción.pendiente." &&
+      profile.description.trim() !== ""
       ? profile.description
       : "Hola! Bienvenidos a mi perfil.";
 
   const email = profile.email || "correoejemplo@gmail.com";
-  const memberSince = profile.memberSince || "Enero 2021";
-  const location =
+
+  const memberSince = profile.memberSince
+    ? typeof profile.memberSince === "string" && profile.memberSince.includes("T")
+      ? new Date(profile.memberSince).toLocaleDateString()
+      : profile.memberSince
+    : "Enero 2021";
+
+  const locationText =
     profile.location && profile.location !== "-"
       ? profile.location
-      : "Ubicación";
+      : profile.baseLocation || "";
+
+  const coverSrc = profile.coverUrl || profile.coverPhoto || headerDefaultPhoto;
+  const avatarSrc = profile.avatarUrl || profile.photo || profileDefaultPhoto;
 
   return (
-    <div className="flex flex-col w-full">
+    <div className="flex flex-col w-full font-sans">
       {/* ── 1. Imagen de Portada (Cover) ────────────────────────────── */}
-      <div className="relative w-full h-20 sm:h-30 md:h-40 rounded-[12px] overflow-hidden bg-[#292929] border border-[#323232]">
+      <div className="relative w-full h-24 sm:h-32 md:h-44 rounded-[12px] overflow-hidden bg-[#292929] border border-[#323232]">
         <img
-          src={profile.coverUrl || profile.coverPhoto || headerDefaultPhoto}
+          src={coverSrc}
           alt="Portada de perfil"
           className="w-full h-full object-cover"
         />
       </div>
 
-      {/* ── 2. Avatar Superpuesto con Indicador de Estado ───────────── */}
-      <div className="-mt-14 sm:-mt-16 ml-4 sm:ml-6 relative z-10 w-fit">
-        <div className="relative h-24 w-24 sm:h-28 sm:w-28 rounded-full border-4 border-[#202020] bg-[#292929] overflow-hidden shadow-lg flex items-center justify-center">
-          <Avatar
-            initials={profile.firstName ? profile.firstName[0].toUpperCase() : "U"}
-            avatarUrl={profile.avatarUrl || profile.photo}
-            isVerified={profile.isVerified}
-            size="lg"
+      {/* ── 2. Avatar Superpuesto con Indicador de Estado (Punto Verde) ─ */}
+      <div className="-mt-12 sm:-mt-16 ml-4 sm:ml-6 relative z-10 w-fit">
+        <div className="relative h-20 w-20 sm:h-28 sm:w-28 rounded-full border-4 border-[#202020] bg-[#292929] overflow-hidden shadow-lg flex items-center justify-center">
+          <img
+            src={avatarSrc}
+            alt={fullName}
+            className="h-full w-full object-cover"
           />
         </div>
-        {/* Indicador de estado (punto verde) */}
+        {/* Indicador de estado (punto verde activo) */}
         <span
-          className="absolute bottom-1 right-1 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-[#202020]"
+          className="absolute bottom-1 right-1 h-3.5 w-3.5 sm:h-4 sm:w-4 rounded-full bg-emerald-500 border-2 border-[#202020]"
           title="Estado: Activo"
         />
       </div>
 
-      {/* ── 3. Información del Perfil (CA02) ────────────────────────── */}
+      {/* ── 3. Información Básica del Perfil (CA02) ────────────────── */}
       <div className="flex flex-col mt-3">
         {/* Fila: Nombre/Rol + Botón Editar */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -70,14 +105,14 @@ export default function ProfileHeader({ profile = {} }) {
             <h1 className="text-xl sm:text-2xl font-bold text-white leading-tight">
               {fullName}
             </h1>
-            <p className="text-xs sm:text-sm text-[#A8A8AA] font-normal mt-0.5">
-              {profile.role || "Cliente"}
+            <p className="text-xs sm:text-sm text-[#A8A8AA] font-normal mt-0.5 capitalize">
+              {userRole}
             </p>
           </div>
 
           <button
             type="button"
-            onClick={() => navigate("/client/profile/edit-profile")}
+            onClick={() => navigate(resolvedEditRoute)}
             className="flex items-center gap-2 rounded-[6px] border border-[#3f3f3f] bg-transparent px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#292929] cursor-pointer self-start sm:self-auto"
           >
             <PencilSquareIcon className="h-4 w-4 text-white" />
@@ -109,10 +144,12 @@ export default function ProfileHeader({ profile = {} }) {
           </div>
 
           {/* Ubicación */}
-          <div className="flex items-center gap-1.5">
-            <MapPinIcon className="h-4 w-4 text-[#A8A8AA]" />
-            <span>{location}</span>
-          </div>
+          {locationText && (
+            <div className="flex items-center gap-1.5">
+              <MapPinIcon className="h-4 w-4 text-[#A8A8AA]" />
+              <span>{locationText}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

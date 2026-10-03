@@ -18,6 +18,7 @@ import Stepper from "../../../components/ui/Stepper";
 import Input from "../../../components/ui/Input";
 import Textarea from "../../../components/ui/Textarea";
 import Button from "../../../components/ui/Button";
+import AddressAutocomplete from "../../../components/ui/AddressAutocomplete";
 
 // Context & Schema
 import { useCreateRequest } from "../context/CreateRequestContext";
@@ -27,10 +28,13 @@ export default function CreateRequestLocationPage() {
   const navigate = useNavigate();
   const { requestData, updateRequestData, clearRequestData } = useCreateRequest();
 
+  const [showMap, setShowMap] = useState(true);
+
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(createRequestStep2Schema),
@@ -39,8 +43,20 @@ export default function CreateRequestLocationPage() {
       apartment: requestData.apartment || "",
       zipCode: requestData.zipCode || "",
       additionalDetails: requestData.additionalDetails || "",
+      latitude: requestData.latitude || null,
+      longitude: requestData.longitude || null,
+      city: requestData.city || "",
+      neighborhood: requestData.neighborhood || "",
     }
   });
+
+  const handleAddressSelect = ({ address, lat, lng, city, neighborhood }) => {
+    setValue("address", address, { shouldValidate: true });
+    setValue("latitude", lat, { shouldValidate: true });
+    setValue("longitude", lng, { shouldValidate: true });
+    setValue("city", city, { shouldValidate: true });
+    setValue("neighborhood", neighborhood, { shouldValidate: true });
+  };
 
   const addressValue = watch("address");
   const apartmentValue = watch("apartment");
@@ -99,14 +115,18 @@ export default function CreateRequestLocationPage() {
             {/* Left Column: Form Fields */}
             <div className="flex flex-col gap-6">
               
-              <Input
-                id="address"
+              <AddressAutocomplete
                 label="Dirección completa"
-                placeholder="Ej: Av. Corrientes 1234, CABA"
-                prefix={<MapPinIcon className="h-5 w-5" />}
-                {...register("address")}
-                error={errors.address?.message}
+                defaultValue={addressValue}
+                onAddressSelect={handleAddressSelect}
+                error={errors.address?.message || errors.latitude?.message}
+                showMap={showMap}
               />
+              <input type="hidden" {...register("address")} />
+              <input type="hidden" {...register("latitude")} />
+              <input type="hidden" {...register("longitude")} />
+              <input type="hidden" {...register("city")} />
+              <input type="hidden" {...register("neighborhood")} />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <Input
@@ -157,9 +177,9 @@ export default function CreateRequestLocationPage() {
                       type="button"
                       variant="outline" 
                       className="w-full flex items-center justify-center gap-2 border-[#555] text-white hover:bg-[#333] transition-colors py-2 text-xs"
-                      onClick={() => console.log("Open Map modal")}
+                      onClick={() => setShowMap(!showMap)}
                     >
-                      <MapIcon className="h-4 w-4" /> Ver en mapa
+                      <MapIcon className="h-4 w-4" /> {showMap ? "Ocultar mapa" : "Ver en mapa"}
                     </Button>
                   </div>
 

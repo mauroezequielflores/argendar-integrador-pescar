@@ -10,7 +10,9 @@ import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import InfoAlert from "../../../components/ui/InfoAlert";
 import Loader from "../../../components/ui/Loader";
 import Button from "../../../components/ui/Button";
+import AddressAutocomplete from "../../../components/ui/AddressAutocomplete";
 import { api } from "../../../libs/axios";
+import StatusModal from "../../../components/ui/StatusModal";
 
 const PROFESIONES = ["Plomería", "Electricidad", "Frigorista"];
 
@@ -186,22 +188,26 @@ function InfoCard({ label, value, extra }) {
   );
 }
 
+import { useProfileSettings, useUpdateProfileSettings } from "../hooks/useProfileQueries";
+
 /* ── Pantalla principal ─────────────────────────────────────────── */
 export default function EditProfileSettingsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const match = location.pathname.match(/^\/(professional|client)/);
   const prefix = match ? `/${match[1]}` : "";
+  const role = match ? match[1] : "client";
   const fileInputRef = useRef(null);
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({ isOpen: false, title: "", description: "", type: "error" });
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
     dni: "",
     location: "",
+    latitude: null,
+    longitude: null,
+    coverageRadiusKm: 10,
     phone: "",
     email: "",
     emailAlerts: true,
@@ -210,61 +216,68 @@ export default function EditProfileSettingsPage() {
     profesion: PROFESIONES[0],
   });
 
+  const { data: settings, isLoading } = useProfileSettings(role);
+  const updateSettingsMutation = useUpdateProfileSettings();
+
   useEffect(() => {
-    const fetchSettings = async () => {
-      if (!prefix) return;
-      try {
-        const response = await api.get(`${prefix}/profile/settings`);
-        const { personalInfo, location: loc, accountData } = response.data;
-        
-        setForm((prev) => ({
-          ...prev,
-          firstName: personalInfo?.firstName || "",
-          lastName: personalInfo?.lastName || "",
-          dni: personalInfo?.dni || "",
-          location: loc?.address || "",
-          email: accountData?.email || "",
-          phone: accountData?.phone || "",
-          emailAlerts: true, // Valores por defecto o del API si existen
-          phoneAlerts: true,
-        }));
-      } catch (error) {
-        console.error("Error al cargar las configuraciones:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchSettings();
-  }, [prefix]);
+    if (settings) {
+      const { personalInfo, location: loc, accountData } = settings;
+      
+      setForm((prev) => ({
+        ...prev,
+        firstName: personalInfo?.firstName || "",
+        lastName: personalInfo?.lastName || "",
+        dni: personalInfo?.dni || "",
+        location: loc?.address || "",
+        latitude: loc?.latitude || null,
+        longitude: loc?.longitude || null,
+        coverageRadiusKm: loc?.coverageRadiusKm || 10,
+        email: accountData?.email || "",
+        phone: accountData?.phone || "",
+        emailAlerts: true, // Valores por defecto o del API si existen
+        phoneAlerts: true,
+      }));
+    }
+  }, [settings]);
 
   const set = (field) => (value) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
   const handleBack = () => navigate(`${prefix}/profile/profile-settings`);
   
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      const payload = {
-        firstName: form.firstName,
-        lastName: form.lastName,
-        dni: form.dni,
-        location: form.location,
-        phone: form.phone,
-        emailAlerts: form.emailAlerts,
-        phoneAlerts: form.phoneAlerts
-      };
-
-      await api.patch(`${prefix}/profile/settings`, payload);
-      // Dispatch event para actualizar Navbar si se cambió el nombre
-      window.dispatchEvent(new CustomEvent('profileUpdated'));
-      navigate(`${prefix}/profile/profile-settings`);
-    } catch (error) {
-      console.error("Error al guardar configuraciones:", error);
-      alert(error.response?.data?.error?.message || error.response?.data?.message || "Ocurrió un error al guardar los cambios.");
-    } finally {
-      setIsSaving(false);
+  const handleSave = () => {
+    const payload = {
+      firstName: form.firstName,
+      lastName: form.lastName,
+      dni: form.dni,
+      location: form.location,
+      latitude: form.latitude,
+      longitude: form.longitude,
+      phone: form.phone,
+      emailAlerts: form.emailAlerts,
+      phoneAlerts: form.phoneAlerts
+    };
+    
+    if (role === "professional") {
+      payload.coverageRadiusKm = form.coverageRadiusKm;
     }
+
+    updateSettingsMutation.mutate({ role, payload }, {
+      onSuccess: () => {
+        window.dispatchEvent(new CustomEvent('profileUpdated'));
+        navigate(`${prefix}/profile/profile-settings`);
+      },
+      onError: (error) => {
+        console.error("Error al guardar configuraciones:", error);
+        setAlertConfig({
+          isOpen: true,
+          type: "error",
+          title: "Error al guardar",
+          description: error.response?.data?.error?.message || error.response?.data?.message || "Ocurrió un error al guardar los cambios.",
+          buttonText: "Intentar nuevamente"
+        });
+      }
+    });
   };
 
   if (isLoading) {
@@ -356,24 +369,45 @@ export default function EditProfileSettingsPage() {
         {/* CA03 — Ubicación */}
         <div className="flex flex-col gap-4">
           <SectionHeader
-            title="Ubicación"
-            description="Seleccionar una ubicación en nuestro mapa:"
-            action={
-              <button
-                type="button"
-                title="Editar ubicación (futura integración Google Maps)"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] border border-[#3a3a3a] bg-[#323232] text-[#A8A8AA] transition-colors hover:border-[#F78736] hover:text-white"
-              >
-                <PencilSquareIcon className="h-4 w-4" />
-              </button>
-            }
+            title="Ubicación Base"
+            description="Buscá y seleccioná tu dirección exacta en el mapa."
           />
-          <EditableField
-            label="Dirección"
-            value={form.location}
-            onChange={set("location")}
-            placeholder="Ej: Buenos Aires, Argentina"
+          <AddressAutocomplete
+            label=""
+            defaultValue={form.location}
+            onAddressSelect={({ address, lat, lng }) => {
+              set("location")(address);
+              set("latitude")(lat);
+              set("longitude")(lng);
+            }}
+            showMap={true}
           />
+          
+          {prefix === "/professional" && (
+            <div className="flex flex-col gap-2 mt-4 rounded-[6px] border border-[#3a3a3a] bg-[#292929] p-5">
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm font-medium text-white">Radio de Cobertura</label>
+                <span className="text-sm font-bold text-[#F78736] bg-[#F78736]/10 px-2 py-0.5 rounded">
+                  {form.coverageRadiusKm} km
+                </span>
+              </div>
+              <p className="text-xs text-[#A8A8AA] mb-4">Definí hasta qué distancia estás dispuesto a viajar para brindar servicios.</p>
+              <input 
+                type="range" 
+                min="1" 
+                max="100" 
+                step="1"
+                value={form.coverageRadiusKm}
+                onChange={(e) => set("coverageRadiusKm")(parseInt(e.target.value, 10))}
+                className="w-full h-2 bg-[#3a3a3a] rounded-lg appearance-none cursor-pointer accent-[#F78736]"
+              />
+              <div className="flex justify-between text-[10px] text-[#A8A8AA] mt-1 font-medium">
+                <span>1 km</span>
+                <span>50 km</span>
+                <span>100 km</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* CA04 — Información profesional (SOLO PARA PROFESIONALES) */}
@@ -543,7 +577,7 @@ export default function EditProfileSettingsPage() {
           <Button
             variant="primary"
             onClick={handleSave}
-            isLoading={isSaving}
+            isLoading={updateSettingsMutation.isPending}
             className="px-6"
           >
             Guardar cambios
@@ -554,6 +588,15 @@ export default function EditProfileSettingsPage() {
       <ChangePasswordModal 
         isOpen={isPasswordModalOpen} 
         onClose={() => setIsPasswordModalOpen(false)} 
+      />
+
+      <StatusModal
+        isOpen={alertConfig.isOpen}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        description={alertConfig.description}
+        buttonText={alertConfig.buttonText || "Cerrar"}
+        onClose={() => setAlertConfig({ ...alertConfig, isOpen: false })}
       />
     </div>
   );

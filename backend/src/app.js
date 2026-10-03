@@ -3,8 +3,12 @@ import cors from 'cors';
 import { supabase } from './config/supabase.js';
 import authRoutes from './routes/authRoutes.js';
 import clientRoutes from './routes/clientRoutes.js';
-import clientNotificationRoutes from './routes/clientNotificationRoutes.js';
 import professionalRoutes from './routes/professionalRoutes.js';
+import jobRequestsRoutes from './routes/jobRequestsRoutes.js';
+import marketplaceRoutes from './routes/marketplaceRoutes.js';
+import offersRoutes from './routes/offersRoutes.js';
+import appointmentsRoutes from './routes/appointmentsRoutes.js';
+import clientNotificationRoutes from './routes/clientNotificationRoutes.js';
 import professionalNotificationRoutes from './routes/professionalNotificationRoutes.js';
 import professionalDetailsRoutes from './routes/professionalDetailsRoutes.js';
 import clientReviewRoutes from './routes/clientReviewRoutes.js';
@@ -15,7 +19,7 @@ const app = express();
 
 // --- Middlewares Globales ---
 app.use(cors());
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '50mb' }));
 
 // --- Rutas de la API ---
 app.use('/api/v1/auth', authRoutes);
@@ -23,9 +27,13 @@ app.use('/api/v1/client', clientRoutes);
 app.use('/api/v1/client/notifications', clientNotificationRoutes);
 app.use('/api/v1/client/reviews', clientReviewRoutes);
 app.use('/api/v1/professional', professionalRoutes);
+app.use('/api/v1/professional/marketplace', marketplaceRoutes);
 app.use('/api/v1/professional/notifications', professionalNotificationRoutes);
 app.use('/api/v1/professional', professionalDetailsRoutes);
 app.use('/api/v1/chatbot', chatbotRoutes);
+app.use('/api/v1/job-requests', jobRequestsRoutes);
+app.use('/api/v1/offers', offersRoutes);
+app.use('/api/v1/appointments', appointmentsRoutes);
 
 // --- Rutas de Diagnóstico (Pruebas iniciales) ---
 // NOTA: Más adelante, las rutas de la aplicación se separarán en la carpeta src/routes/
@@ -42,11 +50,11 @@ app.get('/test-db', async (req, res) => {
     const { data, error } = await supabase.from('users').select('*').limit(1);
 
     if (error) {
-      // Si el error es de que la tabla no existe, significa que logramos conectar.
-      return res.status(200).json({
-        message: '¡Conectado a Supabase exitosamente! (La tabla "users" no existe aún, lo cual es normal)',
-        details: error.message
-      });
+       // Si el error es de que la tabla no existe, significa que logramos conectar.
+       return res.status(200).json({ 
+         message: '¡Conectado a Supabase exitosamente! (La tabla "users" no existe aún, lo cual es normal)',
+         details: error.message
+       });
     }
 
     res.status(200).json({ message: '¡Conectado a Supabase exitosamente y se encontró la tabla!', data });
@@ -60,4 +68,3 @@ app.get('/test-db', async (req, res) => {
 app.use(errorHandler);
 
 export default app;
-

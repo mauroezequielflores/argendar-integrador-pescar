@@ -14,6 +14,8 @@ import Loader from "../../../components/ui/Loader";
 import { ROUTES } from "../../../constants/routes";
 import { api } from "../../../libs/axios";
 
+import { useProfessionalProfile, useUpdateProfessionalProfile } from "../hooks/useProfileQueries";
+
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
 const DIAS_SEMANA = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
@@ -226,9 +228,6 @@ function ModalDisponibilidad({ disponibilidad, onClose, onSave }) {
 
 export default function EditProfessionalProfilePage() {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
 
   // Imágenes
   const coverInputRef = useRef(null);
@@ -250,37 +249,28 @@ export default function EditProfessionalProfilePage() {
   const [disponibilidad, setDisponibilidad] = useState([]);
   const [modalAbierto, setModalAbierto] = useState(false);
 
+  const { data: profile, isLoading } = useProfessionalProfile();
+  const updateProfileMutation = useUpdateProfessionalProfile();
+
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await api.get('/professional/profile');
-        const data = response.data;
-        setProfile(data);
-        setBio(data.description || "");
-        setHabilidades(data.skills || []);
-        
-        // Mapear disponibilidad del backend a la estructura del frontend
-        const schedule = data.availability?.schedule || [];
-        const loadedDisp = DIAS_SEMANA.map(dia => {
-          const entry = schedule.find(s => s.day === dia);
-          if (entry) {
-            // El backend guarda time_range como string "09:00 - 18:00"
-            const [inicio, fin] = entry.timeRange.split(' - ');
-            return { dia, activo: true, franjas: [{ inicio: inicio || "09:00", fin: fin || "18:00" }] };
-          }
-          return { dia, activo: false, franjas: [] };
-        });
-        setDisponibilidad(loadedDisp);
-        setAvatarPreview(data.avatarUrl);
-        setCoverPreview(data.coverUrl);
-      } catch (error) {
-        console.error("Error fetching professional profile", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchProfile();
-  }, []);
+    if (profile) {
+      setBio(profile.description || "");
+      setHabilidades(profile.skills || []);
+      
+      const schedule = profile.availability?.schedule || [];
+      const loadedDisp = DIAS_SEMANA.map(dia => {
+        const entry = schedule.find(s => s.day === dia);
+        if (entry) {
+          const [inicio, fin] = entry.timeRange.split(' - ');
+          return { dia, activo: true, franjas: [{ inicio: inicio || "09:00", fin: fin || "18:00" }] };
+        }
+        return { dia, activo: false, franjas: [] };
+      });
+      setDisponibilidad(loadedDisp);
+      setAvatarPreview(profile.avatarUrl);
+      setCoverPreview(profile.coverUrl);
+    }
+  }, [profile]);
 
   // ── Handlers ──
 
@@ -318,78 +308,50 @@ export default function EditProfessionalProfilePage() {
     setModalAbierto(false);
   };
 
-  const handleSaveAndReturn = async () => {
-    setIsSaving(true);
-    try {
-      // Map availability back to backend format
-      const schedule = [];
-      disponibilidad.forEach(d => {
-        if (d.activo && d.franjas.length > 0) {
-          schedule.push({
-            day: d.dia,
-            timeRange: `${d.franjas[0].inicio} - ${d.franjas[0].fin}` // Taking first range for now to match backend simple string
-          });
-        }
-      });
+  const handleSaveAndReturn = () => {
+    const schedule = [];
+    disponibilidad.forEach(d => {
+      if (d.activo && d.franjas.length > 0) {
+        schedule.push({
+          day: d.dia,
+          timeRange: `${d.franjas[0].inicio} - ${d.franjas[0].fin}` // Taking first range for now to match backend simple string
+        });
+      }
+    });
 
-      const payload = { 
-        description: bio,
-        skills: habilidades,
-        availability: { schedule }
-      };
+    const payload = { 
+      description: bio,
+      skills: habilidades,
+      availability: { schedule }
+    };
 
-      if (avatarBase64) payload.avatarUrl = avatarBase64;
-      if (coverBase64) payload.coverUrl = coverBase64;
+    if (avatarBase64) payload.avatarUrl = avatarBase64;
+    if (coverBase64) payload.coverUrl = coverBase64;
 
-      await api.patch('/professional/profile', payload);
-      navigate("/professional/profile");
-    } catch (error) {
-      console.error("Error saving profile", error);
-      setIsSaving(false);
-    }
+    updateProfileMutation.mutate(payload, {
+      onSuccess: () => navigate("/professional/profile"),
+    });
   };
 
-  const handleSaveBio = async () => {
-    setIsSaving(true);
-    try {
-      await api.patch('/professional/profile', { description: bio });
-      // show success if needed
-    } catch (error) {
-      console.error("Error saving bio", error);
-    } finally {
-      setIsSaving(false);
-    }
+  const handleSaveBio = () => {
+    updateProfileMutation.mutate({ description: bio });
   };
 
-  const handleSaveSkills = async () => {
-    setIsSaving(true);
-    try {
-      await api.patch('/professional/profile', { skills: habilidades });
-    } catch (error) {
-      console.error("Error saving skills", error);
-    } finally {
-      setIsSaving(false);
-    }
+  const handleSaveSkills = () => {
+    updateProfileMutation.mutate({ skills: habilidades });
   };
 
-  const handleSaveAvailability = async () => {
-    setIsSaving(true);
-    try {
-      const schedule = [];
-      disponibilidad.forEach(d => {
-        if (d.activo && d.franjas.length > 0) {
-          schedule.push({
-            day: d.dia,
-            timeRange: `${d.franjas[0].inicio} - ${d.franjas[0].fin}`
-          });
-        }
-      });
-      await api.patch('/professional/profile', { availability: { schedule } });
-    } catch (error) {
-      console.error("Error saving availability", error);
-    } finally {
-      setIsSaving(false);
-    }
+  const handleSaveAvailability = () => {
+    const schedule = [];
+    disponibilidad.forEach(d => {
+      if (d.activo && d.franjas.length > 0) {
+        schedule.push({
+          day: d.dia,
+          timeRange: `${d.franjas[0].inicio} - ${d.franjas[0].fin}`
+        });
+      }
+    });
+    updateProfileMutation.mutate({ availability: { schedule } });
   };
 
   const resumen = calcularResumen(disponibilidad);
@@ -458,10 +420,10 @@ export default function EditProfessionalProfilePage() {
 
           <button
             onClick={handleSaveAndReturn}
-            disabled={isSaving}
+            disabled={updateProfileMutation.isPending}
             className="flex shrink-0 items-center gap-2 self-start rounded-[6px] border border-[#323232] bg-transparent px-4 py-2 text-xs font-medium text-white hover:bg-[#323232] transition-colors sm:self-auto disabled:opacity-50"
           >
-            {isSaving ? "Guardando..." : "Guardar y volver a Mi perfil"}
+            {updateProfileMutation.isPending ? "Guardando..." : "Guardar y volver a Mi perfil"}
           </button>
         </div>
 
@@ -494,7 +456,7 @@ export default function EditProfessionalProfilePage() {
         <div className="flex justify-end">
           <button 
             onClick={handleSaveBio}
-            disabled={isSaving}
+            disabled={updateProfileMutation.isPending}
             className="rounded-[6px] bg-[#F78736] px-4 py-2.5 text-xs font-medium text-white hover:bg-[#e06d00] transition-colors disabled:opacity-50"
           >
             Guardar cambios
@@ -551,7 +513,7 @@ export default function EditProfessionalProfilePage() {
         <div className="flex justify-end">
           <button 
             onClick={handleSaveSkills}
-            disabled={isSaving}
+            disabled={updateProfileMutation.isPending}
             className="rounded-[6px] bg-[#F78736] px-4 py-2.5 text-xs font-medium text-white hover:bg-[#e06d00] transition-colors disabled:opacity-50"
           >
             Guardar cambios
@@ -594,7 +556,7 @@ export default function EditProfessionalProfilePage() {
           </button>
           <button
             onClick={handleSaveAvailability}
-            disabled={isSaving}
+            disabled={updateProfileMutation.isPending}
             className="rounded-[6px] bg-[#F78736] px-4 py-2.5 text-xs font-medium text-white hover:bg-[#e06d00] transition-colors disabled:opacity-50"
           >
             Guardar cambios

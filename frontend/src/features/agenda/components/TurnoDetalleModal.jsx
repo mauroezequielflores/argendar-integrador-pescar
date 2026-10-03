@@ -2,11 +2,78 @@ import Modal from "../../../components/ui/Modal";
 import Button from "../../../components/ui/Button";
 import { UserIcon, MapPinIcon, CalendarDaysIcon, CurrencyDollarIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { StarIcon } from "@heroicons/react/24/solid";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../../../libs/axios";
+import { useAuth } from "../../../context/AuthContext";
+import { useState } from "react";
+import SolicitudDetailModal from "../../marketplace/components/SolicitudDetailModal";
+import { formatDatePreference, formatStatus } from "../../../utils/formatters";
 
-export default function TurnoDetalleModal({ turno, isOpen, onClose, onConfirmarPago, onReprogramar, onFinalizar }) {
-  if (!turno) return null;
+export default function TurnoDetalleModal({ turno, isOpen, onClose, onConfirmarPago, onReprogramar, onFinalizar, isConfirmandoPago, isHistory = false }) {
+  const { user } = useAuth();
+  const [isSolicitudModalOpen, setIsSolicitudModalOpen] = useState(false);
+  
+  const { data: turnoDetails, isLoading, isError } = useQuery({
+    queryKey: ['appointment-details', turno?.id],
+    queryFn: async () => {
+      const url = user.role === 'professional' 
+        ? `/professional/appointments/${turno.id}`
+        : `/appointments/${turno.id}`;
+      const response = await api.get(url);
+      return response.data;
+    },
+    enabled: isOpen && !!turno?.id,
+  });
 
-  const isPagoPendiente = turno.pago.estado === "PENDIENTE";
+  if (!isOpen) return null;
+
+  if (isLoading) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <div className="flex flex-col items-center justify-center h-64 text-white">
+          <p>Cargando detalles...</p>
+        </div>
+      </Modal>
+    );
+  }
+
+  if (isError || !turnoDetails) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <div className="flex flex-col items-center justify-center h-64 text-white">
+          <p>Ocurrió un error al cargar los detalles del turno.</p>
+        </div>
+      </Modal>
+    );
+  }
+
+  const {
+    estado,
+    ubicacion,
+    direccionExacta,
+    fecha,
+    persona,
+    solicitud,
+    pago,
+    preferencia,
+    categoria
+  } = turnoDetails;
+
+  const isPagoPendiente = pago?.estado === "PENDIENTE" || pago?.estado === "pending";
+
+  // Determinar el título de la sección 2
+  const isProfessional = user?.role === 'professional';
+  const personSectionTitle = isProfessional ? "Detalle del Cliente" : "Detalle del Profesional";
+
+  const getDayAndHour = (dateString) => {
+    if (!dateString) return { day: "", hour: "" };
+    const date = new Date(dateString);
+    const day = date.toLocaleDateString();
+    const hour = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + " hs";
+    return { day, hour };
+  };
+
+  const { day, hour } = getDayAndHour(fecha);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -20,9 +87,11 @@ export default function TurnoDetalleModal({ turno, isOpen, onClose, onConfirmarP
           >
             <XMarkIcon className="h-6 w-6" />
           </button>
-          <button className="px-4 py-2 text-sm font-medium text-[#A8A8AA] border border-[#323232] rounded-[6px] bg-transparent hover:text-white hover:bg-[#323232] transition-colors">
-            Cancelar turno
-          </button>
+          {!isHistory && (
+            <button className="px-4 py-2 text-sm font-medium text-[#A8A8AA] border border-[#323232] rounded-[6px] bg-transparent hover:text-white hover:bg-[#323232] transition-colors">
+              Cancelar turno
+            </button>
+          )}
         </div>
 
         {/* Sección 1: Detalle del Turno */}
@@ -30,7 +99,7 @@ export default function TurnoDetalleModal({ turno, isOpen, onClose, onConfirmarP
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-bold text-white">Detalle del Turno</h3>
             <span className="px-2 py-1 text-[10px] font-bold text-[#A8A8AA] bg-[#323232] rounded-[4px] tracking-wider uppercase border border-[#404040]">
-              PROGRAMADO
+              {formatStatus(estado)}
             </span>
           </div>
           
@@ -38,15 +107,15 @@ export default function TurnoDetalleModal({ turno, isOpen, onClose, onConfirmarP
             {/* Perfil */}
             <div className="flex items-center p-4 gap-4 border-b border-[#323232]">
               <div className="h-12 w-12 rounded-full bg-[#727272] flex items-center justify-center overflow-hidden shrink-0">
-                {turno.cliente?.foto ? (
-                  <img src={turno.cliente.foto} alt="avatar" className="h-full w-full object-cover" />
+                {persona?.foto ? (
+                  <img src={persona.foto} alt="avatar" className="h-full w-full object-cover" />
                 ) : (
                   <UserIcon className="h-6 w-6 text-white" />
                 )}
               </div>
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-white font-bold text-sm">{turno.cliente?.nombre || "Ricardo Gómez"}</span>
+                  <span className="text-white font-bold text-sm">{persona?.nombre || "Sin nombre"}</span>
                   <div className="flex text-white h-2.5">
                     <StarIcon className="h-2.5 w-2.5" />
                     <StarIcon className="h-2.5 w-2.5" />
@@ -55,29 +124,29 @@ export default function TurnoDetalleModal({ turno, isOpen, onClose, onConfirmarP
                     <StarIcon className="h-2.5 w-2.5 text-[#A8A8AA]" />
                   </div>
                 </div>
-                <span className="text-[10px] text-[#A8A8AA] uppercase tracking-wide">{turno.cliente?.profesion || "ELECTRICISTA"}</span>
+                <span className="text-[10px] text-[#A8A8AA] uppercase tracking-wide">{persona?.profesion || "CLIENTE"}</span>
               </div>
             </div>
             
             {/* Fechas */}
             <div className="p-4 border-b border-[#323232]">
               <span className="text-[10px] text-[#A8A8AA] font-bold uppercase tracking-wider block mb-1">FECHA PROPUESTA</span>
-              <span className="text-white font-bold text-sm">{turno.fecha || "30/07/2026"}</span>
+              <span className="text-white font-bold text-sm">{day || "-"}</span>
             </div>
             <div className="p-4 flex items-center justify-between">
               <span className="text-xs text-[#A8A8AA]">Horario</span>
-              <span className="text-white font-bold text-sm">{turno.horario || "09:00 hs"}</span>
+              <span className="text-white font-bold text-sm">{hour || "-"}</span>
             </div>
           </div>
         </section>
 
-        {/* Sección 2: Detalle del Cliente */}
+        {/* Sección 2: Detalle del Cliente / Profesional */}
         <section className="flex flex-col mb-6 border border-[#323232] rounded-[8px] bg-transparent overflow-hidden">
           {/* Header y Ubicación */}
           <div className="p-4 pb-5 flex flex-col gap-4">
             <h4 className="text-white font-bold flex items-center gap-2 text-base">
               <UserIcon className="h-5 w-5 text-white" />
-              Detalle del Cliente
+              {personSectionTitle}
             </h4>
             
             <div className="flex items-start gap-3">
@@ -86,8 +155,8 @@ export default function TurnoDetalleModal({ turno, isOpen, onClose, onConfirmarP
               </div>
               <div className="flex flex-col">
                 <span className="text-[10px] text-[#A8A8AA] font-bold uppercase tracking-wider mb-1">UBICACIÓN</span>
-                <span className="text-white font-bold text-sm leading-tight mb-1">{turno.direccionExacta || "Av. Santa Fe 2534, Piso 4, Dpto B"}</span>
-                <span className="text-xs text-[#A8A8AA] leading-tight">{turno.ubicacion || "Palermo, Ciudad Autónoma de Buenos Aires"}</span>
+                <span className="text-white font-bold text-sm leading-tight mb-1">{direccionExacta || "-"}</span>
+                <span className="text-xs text-[#A8A8AA] leading-tight">{ubicacion || "-"}</span>
               </div>
             </div>
           </div>
@@ -99,15 +168,17 @@ export default function TurnoDetalleModal({ turno, isOpen, onClose, onConfirmarP
                 PUBLICADA
               </span>
               <span className="px-2 py-1 text-[10px] font-bold text-[#A8A8AA] bg-[#323232] rounded-[4px] uppercase border border-[#404040]">
-                PLOMERIA
+                CATEGORÍA
               </span>
             </div>
             <div className="flex items-start gap-3">
-              <div className="h-10 w-10 bg-[#A8A8AA] rounded-full shrink-0"></div>
+              <div className="h-10 w-10 bg-[#A8A8AA] rounded-full shrink-0 flex items-center justify-center overflow-hidden">
+                {/* Opcional: Icono de categoría */}
+              </div>
               <div>
-                <h5 className="text-white font-bold text-sm mb-1 line-clamp-1">{turno.solicitud?.titulo || "Reparación de pérdida en caño..."}</h5>
+                <h5 className="text-white font-bold text-sm mb-1 line-clamp-1">{solicitud?.titulo || "Sin título"}</h5>
                 <p className="text-xs leading-relaxed line-clamp-2 text-[#A8A8AA]">
-                  {turno.solicitud?.descripcion || "Hay una pérdida constante de agua debajo de la mesada de la cocina. Parece ser el caño..."}
+                  {solicitud?.descripcion || "Sin descripción"}
                 </p>
               </div>
             </div>
@@ -117,9 +188,12 @@ export default function TurnoDetalleModal({ turno, isOpen, onClose, onConfirmarP
           <div className="border-t border-[#323232] p-4 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs">
               <CalendarDaysIcon className="h-4 w-4" />
-              <span>Preferencia: <span className="text-white font-medium">Este mes</span></span>
+              <span>Preferencia: <span className="text-white font-medium">{formatDatePreference(preferencia) || "-"}</span></span>
             </div>
-            <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-[#323232] rounded-[6px] hover:bg-[#404040] transition-colors border border-[#404040]">
+            <button 
+              onClick={() => setIsSolicitudModalOpen(true)}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-[#323232] rounded-[6px] hover:bg-[#404040] transition-colors border border-[#404040]"
+            >
               Ver detalle <span className="text-white">→</span>
             </button>
           </div>
@@ -134,58 +208,82 @@ export default function TurnoDetalleModal({ turno, isOpen, onClose, onConfirmarP
               Detalle del Pago
             </h4>
             <span className="px-2 py-1 text-[10px] font-bold text-[#A8A8AA] bg-[#323232] rounded-[4px] uppercase border border-[#404040]">
-              {turno.pago?.estado || "PENDIENTE"}
+              {formatStatus(pago?.estado || "pending")}
             </span>
           </div>
 
           {/* Filas de pago (Líneas Full Width) */}
           <div className="border-t border-[#323232] p-4 py-3 flex items-center justify-between text-xs">
             <span>Método de Pago</span>
-            <span className="text-white">{turno.pago?.metodo || "EFECTIVO"}</span>
+            <span className="text-white">Efectivo</span>
           </div>
           <div className="border-t border-[#323232] p-4 py-3 flex items-center justify-between text-xs">
             <span>Seña abonada</span>
-            <span className="text-white font-medium">${turno.pago?.senia || "0,00"}</span>
+            <span className="text-white font-medium">${pago?.senia?.toLocaleString() || "0,00"}</span>
           </div>
           <div className="border-t border-[#323232] p-4 py-3 flex items-center justify-between text-xs">
             <span>Saldo restante</span>
-            <span className="text-white font-bold">${turno.pago?.saldo || "45.000,00"}</span>
+            <span className="text-white font-bold">${pago?.saldo?.toLocaleString() || "0,00"}</span>
           </div>
           <div className="border-t border-[#323232] p-4 py-4 flex items-center justify-between text-sm">
             <span className="text-white font-bold">Total del servicio</span>
-            <span className="text-white font-bold">${turno.pago?.saldo || "45.000,00"}</span>
+            <span className="text-white font-bold">${pago?.total?.toLocaleString() || "0,00"}</span>
           </div>
           
-          <div className="px-4 pb-4">
-            {isPagoPendiente && (
-              <Button variant="primary" onClick={onConfirmarPago} className="font-bold w-full">
-                Confirmar pago
+          {isProfessional && isPagoPendiente && !isHistory && (
+            <div className="px-4 pb-4">
+              <Button variant="primary" onClick={onConfirmarPago} isLoading={isConfirmandoPago} className="font-bold w-full">
+                {isConfirmandoPago ? "Confirmando..." : "Confirmar pago"}
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </section>
 
         {/* Acciones Finales (Fuera de las tarjetas) */}
-        <section className="flex items-center gap-3 mt-2">
-          <button 
-            onClick={onReprogramar} 
-            className="flex-1 px-4 py-3 text-xs font-medium text-white border border-[#323232] rounded-[6px] bg-transparent hover:bg-[#292929] transition-colors text-center"
-          >
-            Reprogramar turno
-          </button>
-          <button 
-            onClick={onFinalizar} 
-            disabled={isPagoPendiente}
-            className={`flex-1 px-4 py-3 text-xs font-medium rounded-[6px] text-center transition-colors ${
-              isPagoPendiente 
-                ? 'bg-[#727272] text-[#A8A8AA] opacity-50 cursor-not-allowed' 
-                : 'bg-[#F78736] text-white hover:bg-[#e06d00]'
-            }`}
-          >
-            Finalizar turno
-          </button>
-        </section>
+        {!isHistory && (
+          <section className="flex items-center gap-3 mt-2">
+            <button 
+              onClick={onReprogramar} 
+              className="flex-1 px-4 py-3 text-xs font-medium text-white border border-[#323232] rounded-[6px] bg-transparent hover:bg-[#292929] transition-colors text-center"
+            >
+              Reprogramar turno
+            </button>
+            {isProfessional && (
+              <button 
+                onClick={onFinalizar} 
+                disabled={isPagoPendiente}
+                className={`flex-1 px-4 py-3 text-xs font-medium rounded-[6px] text-center transition-colors ${
+                  isPagoPendiente 
+                    ? 'bg-[#727272] text-[#A8A8AA] opacity-50 cursor-not-allowed' 
+                    : 'bg-[#F78736] text-white hover:bg-[#e06d00]'
+                }`}
+              >
+                Finalizar turno
+              </button>
+            )}
+          </section>
+        )}
       </div>
+
+      {solicitud?.id && (
+        <SolicitudDetailModal
+          isOpen={isSolicitudModalOpen}
+          onClose={() => setIsSolicitudModalOpen(false)}
+          solicitudId={solicitud.id}
+          preloadedData={{
+            id: solicitud.id,
+            cliente: { nombre: persona?.nombre || "", inicial: "" },
+            categoria: solicitud.categoria || "",
+            titulo: solicitud.titulo || "",
+            descripcion: solicitud.descripcion || "",
+            cuestionario: solicitud.cuestionario || {},
+            ubicacion: solicitud.ubicacion || "",
+            horarioPreferencia: solicitud.horarioPreferencia || "",
+            imagenesUrl: solicitud.imagenesUrl || []
+          }}
+          readOnly={true}
+        />
+      )}
     </Modal>
   );
 }

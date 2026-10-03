@@ -14,6 +14,8 @@ export const updateClientSettingsSchema = z.object({
     lastName: z.string().min(1, "El apellido es requerido").optional(),
     dni: z.string().min(6, "DNI inválido").optional(),
     location: z.string().optional(),
+    latitude: z.number().nullable().optional(),
+    longitude: z.number().nullable().optional(),
     phone: z.string().optional(),
     emailAlerts: z.boolean().optional(),
     phoneAlerts: z.boolean().optional()
@@ -42,4 +44,17 @@ export const updateProfessionalProfileSchema = z.object({
   }).strict() // Evita campos extra como ratingAvg o reviewsCount
 });
 
-export const updateProfessionalSettingsSchema = updateClientSettingsSchema; // Comparte la misma estructura para PII
+export const updateProfessionalSettingsSchema = z.object({
+  body: z.object({
+    firstName: z.string().min(1, "El nombre es requerido").optional(),
+    lastName: z.string().min(1, "El apellido es requerido").optional(),
+    dni: z.string().min(6, "DNI inválido").optional(),
+    location: z.string().optional(),
+    latitude: z.number().nullable().optional(),
+    longitude: z.number().nullable().optional(),
+    coverageRadiusKm: z.number().positive("El radio debe ser positivo").nullable().optional(),
+    phone: z.string().optional(),
+    emailAlerts: z.boolean().optional(),
+    phoneAlerts: z.boolean().optional()
+  }).strict()
+});

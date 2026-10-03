@@ -10,6 +10,7 @@ export const validateRequest = (schema) => async (req, res, next) => {
     return next();
   } catch (error) {
     const errorMessage = error.errors ? error.errors[0].message : 'Error de validación';
+    console.error('🔥 Validation Error:', errorMessage, 'Body:', req.body);
     return next(new ValidationError(errorMessage));
   }
 };

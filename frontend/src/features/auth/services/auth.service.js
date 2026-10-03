@@ -15,16 +15,8 @@ import { api } from "../../../libs/axios";
  */
 export async function requestPasswordReset({ email }) {
   try {
-    // Cuando el backend esté disponible:
-    // const response = await api.post("/auth/forgot-password", { email });
-    // return response.data;
-
-    // Simulación local para desarrollo frontend / mocks:
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    return {
-      success: true,
-      message: "Hemos enviado un enlace de recuperación a tu correo electrónico.",
-    };
+    const response = await api.post("/auth/forgot-password", { email });
+    return response.data;
   } catch (error) {
     const message =
       error.response?.data?.message ||
@@ -41,15 +33,8 @@ export async function requestPasswordReset({ email }) {
  */
 export async function resendPasswordReset({ email }) {
   try {
-    // Cuando el backend esté disponible:
-    // const response = await api.post("/auth/resend-forgot-password", { email });
-    // return response.data;
-
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    return {
-      success: true,
-      message: "Enlace reenviado exitosamente.",
-    };
+    const response = await api.post("/auth/resend-forgot-password", { email });
+    return response.data;
   } catch (error) {
     const message =
       error.response?.data?.message ||
@@ -68,19 +53,12 @@ export async function resendPasswordReset({ email }) {
  */
 export async function resetPasswordConfirm({ token = "", password, confirmPassword }) {
   try {
-    // Cuando el backend esté disponible:
-    // const response = await api.post("/auth/reset-password", {
-    //   token,
-    //   password,
-    //   confirmPassword,
-    // });
-    // return response.data;
-
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    return {
-      success: true,
-      message: "Tu contraseña ha sido restablecida exitosamente.",
-    };
+    const response = await api.post("/auth/reset-password", {
+      token,
+      password,
+      confirmPassword,
+    });
+    return response.data;
   } catch (error) {
     const message =
       error.response?.data?.message ||

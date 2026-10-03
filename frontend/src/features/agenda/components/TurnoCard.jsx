@@ -1,7 +1,5 @@
 import Card from "../../../components/ui/Card";
-import Badge from "../../../components/ui/Badge";
 import Button from "../../../components/ui/Button";
-import Avatar from "../../../components/ui/Avatar";
 import {
   MapPinIcon,
   ClockIcon,
@@ -9,58 +7,73 @@ import {
   ArrowRightIcon,
   UserIcon
 } from "@heroicons/react/24/outline";
+import { formatStatus } from "../../../utils/formatters";
 
 export default function TurnoCard({ turno, onVerDetalle }) {
+  let formattedFecha = turno.fecha;
+  let formattedHorario = turno.horario;
+  
+  if (turno.fecha && turno.fecha.includes('T')) {
+    const d = new Date(turno.fecha);
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    formattedFecha = `${day}/${month}/${year}`;
+    formattedHorario = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')} hs`;
+  }
+
   return (
-    <Card className="p-4 flex flex-col gap-4 border border-[#3a3a3a]">
+    <Card rounded="sm" className="flex flex-col gap-0 border border-[#323232] bg-[#222222] p-5 hover:border-[#404040] transition-colors">
       {/* Top Row */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold text-[#A8A8AA] tracking-wider">TURNO •</span>
-          <Badge variant={turno.estado === "CONFIRMADO" ? "orange" : "default"} className="uppercase">
-            {turno.estado}
-          </Badge>
-          <Badge className="flex items-center gap-1 uppercase">
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-4">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold text-[#888888] tracking-wide mr-1">TURNO <span className="mx-0.5 text-[#555]">•</span></span>
+          <span className="inline-flex items-center rounded-[4px] border border-[#3a3a3a] bg-transparent px-2 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider">
+            {formatStatus(turno.estado)}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-[4px] border border-[#3a3a3a] bg-transparent px-2 py-0.5 text-[10px] font-bold text-[#A8A8AA] uppercase tracking-wider">
             <MapPinIcon className="h-3 w-3" />
             {turno.ubicacion}
-          </Badge>
+          </span>
         </div>
-        <div className="flex items-center gap-1 text-xs text-[#A8A8AA]">
-          <ClockIcon className="h-3 w-3" />
+        <div className="flex items-center gap-1 text-[11px] text-[#888888]">
+          <ClockIcon className="h-3.5 w-3.5" />
           <span>hace 2 días</span>
         </div>
       </div>
 
       {/* Middle Row */}
-      <div className="flex items-center gap-4 py-2 border-b border-[#3a3a3a]">
-        <div className="h-12 w-12 rounded-full bg-[#727272] flex items-center justify-center overflow-hidden">
-          {turno.cliente?.foto ? (
-             <img src={turno.cliente.foto} alt="avatar" className="h-full w-full object-cover" />
+      <div className="flex items-center gap-4 pb-5 pt-1">
+        <div className="h-14 w-14 shrink-0 rounded-full bg-[#727272] flex items-center justify-center overflow-hidden">
+          {(turno.persona?.foto || turno.cliente?.foto) ? (
+             <img src={turno.persona?.foto || turno.cliente?.foto} alt="avatar" className="h-full w-full object-cover" />
           ) : (
-            <UserIcon className="h-6 w-6 text-white" />
+            <UserIcon className="h-7 w-7 text-white" />
           )}
         </div>
-        <div className="flex flex-col">
-          <h3 className="text-base font-semibold text-white">{turno.titulo}</h3>
-          <span className="text-sm text-[#A8A8AA]">{turno.cliente?.nombre}</span>
+        <div className="flex flex-col gap-1.5">
+          <h3 className="text-xl font-bold text-white leading-tight">{turno.titulo}</h3>
+          <span className="text-[13px] text-[#A8A8AA] font-medium">{turno.persona?.nombre || turno.cliente?.nombre}</span>
         </div>
       </div>
 
       {/* Bottom Row */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-        <div className="flex items-center gap-3 text-[#A8A8AA] text-sm">
-          <div className="flex items-center gap-2">
-            <CalendarDaysIcon className="h-4 w-4" />
-            <span>Programado :</span>
-            <span className="text-white font-medium">{turno.fecha} • {turno.horario}</span>
-          </div>
-          <span className="text-[#3a3a3a]">•</span>
-          <Badge className="uppercase">{turno.categoria}</Badge>
+      <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[#323232]">
+        <div className="flex items-center gap-2 text-[#888888] text-[13px]">
+          <CalendarDaysIcon className="h-4 w-4" />
+          <span>Programado :</span>
+          <span className="text-[#E0E0E0] font-medium ml-1">{formattedFecha}</span>
+          <span className="text-[#444] mx-1">•</span>
+          <span className="text-[#E0E0E0] font-medium">{formattedHorario}</span>
+          <span className="text-[#444] mx-1">•</span>
+          <span className="inline-flex items-center rounded-[4px] border border-[#3a3a3a] bg-transparent px-2 py-0.5 text-[10px] font-bold text-[#A8A8AA] uppercase tracking-wider">
+            {turno.categoria}
+          </span>
         </div>
 
         <div>
-          <Button variant="ghost" onClick={onVerDetalle} className="border-[#3a3a3a] text-white hover:border-[#F78736]">
-            Ver detalle <ArrowRightIcon className="h-4 w-4" />
+          <Button variant="ghost" onClick={onVerDetalle} className="border border-[#3a3a3a] text-[13px] font-medium text-white hover:bg-[#3a3a3a] px-4 py-1.5 rounded-[6px] transition-colors h-auto">
+            Ver detalle <ArrowRightIcon className="h-3.5 w-3.5 inline-block ml-1" />
           </Button>
         </div>
       </div>

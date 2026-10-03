@@ -1,14 +1,12 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import {
   MagnifyingGlassIcon,
   CreditCardIcon,
   ArrowPathIcon,
-  XCircleIcon,
 } from "@heroicons/react/24/outline";
 
 import DataTable from "../../../components/ui/DataTable";
 import Badge from "../../../components/ui/Badge";
-import Button from "../../../components/ui/Button";
 import EmptyState from "../../../components/ui/EmptyState";
 import Breadcrumbs from "../../../components/ui/Breadcrumbs";
 
@@ -88,26 +86,17 @@ const TABLE_COLUMNS = [
     headerClassName: "text-right",
     className: "text-right",
     render: () => (
-      <div className="flex items-center justify-end gap-2">
-        {/* CA04 — Botones presentes pero siempre disabled en esta iteración */}
-        <Button
-          variant="ghost"
-          size="sm"
+      <div className="flex items-center justify-end gap-1.5">
+        {/* Botón de Realizar Reembolso (ícono cuadrado compacto) */}
+        <button
+          type="button"
           disabled
-          className="gap-1.5 border-[#3a3a3a] text-xs"
+          title="Realizar reembolso"
+          aria-label="Realizar reembolso"
+          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#3a3a3a] text-[#A8A8AA] transition-colors hover:border-[#555] hover:text-white bg-transparent opacity-50 cursor-not-allowed"
         >
-          <ArrowPathIcon className="h-3.5 w-3.5" />
-          Realizar reembolso
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled
-          className="gap-1.5 border-[#3a3a3a] text-xs"
-        >
-          <XCircleIcon className="h-3.5 w-3.5" />
-          Cancelar transacción
-        </Button>
+          <ArrowPathIcon className="h-4 w-4" />
+        </button>
       </div>
     ),
   },
@@ -145,7 +134,7 @@ export default function AdminTransactionsPage() {
 
       {/* Título y descripción — CA01 */}
       <div>
-        <h1 className="text-3xl font-bold text-white">Transacciones</h1>
+        <h1 className="text-2xl font-bold text-white">Transacciones</h1>
         <p className="mt-1 text-sm text-[#A8A8AA]">
           Consultá el historial de transacciones realizadas en la plataforma.
         </p>

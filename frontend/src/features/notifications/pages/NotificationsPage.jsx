@@ -267,7 +267,7 @@ export default function NotificationsPage() {
           onClose={() => setSelectedRating(null)}
           onViewDetails={() => {
             setSelectedRating(null);
-            navigate(selectedRating.href || ROUTES.CLIENT_AGENDA);
+            navigate('/client/agenda/historial');
           }}
           onSubmitSuccess={(reviewData) => {
             submitReviewMutation.mutate(reviewData);

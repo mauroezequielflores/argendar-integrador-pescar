@@ -27,6 +27,8 @@ import AdminLayout from "../layouts/AdminLayout";
 import AdminDashboardPage from "../../features/dashboard/pages/AdminDashboardPage";
 import AdminModerationPage from "../../features/moderation/pages/AdminModerationPage";
 import { AdminTransactionsPage } from "../../features/transactions";
+import AdminUsersPage from "../../features/users/pages/AdminUsersPage";
+import AdminReportsPage from "../../features/reports/pages/AdminReportsPage";
 
 import AgendaPage from "../../features/agenda/pages/AgendaPage";
 import CreateRequestPage from "../../features/agenda/pages/CreateRequestPage";
@@ -42,6 +44,7 @@ import CancellationDetailsPage from "../../features/notifications/pages/Cancella
 import PaymentConfirmedDetailsPage from "../../features/notifications/pages/PaymentConfirmedDetailsPage";
 import ReviewDetailsPage from "../../features/notifications/pages/ReviewDetailsPage";
 import ProfessionalMarketplacePage from "../../features/marketplace/pages/ProfessionalMarketplacePage";
+import CreateOfferPage from "../../features/marketplace/pages/CreateOfferPage";
 import ProfessionalHelpPage from "../../features/help/pages/ProfessionalHelpPage";
 import ProfessionalProfilePage from "../../features/profile/pages/ProfessionalProfilePage";
 import EditProfessionalProfilePage from "../../features/profile/pages/EditProfessionalProfilePage";
@@ -60,6 +63,8 @@ import PaymentMethodsPage from "../../features/profile/pages/PaymentMethodsPage"
 import SettingsPage from "../../features/configurations/pages/SettingsPage";
 import HelpPage from "../../features/help/pages/HelpPage";
 
+import ProfessionalPublicProfilePage from "../../features/profile/pages/ProfessionalPublicProfilePage";
+
 /**
  * AppRouter — Arbol de rutas principal de Argendar.
  *
@@ -76,8 +81,8 @@ import HelpPage from "../../features/help/pages/HelpPage";
 export default function AppRouter() {
   return (
     <Routes>
-      {/* Redirect raiz */}
-      <Route path="/" element={<Navigate to={ROUTES.LOGIN} replace />} />
+      {/* Raiz */}
+      <Route path="/" element={<ClientLandingPage />} />
 
       {/* Landing pages (públicas — CA01) */}
       <Route path={ROUTES.LANDING_CLIENT} element={<ClientLandingPage />} />
@@ -102,6 +107,10 @@ export default function AppRouter() {
         }
       >
         <Route path="agenda" element={<AgendaPage />} />
+        <Route path="agenda/solicitud/:id/ofertas" element={<AgendaPage />} />
+        <Route path="agenda/solicitud/:id" element={<AgendaPage />} />
+        <Route path="agenda/turnos" element={<AgendaPage />} />
+        <Route path="agenda/historial" element={<AgendaPage />} />
 
         {/* Flujo de Creacion de Solicitud envuelto en su Layout */}
         <Route element={<CreateRequestLayout />}>
@@ -109,6 +118,9 @@ export default function AppRouter() {
           <Route path="agenda/create-request/location" element={<CreateRequestLocationPage />} />
           <Route path="agenda/create-request/revision" element={<CreateRequestRevisionPage />} />
         </Route>
+
+        {/* --- PROFESSIONAL PUBLIC PROFILE --- */}
+        <Route path="professional/:id" element={<ProfessionalPublicProfilePage />} />
 
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="marketplace" element={<MarketplacePage />} />
@@ -145,6 +157,7 @@ export default function AppRouter() {
         <Route path="payments/:id/details" element={<PaymentConfirmedDetailsPage />} />
         <Route path="reviews/:id/details" element={<ReviewDetailsPage />} />
         <Route path="marketplace" element={<ProfessionalMarketplacePage />} />
+        <Route path="marketplace/:solicitudId/create-offer" element={<CreateOfferPage />} />
         <Route path="profile" element={<ProfessionalProfilePage />} />
         <Route path="profile/edit-profile" element={<EditProfessionalProfilePage />} />
         <Route path="profile/profile-settings" element={<ProfessionalProfileSettingsPage />} />
@@ -171,8 +184,13 @@ export default function AppRouter() {
         }
       >
         <Route path="dashboard" element={<AdminDashboardPage />} />
+        <Route path="users" element={<AdminUsersPage />} />
+        <Route path="professionals" element={<Navigate to="/admin/users" replace />} />
+        <Route path="clients" element={<Navigate to="/admin/users" replace />} />
         <Route path="moderation" element={<AdminModerationPage />} />
         <Route path="transactions" element={<AdminTransactionsPage />} />
+        <Route path="reports" element={<AdminReportsPage />} />
+        <Route path="inbox" element={<Navigate to="/admin/reports" replace />} />
         <Route path="home" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
       </Route>

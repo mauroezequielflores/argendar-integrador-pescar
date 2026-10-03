@@ -1,4 +1,15 @@
 import * as clientService from '../services/clientService.js';
+import * as professionalService from '../services/professionalService.js';
+
+export const getProfessionalPublicProfile = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const data = await professionalService.getProfessionalProfile(id);
+    res.status(200).json(data);
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const getProfile = async (req, res, next) => {
   try {

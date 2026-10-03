@@ -33,6 +33,42 @@ export const getProfessionalProfile = async (userId) => {
   }
 
   const profData = data.professional_profiles || {};
+
+  // Fetch reviews to get tags and recent opinions
+  const { data: reviewsData } = await supabase
+    .from('reviews')
+    .select(`
+      rating,
+      comment,
+      tags,
+      created_at,
+      reviewer:profiles!reviewer_id(first_name, last_name)
+    `)
+    .eq('reviewee_id', userId)
+    .order('created_at', { ascending: false });
+
+  const tagsCount = {};
+  const recentReviews = [];
+
+  if (reviewsData) {
+    reviewsData.forEach((rev, index) => {
+      // Tags aggregation
+      if (rev.tags && Array.isArray(rev.tags)) {
+        rev.tags.forEach(tag => {
+          tagsCount[tag] = (tagsCount[tag] || 0) + 1;
+        });
+      }
+      // Top 5 recent reviews
+      if (index < 5) {
+        recentReviews.push({
+          authorName: `${rev.reviewer?.first_name || 'Usuario'} ${rev.reviewer?.last_name || ''}`.trim(),
+          rating: rev.rating,
+          comment: rev.comment,
+          createdAt: rev.created_at
+        });
+      }
+    });
+  }
   
   return {
     firstName: data.first_name,
@@ -58,7 +94,9 @@ export const getProfessionalProfile = async (userId) => {
       }))
     },
     ratingAvg: Number(profData.rating_avg || 0),
-    reviewsCount: profData.reviews_count || 0
+    reviewsCount: profData.reviews_count || 0,
+    tagsCount,
+    recentReviews
   };
 };
 
@@ -148,9 +186,11 @@ export const getProfessionalSettings = async (userId, userEmail) => {
       dni_verified,
       location,
       location_verified,
+      latitude,
+      longitude,
       phone,
       phone_verified,
-      professional_profiles(is_verified)
+      professional_profiles(is_verified, coverage_radius_km)
     `)
     .eq('id', userId)
     .single();
@@ -160,6 +200,7 @@ export const getProfessionalSettings = async (userId, userEmail) => {
   }
 
   const isVerified = user.professional_profiles?.is_verified || false;
+  const coverageRadiusKm = user.professional_profiles?.coverage_radius_km || 10;
 
   return {
     personalInfo: {
@@ -171,7 +212,10 @@ export const getProfessionalSettings = async (userId, userEmail) => {
     },
     location: {
       address: user.location,
-      locationVerified: user.location_verified
+      latitude: user.latitude,
+      longitude: user.longitude,
+      locationVerified: user.location_verified,
+      coverageRadiusKm
     },
     accountData: {
       email: userEmail,
@@ -184,7 +228,6 @@ export const getProfessionalSettings = async (userId, userEmail) => {
 };
 
 export const updateProfessionalSettings = async (userId, data) => {
-  // Es exactamente la misma lógica que en cliente para los PII.
   const { data: currentUser, error: fetchError } = await supabase
     .from('profiles')
     .select('dni_verified')
@@ -194,8 +237,8 @@ export const updateProfessionalSettings = async (userId, data) => {
   if (fetchError) throw new AppError('Error al verificar perfil', 500);
 
   const payload = {};
-  if (data.firstName) payload.first_name = data.firstName;
-  if (data.lastName) payload.last_name = data.lastName;
+  if (data.firstName !== undefined) payload.first_name = data.firstName;
+  if (data.lastName !== undefined) payload.last_name = data.lastName;
   
   if (data.dni !== undefined) {
     if (currentUser.dni_verified) {
@@ -209,6 +252,9 @@ export const updateProfessionalSettings = async (userId, data) => {
     payload.location = data.location;
     payload.location_verified = false;
   }
+  
+  if (data.latitude !== undefined) payload.latitude = data.latitude;
+  if (data.longitude !== undefined) payload.longitude = data.longitude;
 
   if (data.phone !== undefined) {
     payload.phone = data.phone;
@@ -222,11 +268,26 @@ export const updateProfessionalSettings = async (userId, data) => {
     .from('profiles')
     .update(payload)
     .eq('id', userId)
-    .select('first_name, last_name, dni, dni_verified, location, location_verified, phone, phone_verified, email_alerts, phone_alerts')
+    .select('first_name, last_name, dni, dni_verified, location, location_verified, latitude, longitude, phone, phone_verified, email_alerts, phone_alerts')
     .single();
 
   if (error) {
-    throw new AppError('Error al actualizar configuración', 500);
+    throw new AppError('Error al actualizar configuración general', 500);
+  }
+
+  // Update professional_profiles for radius and coordinates
+  const profPayload = {};
+  if (data.coverageRadiusKm !== undefined) profPayload.coverage_radius_km = data.coverageRadiusKm;
+  if (data.latitude !== undefined) profPayload.latitude = data.latitude;
+  if (data.longitude !== undefined) profPayload.longitude = data.longitude;
+
+  if (Object.keys(profPayload).length > 0) {
+    const { error: profError } = await supabase
+      .from('professional_profiles')
+      .update(profPayload)
+      .eq('profile_id', userId);
+      
+    if (profError) throw new AppError('Error al actualizar configuración profesional (radio/ubicación)', 500);
   }
 
   return {
@@ -235,7 +296,10 @@ export const updateProfessionalSettings = async (userId, data) => {
     dni: updated.dni,
     dniVerified: updated.dni_verified,
     location: updated.location,
+    latitude: updated.latitude,
+    longitude: updated.longitude,
     locationVerified: updated.location_verified,
+    coverageRadiusKm: data.coverageRadiusKm !== undefined ? data.coverageRadiusKm : undefined,
     phone: updated.phone,
     phoneVerified: updated.phone_verified,
     emailAlerts: updated.email_alerts,

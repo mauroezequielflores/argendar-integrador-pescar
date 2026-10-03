@@ -58,4 +58,33 @@ REGLAS DE SEGURIDAD Y DOMINIO ESTRICTO:
 4. Manten un tono profesional, claro y empático. Respuestas concisas,claras y completas.
 5. Adapta la respuesta al ROL del usuario (Cliente o Profesional) que se te indique en el mensaje.
 
-`;
+\`;
+
+export const REQUEST_STATUS = {
+  PUBLISHED: 'open',
+  OFFERED: 'offered',
+  SCHEDULED: 'scheduled',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled'
+};
+
+export const OFFER_STATUS = {
+  PENDING: 'pending',
+  ACCEPTED: 'accepted',
+  REJECTED: 'rejected',
+  WITHDRAWN: 'withdrawn'
+};
+
+export const APPOINTMENT_STATUS = {
+  CONFIRMED: 'confirmed',
+  RESCHEDULED: 'rescheduled',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled'
+};
+
+export const PAYMENT_STATUS = {
+  PENDING: 'pending',
+  PARTIAL: 'partial',
+  PAID: 'paid',
+  REFUNDED: 'refunded'
+};

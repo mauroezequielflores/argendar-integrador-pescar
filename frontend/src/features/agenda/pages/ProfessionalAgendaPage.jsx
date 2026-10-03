@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "../../../libs/axios";
 import {
   CalendarIcon,
   RectangleStackIcon,
@@ -13,21 +15,16 @@ import {
 import { useAuth } from "../../../context/AuthContext";
 import { ROUTES } from "../../../constants/routes";
 import EmptyState from "../../../components/ui/EmptyState";
-import {
-  mockOfertasPendientes,
-  mockHistorial,
-} from "../data/mockProfessionalAgenda";
 
 // Feature Components
 import TurnoCard from "../components/TurnoCard";
 import TurnoDetalleModal from "../components/TurnoDetalleModal";
 import RechazoFinalizarModal from "../components/RechazoFinalizarModal";
 import ExitoFinalizarModal from "../components/ExitoFinalizarModal";
+import ExitoPagoModal from "../components/ExitoPagoModal";
+import RechazoPagoModal from "../components/RechazoPagoModal";
 import OfertaCard from "../components/OfertaCard";
 import SolicitudDetalleModal from "../components/SolicitudDetalleModal";
-
-// Data
-import { mockAgenda } from "../data/mockAgenda";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -76,7 +73,7 @@ function TabNav({ active, onChange }) {
   );
 }
 
-function FilterBar({ count, label }) {
+function FilterBar({ count, label, sort, onSortChange }) {
   return (
     <div className="flex items-center justify-between">
       <p className="text-sm text-white">
@@ -84,22 +81,26 @@ function FilterBar({ count, label }) {
       </p>
       <div className="flex items-center gap-2 text-sm text-[#A8A8AA]">
         Ordenar por:
-        <span className="rounded-[6px] border border-[#323232] bg-[#292929] px-3 py-1 text-white text-xs">
-          Más nuevo
-        </span>
+        <select
+          value={sort}
+          onChange={(e) => onSortChange(e.target.value)}
+          className="rounded-[6px] border border-[#323232] bg-[#292929] px-3 py-1 text-white text-xs focus:outline-none focus:border-[#F78736] appearance-none"
+        >
+          <option value="newest">Más nuevo</option>
+          <option value="oldest">Más antiguo</option>
+        </select>
       </div>
     </div>
   );
 }
 
-function FilterChips() {
+function FilterChips({ sort }) {
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs text-[#A8A8AA]">Filtros</span>
       <span className="text-xs text-[#A8A8AA]">|</span>
       <span className="flex items-center gap-1 rounded-[6px] bg-[#323232] px-2 py-1 text-xs text-white">
-        Más nuevo
-        <XMarkIcon className="h-3 w-3 text-[#A8A8AA]" />
+        {sort === "oldest" ? "Más antiguo" : "Más nuevo"}
       </span>
     </div>
   );
@@ -109,14 +110,16 @@ function FilterChips() {
 
 // ─── Paneles ─────────────────────────────────────────────────────────────────
 
-function PanelProximosTurnos({ items, onVerDetalle }) {
+function PanelProximosTurnos({ items, onVerDetalle, sort, onSortChange }) {
   return (
     <div className="flex flex-col gap-3">
       <FilterBar
         count={items.length}
-        label={items.length === 1 ? "turno encontrado" : "turnos encontradas"}
+        label={items.length === 1 ? "turno encontrado" : "turnos encontrados"}
+        sort={sort}
+        onSortChange={onSortChange}
       />
-      <FilterChips />
+      <FilterChips sort={sort} />
       <div className="rounded-[6px] border-0">
         {items.length === 0 ? (
           <EmptyState
@@ -136,7 +139,7 @@ function PanelProximosTurnos({ items, onVerDetalle }) {
   );
 }
 
-function PanelOfertas({ items, onVerDetalle, onVerMiOferta }) {
+function PanelOfertas({ items, onVerDetalle, onVerMiOferta, sort, onSortChange }) {
   const navigate = useNavigate();
 
   return (
@@ -144,8 +147,10 @@ function PanelOfertas({ items, onVerDetalle, onVerMiOferta }) {
       <FilterBar
         count={items.length}
         label={items.length === 1 ? "oferta pendiente" : "ofertas pendientes"}
+        sort={sort}
+        onSortChange={onSortChange}
       />
-      <FilterChips />
+      <FilterChips sort={sort} />
       {items.length === 0 ? (
         <div className="rounded-[6px] border border-[#323232] bg-[#292929]">
           <EmptyState
@@ -178,57 +183,57 @@ function PanelOfertas({ items, onVerDetalle, onVerMiOferta }) {
   );
 }
 
-function PanelHistorial({ items }) {
-  return (
-    <div className="flex flex-col gap-3">
-      <FilterBar
-        count={items.length}
-        label={items.length === 1 ? "turno encontrado" : "turnos encontradas"}
-      />
-      <FilterChips />
-      <div className="rounded-[6px] border border-[#323232] bg-[#292929]">
-        {items.length === 0 ? (
-          <EmptyState
-            icon={ClockIcon}
-            title="Todavía no hay historial"
-            description="Tus ofertas y turnos finalizados o cancelados aparecerán acá."
-          />
-        ) : (
-          <div className="flex flex-col gap-3 p-4">
-            {items.map((item) => (
-              <div key={item.id} className="text-sm text-white">
-                {item.servicio}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ─── Página principal ────────────────────────────────────────────────────────
 
 export default function ProfessionalAgendaPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("turnos");
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState(location.state?.activeTab || "turnos");
+  const [sortOrder, setSortOrder] = useState("newest");
 
   // States for Agenda data
-  const [turnos, setTurnos] = useState(mockAgenda);
   const [selectedTurno, setSelectedTurno] = useState(null);
 
   // Modal states
   const [isDetalleOpen, setIsDetalleOpen] = useState(false);
   const [isRechazoOpen, setIsRechazoOpen] = useState(false);
   const [isExitoOpen, setIsExitoOpen] = useState(false);
+  const [isExitoPagoOpen, setIsExitoPagoOpen] = useState(false);
+  const [isRechazoPagoOpen, setIsRechazoPagoOpen] = useState(false);
 
   // States para Ofertas
   const [isSolicitudDetalleOpen, setIsSolicitudDetalleOpen] = useState(false);
   const [selectedOferta, setSelectedOferta] = useState(null);
+  const [modalMode, setModalMode] = useState("solicitud"); // "solicitud" o "oferta"
 
   const greeting = getGreeting();
   const firstName = user?.name ?? "Profesional";
+
+  // Fetch appointments (Próximos turnos e Historial)
+  const { data: turnosData, isLoading: isLoadingTurnos } = useQuery({
+    queryKey: ["professional-appointments", activeTab, sortOrder],
+    queryFn: async () => {
+      const tabParam = activeTab === "turnos" ? "proximos" : activeTab;
+      const response = await api.get(`/professional/appointments?tab=${tabParam}&sort=${sortOrder}`);
+      return response.data;
+    },
+    enabled: activeTab === "turnos" || activeTab === "historial",
+  });
+
+  const turnos = turnosData?.appointments || [];
+
+  // Fetch ofertas pendientes
+  const { data: pendingOffersData, isLoading: isLoadingOffers } = useQuery({
+    queryKey: ["professional-pending-offers", sortOrder],
+    queryFn: async () => {
+      const response = await api.get(`/offers/professional/pending?sort=${sortOrder}`);
+      return response.data;
+    },
+    enabled: activeTab === "ofertas",
+  });
+
+  const ofertasPendientes = pendingOffersData?.data || [];
 
   // ─── Acciones ──────────────────────────────────────────────────────────────
 
@@ -239,35 +244,58 @@ export default function ProfessionalAgendaPage() {
 
   const handleVerDetalleOferta = (oferta) => {
     setSelectedOferta(oferta);
+    setModalMode("solicitud");
     setIsSolicitudDetalleOpen(true);
   };
 
   const handleVerMiOferta = (oferta) => {
-    // Lógica para ver detalle de la propuesta enviada
-    console.log("Ver mi oferta", oferta);
+    setSelectedOferta(oferta);
+    setModalMode("oferta");
+    setIsSolicitudDetalleOpen(true);
   };
 
+  const { mutate: confirmarPago, isPending: isConfirmandoPago } = useMutation({
+    mutationFn: async (turnoId) => {
+      const response = await api.post(`/professional/appointments/${turnoId}/confirm-payment`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["professional-appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["appointment-details", selectedTurno?.id] });
+      setIsExitoPagoOpen(true);
+    },
+    onError: (error) => {
+      console.error("Error al confirmar pago:", error);
+      setIsRechazoPagoOpen(true);
+    }
+  });
+
   const handleConfirmarPago = () => {
-    if (!selectedTurno) return;
-
-    // Update the selected turno locally
-    const updatedTurno = {
-      ...selectedTurno,
-      pago: {
-        ...selectedTurno.pago,
-        estado: "CONFIRMADO"
-      }
-    };
-    setSelectedTurno(updatedTurno);
-
-    // Update the main list
-    setTurnos(turnos.map(t => t.id === updatedTurno.id ? updatedTurno : t));
+    if (!selectedTurno || isConfirmandoPago) return;
+    confirmarPago(selectedTurno.id);
   };
 
   const handleReprogramar = () => {
-    // Logic for reprogramar, just close for now
     setIsDetalleOpen(false);
   };
+
+  const queryClient = useQueryClient();
+
+  const { mutate: finalizarTurno, isPending: isFinalizando } = useMutation({
+    mutationFn: async (turnoId) => {
+      const response = await api.post(`/professional/appointments/${turnoId}/confirm-completion`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["professional-appointments"] });
+      setIsDetalleOpen(false);
+      setIsExitoOpen(true);
+    },
+    onError: (error) => {
+      console.error("Error al finalizar turno:", error);
+      // Aquí podrías mostrar un toast de error si tuvieras uno
+    }
+  });
 
   const handleFinalizarClick = () => {
     if (selectedTurno?.pago?.estado === "PENDIENTE") {
@@ -276,13 +304,8 @@ export default function ProfessionalAgendaPage() {
       return;
     }
 
-    // Simulate backend response (success)
-    setIsDetalleOpen(false);
-    setIsExitoOpen(true);
-
-    // Move to history in a real app, here we might just change status or filter it out
     if (selectedTurno) {
-      setTurnos(turnos.map(t => t.id === selectedTurno.id ? { ...t, estado: "FINALIZADO" } : t));
+      finalizarTurno(selectedTurno.id);
     }
   };
 
@@ -330,20 +353,41 @@ export default function ProfessionalAgendaPage() {
 
       {/* Contenido del tab activo */}
       {activeTab === "turnos" && (
-        <PanelProximosTurnos
-          items={turnos.filter(t => t.estado !== "FINALIZADO")}
-          onVerDetalle={handleVerDetalle}
-        />
+        isLoadingTurnos ? (
+          <div className="flex justify-center p-8 text-white"><p>Cargando turnos...</p></div>
+        ) : (
+          <PanelProximosTurnos
+            items={turnos.filter(t => t.estado !== "FINALIZADO")}
+            onVerDetalle={handleVerDetalle}
+            sort={sortOrder}
+            onSortChange={setSortOrder}
+          />
+        )
       )}
       {activeTab === "ofertas" && (
-        <PanelOfertas
-          items={mockOfertasPendientes}
-          onVerDetalle={handleVerDetalleOferta}
-          onVerMiOferta={handleVerMiOferta}
-        />
+        isLoadingOffers ? (
+          <div className="flex justify-center p-8 text-white"><p>Cargando ofertas...</p></div>
+        ) : (
+          <PanelOfertas
+            items={ofertasPendientes}
+            onVerDetalle={handleVerDetalleOferta}
+            onVerMiOferta={handleVerMiOferta}
+            sort={sortOrder}
+            onSortChange={setSortOrder}
+          />
+        )
       )}
       {activeTab === "historial" && (
-        <PanelHistorial items={mockHistorial} />
+        isLoadingTurnos ? (
+          <div className="flex justify-center p-8 text-white"><p>Cargando historial...</p></div>
+        ) : (
+          <PanelProximosTurnos
+            items={turnos}
+            onVerDetalle={handleVerDetalle}
+            sort={sortOrder}
+            onSortChange={setSortOrder}
+          />
+        )
       )}
 
       {/* Modals */}
@@ -352,8 +396,10 @@ export default function ProfessionalAgendaPage() {
         turno={selectedTurno}
         onClose={() => setIsDetalleOpen(false)}
         onConfirmarPago={handleConfirmarPago}
+        isConfirmandoPago={isConfirmandoPago}
         onReprogramar={handleReprogramar}
         onFinalizar={handleFinalizarClick}
+        isHistory={activeTab === "historial"}
       />
 
       <RechazoFinalizarModal
@@ -366,10 +412,21 @@ export default function ProfessionalAgendaPage() {
         onClose={handleCloseRespuesta}
       />
 
+      <ExitoPagoModal
+        isOpen={isExitoPagoOpen}
+        onClose={() => setIsExitoPagoOpen(false)}
+      />
+
+      <RechazoPagoModal
+        isOpen={isRechazoPagoOpen}
+        onClose={() => setIsRechazoPagoOpen(false)}
+      />
+
       <SolicitudDetalleModal
         isOpen={isSolicitudDetalleOpen}
         onClose={() => setIsSolicitudDetalleOpen(false)}
         oferta={selectedOferta}
+        mode={modalMode}
       />
     </div>
   );

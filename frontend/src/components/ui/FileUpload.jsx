@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import { ArrowUpTrayIcon, XMarkIcon, InformationCircleIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import StatusModal from "./StatusModal";
 
 /**
  * FileUpload — Componente fiel al diseño para subir imágenes.
@@ -12,6 +13,7 @@ export default function FileUpload({
 }) {
   const [files, setFiles] = useState([]);
   const fileInputRef = useRef(null);
+  const [alertConfig, setAlertConfig] = useState({ isOpen: false, title: "", description: "", type: "error" });
 
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
@@ -31,12 +33,12 @@ export default function FileUpload({
     newFiles.forEach((file) => {
       if (validFiles.length >= maxFiles) return;
       if (!file.type.match("image/(jpeg|png|webp)")) {
-        alert(`Formato no permitido: ${file.name}`);
+        setAlertConfig({ isOpen: true, title: "Formato no permitido", description: `El archivo ${file.name} no es válido.`, type: "error", buttonText: "Entendido" });
         hasError = true;
         return;
       }
       if (file.size > maxSizeMB * 1024 * 1024) {
-        alert(`El archivo es muy pesado (máximo ${maxSizeMB}MB): ${file.name}`);
+        setAlertConfig({ isOpen: true, title: "Archivo muy pesado", description: `El archivo ${file.name} supera el máximo de ${maxSizeMB}MB.`, type: "error", buttonText: "Entendido" });
         hasError = true;
         return;
       }
@@ -145,6 +147,15 @@ export default function FileUpload({
           </div>
         </div>
       )}
+
+      <StatusModal
+        isOpen={alertConfig.isOpen}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        description={alertConfig.description}
+        buttonText={alertConfig.buttonText || "Cerrar"}
+        onClose={() => setAlertConfig({ ...alertConfig, isOpen: false })}
+      />
     </div>
   );
 }
