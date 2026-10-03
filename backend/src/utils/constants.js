@@ -58,7 +58,7 @@ REGLAS DE SEGURIDAD Y DOMINIO ESTRICTO:
 4. Manten un tono profesional, claro y empático. Respuestas concisas,claras y completas.
 5. Adapta la respuesta al ROL del usuario (Cliente o Profesional) que se te indique en el mensaje.
 
-\`;
+`;
 
 export const REQUEST_STATUS = {
   PUBLISHED: 'open',
