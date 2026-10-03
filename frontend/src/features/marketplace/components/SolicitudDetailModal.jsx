@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useRequestDetail } from "../hooks/useMarketplaceQueries";
 import Modal from "../../../components/ui/Modal";
 import Loader from "../../../components/ui/Loader";
-import { MapPinIcon, ClockIcon, UserIcon } from "@heroicons/react/24/outline";
+import { MapPinIcon, ClockIcon, UserIcon, WrenchScrewdriverIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { formatDatePreference, getSupabasePublicUrl } from "../../../utils/formatters";
 import ImagePreviewModal from "../../../components/ui/ImagePreviewModal";
 
@@ -24,7 +24,7 @@ export default function SolicitudDetailModal({ isOpen, onClose, solicitudId, pre
   if (!isOpen) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Detalle de la solicitud">
+    <Modal isOpen={isOpen} onClose={onClose} title={null}>
       {isLoading && !preloadedData ? (
         <div className="flex justify-center p-8">
           <Loader />
@@ -34,29 +34,61 @@ export default function SolicitudDetailModal({ isOpen, onClose, solicitudId, pre
           Ocurrió un error al cargar los detalles.
         </div>
       ) : (
-        <div className="flex flex-col gap-6 text-white pb-2">
-          {/* Header con Avatar */}
+        <div className="flex flex-col gap-6 text-white pb-2 px-2 mt-2">
+          {/* Botón Cerrar (Top Left) */}
+          <div className="flex justify-start border-b border-[#292929] pb-4">
+            <button
+              onClick={onClose}
+              className="text-[#A8A8AA] hover:text-white transition-colors"
+            >
+              <XMarkIcon className="h-5 w-5" strokeWidth={2.5} />
+            </button>
+          </div>
+
+          {/* Información del Cliente y Categoría */}
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-[#323232] flex items-center justify-center text-[#A8A8AA]">
-              <UserIcon className="h-6 w-6" />
+            <div className="h-12 w-12 rounded-full bg-[#323232] flex items-center justify-center overflow-hidden border border-[#404040] shrink-0">
+              {detail.cliente.foto ? (
+                <img src={getSupabasePublicUrl(detail.cliente.foto, 'avatars')} alt="avatar" className="h-full w-full object-cover" />
+              ) : (
+                <UserIcon className="h-6 w-6 text-[#A8A8AA]" />
+              )}
             </div>
-            <div>
-              <p className="text-sm text-[#A8A8AA]">SOLICITA:</p>
-              <div className="flex items-center gap-2">
-                <p className="text-base font-semibold">{detail.cliente.nombre} {detail.cliente.inicial}</p>
-                <span className="rounded-full bg-[#323232] px-2 py-0.5 text-[10px] font-bold tracking-wide text-[#F78736] uppercase">
-                  {detail.categoria}
-                </span>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[10px] text-[#A8A8AA] font-bold uppercase tracking-wide leading-none">Solicita</span>
+              <p className="text-base font-bold text-white leading-none">{detail.cliente.nombre} {detail.cliente.inicial}</p>
+              <div className="flex items-center gap-1.5 text-[#A8A8AA] font-bold tracking-wider text-[11px] mt-0.5">
+                 <WrenchScrewdriverIcon className="h-3.5 w-3.5" />
+                 <span className="uppercase">{detail.categoria}</span>
               </div>
             </div>
           </div>
 
+          {/* Estado de la Solicitud */}
+          <div className="flex items-center gap-2 text-[11px] font-bold tracking-wide border-b border-[#292929] pb-4 mt-1">
+            <span className="text-[#A8A8AA] uppercase">SOLICITUD •</span>
+            <span className="bg-[#323232] text-white px-2 py-0.5 rounded-[4px] uppercase border border-[#404040]">
+              PUBLICADA
+            </span>
+            <span className="text-[#A8A8AA] ml-2">⏳ Esperando ofertas...</span>
+          </div>
+
           {/* Título y Descripción */}
-          <div>
-            <h4 className="text-lg font-bold mb-2">{detail.titulo}</h4>
-            <p className="text-sm text-[#A8A8AA] leading-relaxed whitespace-pre-line">
-              {detail.descripcion}
+          <div className="mt-2">
+            <h4 className="text-xl font-bold mb-2 text-white leading-tight">{detail.titulo}</h4>
+            <p className="text-[13.5px] text-[#A8A8AA] leading-relaxed whitespace-pre-line mb-4">
+              {detail.descripcion?.includes('Detalles:') 
+                ? detail.descripcion.split('Detalles:')[0].trim() 
+                : detail.descripcion}
             </p>
+            {detail.descripcion?.includes('Detalles:') && (
+              <>
+                <h4 className="text-sm font-bold text-white uppercase tracking-wide mb-1">Detalles</h4>
+                <p className="text-[13.5px] text-[#A8A8AA] leading-relaxed whitespace-pre-line">
+                  {detail.descripcion.split('Detalles:')[1].trim()}
+                </p>
+              </>
+            )}
           </div>
 
           {/* Grilla de Cuestionario */}
@@ -80,18 +112,25 @@ export default function SolicitudDetailModal({ isOpen, onClose, solicitudId, pre
           </div>
 
           {/* Ubicación y Horario */}
-          <div className="flex flex-col gap-2 border-t border-b border-[#323232] py-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-[#323232] rounded-full p-1.5 text-[#A8A8AA]">
-                <MapPinIcon className="h-4 w-4" />
+          <div className="flex flex-col gap-5 border-t border-b border-[#292929] py-5 mt-2">
+            <div className="flex items-start gap-4">
+              <div className="bg-[#323232] rounded-[6px] p-2 text-[#A8A8AA] shrink-0 mt-0.5">
+                <MapPinIcon className="h-5 w-5" />
               </div>
-              <p className="text-sm font-medium">{detail.ubicacion}</p>
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px] font-bold text-[#A8A8AA] uppercase tracking-wide">Ubicación</span>
+                <p className="text-[13px] font-medium text-white">{detail.ubicacion}</p>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="bg-[#323232] rounded-full p-1.5 text-[#A8A8AA]">
-                <ClockIcon className="h-4 w-4" />
+            
+            <div className="flex items-start gap-4">
+              <div className="bg-[#323232] rounded-[6px] p-2 text-[#A8A8AA] shrink-0 mt-0.5">
+                <ClockIcon className="h-5 w-5" />
               </div>
-              <p className="text-sm font-medium">Horario de preferencia: {detail.horarioPreferencia || 'Indistinto'}</p>
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px] font-bold text-[#A8A8AA] uppercase tracking-wide">Horario de preferencia</span>
+                <p className="text-[13px] font-medium text-white">{detail.horarioPreferencia || 'Indistinto'}</p>
+              </div>
             </div>
           </div>
 

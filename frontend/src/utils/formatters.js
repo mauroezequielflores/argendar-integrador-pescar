@@ -8,6 +8,22 @@ export const formatDatePreference = (preference) => {
   return map[preference] || preference;
 };
 
+export const formatStatus = (status) => {
+  if (!status) return "";
+  const map = {
+    confirmed: "Confirmado",
+    pending: "Pendiente",
+    completed: "Completado",
+    cancelled: "Cancelado",
+    rejected: "Rechazado",
+    accepted: "Aceptado",
+    in_progress: "En curso",
+    scheduled: "Agendado",
+    paid: "Pagado"
+  };
+  return map[status.toLowerCase()] || status;
+};
+
 // If the URL is just a path from Supabase storage (requests/id_img.jpg), convert to full public URL.
 // If it's already a full URL or base64, return as is.
 export const getSupabasePublicUrl = (path, bucket = 'request-photos') => {

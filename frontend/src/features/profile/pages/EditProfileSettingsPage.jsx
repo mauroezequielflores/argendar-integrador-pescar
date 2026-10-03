@@ -6,6 +6,7 @@ import {
   ArrowLeftIcon,
   XMarkIcon
 } from "@heroicons/react/24/outline";
+import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import InfoAlert from "../../../components/ui/InfoAlert";
 import Loader from "../../../components/ui/Loader";
 import Button from "../../../components/ui/Button";

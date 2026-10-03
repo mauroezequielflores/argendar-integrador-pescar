@@ -147,6 +147,7 @@ class OffersService {
       },
       cliente: {
         nombre: offer.requests.profiles?.first_name || '',
+        apellido: offer.requests.profiles?.last_name || '',
         inicial: offer.requests.profiles?.last_name ? offer.requests.profiles.last_name.charAt(0) + '.' : '',
         avatar_url: offer.requests.profiles?.avatar_url || null
       }

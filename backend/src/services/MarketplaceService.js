@@ -35,7 +35,10 @@ class MarketplaceService {
       isOutOfRange: req.is_out_of_range || false,
       fecha: req.created_at,
       foto: req.client_avatar_url || null,
-      cliente: `${req.client_first_name} ${req.client_last_name ? req.client_last_name.charAt(0) + '.' : ''}`.trim() || 'Cliente'
+      cliente: `${req.client_first_name} ${req.client_last_name ? req.client_last_name.charAt(0) + '.' : ''}`.trim() || 'Cliente',
+      cuestionario: {
+        cuandoLoNecesita: req.date_preference || 'flexible'
+      }
     }));
 
     return {
@@ -54,7 +57,7 @@ class MarketplaceService {
     // pero la UI lo oculta.
     const { data, error } = await supabase
       .from('requests')
-      .select('*, profiles(first_name, last_name), request_photos(storage_path), service_categories!inner(name)')
+      .select('*, profiles(first_name, last_name, avatar_url), request_photos(storage_path), service_categories!inner(name)')
       .eq('id', id)
       .eq('status', REQUEST_STATUS.PUBLISHED)
       .single();
@@ -79,7 +82,8 @@ class MarketplaceService {
       hasOffer: !!existingOffer,
       cliente: {
         nombre: data.profiles?.first_name || '',
-        inicial: data.profiles?.last_name ? data.profiles.last_name.charAt(0) + '.' : ''
+        inicial: data.profiles?.last_name ? data.profiles.last_name.charAt(0) + '.' : '',
+        foto: data.profiles?.avatar_url || null
       },
       categoria: data.service_categories?.name || 'General',
       titulo: data.title,

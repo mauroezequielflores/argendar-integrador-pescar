@@ -81,8 +81,8 @@ import ProfessionalPublicProfilePage from "../../features/profile/pages/Professi
 export default function AppRouter() {
   return (
     <Routes>
-      {/* Redirect raiz */}
-      <Route path="/" element={<Navigate to={ROUTES.LOGIN} replace />} />
+      {/* Raiz */}
+      <Route path="/" element={<ClientLandingPage />} />
 
       {/* Landing pages (públicas — CA01) */}
       <Route path={ROUTES.LANDING_CLIENT} element={<ClientLandingPage />} />

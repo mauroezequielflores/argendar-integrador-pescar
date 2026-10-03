@@ -6,11 +6,16 @@ import {
   ClockIcon,
   CalendarDaysIcon,
   ArrowRightIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  UserIcon
 } from "@heroicons/react/24/outline";
-import { formatDatePreference } from "../../../utils/formatters";
+import { formatDatePreference, getSupabasePublicUrl } from "../../../utils/formatters";
+
+import { useAuth } from "../../../context/AuthContext";
 
 export default function SolicitudCard({ solicitud, onVerDetalle, onVerOfertas }) {
+  const { user } = useAuth();
+  
   const getStatusColor = (status) => {
     switch (status) {
       case 'open': return 'text-[#F78736] border-[#F78736]/30 bg-[#F78736]/10';
@@ -44,7 +49,11 @@ export default function SolicitudCard({ solicitud, onVerDetalle, onVerOfertas })
       {/* Middle Row */}
       <div className="flex items-center gap-4 pb-5 pt-1">
         <div className="h-14 w-14 shrink-0 rounded-full bg-[#323232] flex items-center justify-center overflow-hidden border border-[#404040]">
-          <DocumentTextIcon className="h-7 w-7 text-[#A8A8AA]" />
+          {user?.avatar_url ? (
+            <img src={getSupabasePublicUrl(user.avatar_url, 'avatars')} alt="avatar" className="h-full w-full object-cover" />
+          ) : (
+            <UserIcon className="h-7 w-7 text-[#A8A8AA]" />
+          )}
         </div>
         <div className="flex flex-col gap-1.5">
           <h3 className="text-xl font-bold text-white leading-tight">{solicitud.title}</h3>

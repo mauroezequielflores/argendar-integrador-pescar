@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import ServiceSummaryCard from "../../../components/ui/ServiceSummaryCard";
 import RatingInput from "../../../components/ui/RatingInput";
@@ -40,6 +40,8 @@ export default function RatingModal({
   const [comment, setComment] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitLockRef = useRef(false);
 
   // Cerrar con Escape y bloquear scroll del body
   useEffect(() => {
@@ -64,13 +66,17 @@ export default function RatingModal({
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    if (isSubmitting || isSuccess || submitLockRef.current) return;
 
     if (rating === 0) {
       setErrorMessage("Por favor seleccioná al menos 1 estrella para enviar tu calificación.");
       return;
     }
 
+    submitLockRef.current = true;
     setErrorMessage("");
+    setIsSubmitting(true);
     setIsSuccess(true);
 
     if (onSubmitSuccess) {
@@ -237,10 +243,10 @@ export default function RatingModal({
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={isSuccess}
+              disabled={isSuccess || isSubmitting}
               className="rounded-[6px] bg-[#F78736] px-4 py-2 text-xs font-bold text-white hover:bg-[#e07328] transition-colors shadow-sm disabled:opacity-50"
             >
-              Enviar Calificación
+              {isSubmitting && !isSuccess ? "Enviando..." : "Enviar Calificación"}
             </button>
           </div>
         </div>

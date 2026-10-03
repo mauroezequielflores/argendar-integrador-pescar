@@ -250,7 +250,9 @@ function SolicitudCard({ solicitud, onViewDetail }) {
         <div className="flex-1 flex flex-col gap-1">
           <h4 className="text-base font-bold text-white">{solicitud.titulo}</h4>
           <p className="text-xs text-[#A8A8AA] leading-relaxed line-clamp-2">
-            {solicitud.descripcion}
+            {solicitud.descripcion?.includes('Detalles:') 
+              ? solicitud.descripcion.split('Detalles:')[0].trim() 
+              : solicitud.descripcion}
           </p>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { supabase, createThrowawayClient } from '../config/supabase.js';
 import { AppError, ConflictError, UnauthorizedError } from '../utils/errors.js';
-import { ERROR_CODES } from '../utils/constants.js';
+import { ERROR_CODES, ROLES } from '../utils/constants.js';
 
 export const registerUser = async ({ nombre, apellido, email, password, role, latitude, longitude, coverageRadiusKm }) => {
   // We MUST create a throwaway client here because signUp mutates the client's internal auth state,

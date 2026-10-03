@@ -7,6 +7,7 @@ import {
   ArrowRightIcon,
   UserIcon
 } from "@heroicons/react/24/outline";
+import { formatStatus } from "../../../utils/formatters";
 
 export default function TurnoCard({ turno, onVerDetalle }) {
   let formattedFecha = turno.fecha;
@@ -28,7 +29,7 @@ export default function TurnoCard({ turno, onVerDetalle }) {
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-bold text-[#888888] tracking-wide mr-1">TURNO <span className="mx-0.5 text-[#555]">•</span></span>
           <span className="inline-flex items-center rounded-[4px] border border-[#3a3a3a] bg-transparent px-2 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider">
-            {turno.estado}
+            {formatStatus(turno.estado)}
           </span>
           <span className="inline-flex items-center gap-1 rounded-[4px] border border-[#3a3a3a] bg-transparent px-2 py-0.5 text-[10px] font-bold text-[#A8A8AA] uppercase tracking-wider">
             <MapPinIcon className="h-3 w-3" />

@@ -7,8 +7,9 @@ import { api } from "../../../libs/axios";
 import { useAuth } from "../../../context/AuthContext";
 import { useState } from "react";
 import SolicitudDetailModal from "../../marketplace/components/SolicitudDetailModal";
+import { formatDatePreference, formatStatus } from "../../../utils/formatters";
 
-export default function TurnoDetalleModal({ turno, isOpen, onClose, onConfirmarPago, onReprogramar, onFinalizar }) {
+export default function TurnoDetalleModal({ turno, isOpen, onClose, onConfirmarPago, onReprogramar, onFinalizar, isConfirmandoPago, isHistory = false }) {
   const { user } = useAuth();
   const [isSolicitudModalOpen, setIsSolicitudModalOpen] = useState(false);
   
@@ -58,7 +59,7 @@ export default function TurnoDetalleModal({ turno, isOpen, onClose, onConfirmarP
     categoria
   } = turnoDetails;
 
-  const isPagoPendiente = pago?.estado === "PENDIENTE";
+  const isPagoPendiente = pago?.estado === "PENDIENTE" || pago?.estado === "pending";
 
   // Determinar el título de la sección 2
   const isProfessional = user?.role === 'professional';
@@ -86,9 +87,11 @@ export default function TurnoDetalleModal({ turno, isOpen, onClose, onConfirmarP
           >
             <XMarkIcon className="h-6 w-6" />
           </button>
-          <button className="px-4 py-2 text-sm font-medium text-[#A8A8AA] border border-[#323232] rounded-[6px] bg-transparent hover:text-white hover:bg-[#323232] transition-colors">
-            Cancelar turno
-          </button>
+          {!isHistory && (
+            <button className="px-4 py-2 text-sm font-medium text-[#A8A8AA] border border-[#323232] rounded-[6px] bg-transparent hover:text-white hover:bg-[#323232] transition-colors">
+              Cancelar turno
+            </button>
+          )}
         </div>
 
         {/* Sección 1: Detalle del Turno */}
@@ -96,7 +99,7 @@ export default function TurnoDetalleModal({ turno, isOpen, onClose, onConfirmarP
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-bold text-white">Detalle del Turno</h3>
             <span className="px-2 py-1 text-[10px] font-bold text-[#A8A8AA] bg-[#323232] rounded-[4px] tracking-wider uppercase border border-[#404040]">
-              {estado === 'confirmed' ? 'PROGRAMADO' : estado.toUpperCase()}
+              {formatStatus(estado)}
             </span>
           </div>
           
@@ -185,7 +188,7 @@ export default function TurnoDetalleModal({ turno, isOpen, onClose, onConfirmarP
           <div className="border-t border-[#323232] p-4 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs">
               <CalendarDaysIcon className="h-4 w-4" />
-              <span>Preferencia: <span className="text-white font-medium">{preferencia || "-"}</span></span>
+              <span>Preferencia: <span className="text-white font-medium">{formatDatePreference(preferencia) || "-"}</span></span>
             </div>
             <button 
               onClick={() => setIsSolicitudModalOpen(true)}
@@ -205,14 +208,14 @@ export default function TurnoDetalleModal({ turno, isOpen, onClose, onConfirmarP
               Detalle del Pago
             </h4>
             <span className="px-2 py-1 text-[10px] font-bold text-[#A8A8AA] bg-[#323232] rounded-[4px] uppercase border border-[#404040]">
-              {pago?.estado || "PENDIENTE"}
+              {formatStatus(pago?.estado || "pending")}
             </span>
           </div>
 
           {/* Filas de pago (Líneas Full Width) */}
           <div className="border-t border-[#323232] p-4 py-3 flex items-center justify-between text-xs">
             <span>Método de Pago</span>
-            <span className="text-white">{pago?.metodo || "-"}</span>
+            <span className="text-white">Efectivo</span>
           </div>
           <div className="border-t border-[#323232] p-4 py-3 flex items-center justify-between text-xs">
             <span>Seña abonada</span>
@@ -227,35 +230,39 @@ export default function TurnoDetalleModal({ turno, isOpen, onClose, onConfirmarP
             <span className="text-white font-bold">${pago?.total?.toLocaleString() || "0,00"}</span>
           </div>
           
-          <div className="px-4 pb-4">
-            {isPagoPendiente && (
-              <Button variant="primary" onClick={onConfirmarPago} className="font-bold w-full">
-                Confirmar pago
+          {isProfessional && isPagoPendiente && !isHistory && (
+            <div className="px-4 pb-4">
+              <Button variant="primary" onClick={onConfirmarPago} isLoading={isConfirmandoPago} className="font-bold w-full">
+                {isConfirmandoPago ? "Confirmando..." : "Confirmar pago"}
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </section>
 
         {/* Acciones Finales (Fuera de las tarjetas) */}
-        <section className="flex items-center gap-3 mt-2">
-          <button 
-            onClick={onReprogramar} 
-            className="flex-1 px-4 py-3 text-xs font-medium text-white border border-[#323232] rounded-[6px] bg-transparent hover:bg-[#292929] transition-colors text-center"
-          >
-            Reprogramar turno
-          </button>
-          <button 
-            onClick={onFinalizar} 
-            disabled={isPagoPendiente}
-            className={`flex-1 px-4 py-3 text-xs font-medium rounded-[6px] text-center transition-colors ${
-              isPagoPendiente 
-                ? 'bg-[#727272] text-[#A8A8AA] opacity-50 cursor-not-allowed' 
-                : 'bg-[#F78736] text-white hover:bg-[#e06d00]'
-            }`}
-          >
-            Finalizar turno
-          </button>
-        </section>
+        {!isHistory && (
+          <section className="flex items-center gap-3 mt-2">
+            <button 
+              onClick={onReprogramar} 
+              className="flex-1 px-4 py-3 text-xs font-medium text-white border border-[#323232] rounded-[6px] bg-transparent hover:bg-[#292929] transition-colors text-center"
+            >
+              Reprogramar turno
+            </button>
+            {isProfessional && (
+              <button 
+                onClick={onFinalizar} 
+                disabled={isPagoPendiente}
+                className={`flex-1 px-4 py-3 text-xs font-medium rounded-[6px] text-center transition-colors ${
+                  isPagoPendiente 
+                    ? 'bg-[#727272] text-[#A8A8AA] opacity-50 cursor-not-allowed' 
+                    : 'bg-[#F78736] text-white hover:bg-[#e06d00]'
+                }`}
+              >
+                Finalizar turno
+              </button>
+            )}
+          </section>
+        )}
       </div>
 
       {solicitud?.id && (

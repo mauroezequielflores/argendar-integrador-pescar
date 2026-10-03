@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../../libs/axios";
@@ -13,6 +13,7 @@ export default function OfertasRecibidasModal({ isOpen, onClose, requestId, onOf
   const [sortOrder, setSortOrder] = useState("todos");
   const [alertConfig, setAlertConfig] = useState({ isOpen: false, title: "", description: "", type: "error" });
   const navigate = useNavigate();
+  const acceptLockRef = useRef(false);
 
   // Fetch offers for the request
   const { data: offers = [], isLoading, isError } = useQuery({
@@ -31,9 +32,11 @@ export default function OfertasRecibidasModal({ isOpen, onClose, requestId, onOf
       return response.data;
     },
     onSuccess: () => {
+      acceptLockRef.current = false;
       if (onOfertaAceptada) onOfertaAceptada();
     },
     onError: (error) => {
+      acceptLockRef.current = false;
       console.error("Error aceptando la oferta:", error);
       setAlertConfig({
         isOpen: true,
@@ -205,8 +208,12 @@ export default function OfertasRecibidasModal({ isOpen, onClose, requestId, onOf
                       <Button 
                         variant="primary" 
                         className="bg-[#F78736] hover:bg-[#E0722D] text-white"
-                        onClick={() => acceptOffer(offer.id)}
-                        disabled={isAccepting}
+                        onClick={() => {
+                          if (acceptLockRef.current || isAccepting) return;
+                          acceptLockRef.current = true;
+                          acceptOffer(offer.id);
+                        }}
+                        disabled={isAccepting || acceptLockRef.current}
                       >
                         {isAccepting ? "Aceptando..." : "Aceptar Oferta"}
                       </Button>
