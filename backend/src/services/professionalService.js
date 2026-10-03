@@ -33,6 +33,42 @@ export const getProfessionalProfile = async (userId) => {
   }
 
   const profData = data.professional_profiles || {};
+
+  // Fetch reviews to get tags and recent opinions
+  const { data: reviewsData } = await supabase
+    .from('reviews')
+    .select(`
+      rating,
+      comment,
+      tags,
+      created_at,
+      reviewer:profiles!reviewer_id(first_name, last_name)
+    `)
+    .eq('reviewee_id', userId)
+    .order('created_at', { ascending: false });
+
+  const tagsCount = {};
+  const recentReviews = [];
+
+  if (reviewsData) {
+    reviewsData.forEach((rev, index) => {
+      // Tags aggregation
+      if (rev.tags && Array.isArray(rev.tags)) {
+        rev.tags.forEach(tag => {
+          tagsCount[tag] = (tagsCount[tag] || 0) + 1;
+        });
+      }
+      // Top 5 recent reviews
+      if (index < 5) {
+        recentReviews.push({
+          authorName: `${rev.reviewer?.first_name || 'Usuario'} ${rev.reviewer?.last_name || ''}`.trim(),
+          rating: rev.rating,
+          comment: rev.comment,
+          createdAt: rev.created_at
+        });
+      }
+    });
+  }
   
   return {
     firstName: data.first_name,
@@ -58,7 +94,9 @@ export const getProfessionalProfile = async (userId) => {
       }))
     },
     ratingAvg: Number(profData.rating_avg || 0),
-    reviewsCount: profData.reviews_count || 0
+    reviewsCount: profData.reviews_count || 0,
+    tagsCount,
+    recentReviews
   };
 };
 

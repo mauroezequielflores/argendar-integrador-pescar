@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -113,6 +113,7 @@ export default function CreateOfferPage() {
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const submitLockRef = useRef(false);
 
   // Form Setup
   const {
@@ -153,6 +154,9 @@ export default function CreateOfferPage() {
   };
 
   const onSubmit = (data) => {
+    if (submitLockRef.current || createOfferMutation.isPending) return;
+    submitLockRef.current = true;
+    
     // Mapear rango horario a HH:mm como requiere backend
     let timeStr = "08:00"; // fallback
     if (data.proposedTime === "Mañana 08:00 - 12:00") timeStr = "08:00";
@@ -169,8 +173,14 @@ export default function CreateOfferPage() {
     };
 
     createOfferMutation.mutate(payload, {
-      onSuccess: () => setShowSuccess(true),
-      onError: handleOfferError,
+      onSuccess: () => {
+        submitLockRef.current = false;
+        setShowSuccess(true);
+      },
+      onError: (error) => {
+        submitLockRef.current = false;
+        handleOfferError(error);
+      },
     });
   };
 

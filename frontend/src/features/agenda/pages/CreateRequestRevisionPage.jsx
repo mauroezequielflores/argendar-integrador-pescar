@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCrearSolicitud } from "../hooks/useAgendaQueries";
 import { 
@@ -27,6 +27,7 @@ export default function CreateRequestRevisionPage() {
   const { mutateAsync: publicarSolicitud, isPending: isPublishing } = useCrearSolicitud();
   const [selectedImage, setSelectedImage] = useState(null);
   const [alertConfig, setAlertConfig] = useState({ isOpen: false, title: "", description: "", type: "success", onCloseAction: null });
+  const submitLockRef = useRef(false);
 
   const handleEdit = (stepPath) => {
     navigate(`/client/agenda/create-request${stepPath}`);
@@ -42,6 +43,9 @@ export default function CreateRequestRevisionPage() {
   };
 
   const handlePublish = async () => {
+    if (submitLockRef.current || isPublishing) return;
+    submitLockRef.current = true;
+    
     try {
       const toBase64 = (file) => new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -95,6 +99,7 @@ export default function CreateRequestRevisionPage() {
         }
       });
     } catch (error) {
+      submitLockRef.current = false;
       console.error("Error al publicar la solicitud:", error);
       const errorMessage = error.response?.data?.error?.message || "Ocurrió un error al intentar publicar la solicitud.";
       setAlertConfig({

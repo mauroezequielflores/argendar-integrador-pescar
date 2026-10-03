@@ -185,7 +185,12 @@ function DisponibilidadCard({ disponibilidad }) {
   );
 }
 
-function CalificacionesCard({ rating, reviewsCount }) {
+function CalificacionesCard({ rating, reviewsCount, tagsCount }) {
+  // Extract and sort top tags
+  const sortedTags = tagsCount 
+    ? Object.entries(tagsCount).sort((a, b) => b[1] - a[1]).slice(0, 5)
+    : [];
+
   return (
     <div className="flex flex-col gap-4 rounded-[6px] border border-[#323232] bg-[#292929] p-5">
       <h2 className="text-base font-semibold text-white">Resumen de Calificaciones</h2>
@@ -208,31 +213,75 @@ function CalificacionesCard({ rating, reviewsCount }) {
           </div>
         ))}
       </div>
+      
+      {sortedTags.length > 0 && (
+        <>
+          <div className="h-px w-full bg-[#323232] my-2" />
+          <div className="flex flex-col gap-3">
+            <h3 className="text-sm font-semibold text-white">Puntos Fuertes</h3>
+            <div className="flex flex-wrap gap-2">
+              {sortedTags.map(([tag, count]) => (
+                <span key={tag} className="flex items-center gap-1.5 rounded-full bg-[#323232] px-3 py-1.5 text-xs text-white border border-[#404040]">
+                  <span className="text-[#F78736]">{tag}</span>
+                  <span className="text-[#A8A8AA]">({count})</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
-function OpinionesCard() {
+function OpinionesCard({ opiniones = [] }) {
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col gap-4 rounded-[6px] border border-[#323232] bg-[#292929] p-5">
+    <div className="flex flex-col gap-4 rounded-[6px] border border-[#323232] bg-[#292929] p-5 h-full">
       <h2 className="text-base font-semibold text-white">Opiniones recientes</h2>
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 py-12 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#323232]">
-          <StarIcon className="h-6 w-6 text-[#A8A8AA]" />
+      
+      {opiniones.length === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 py-12 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#323232]">
+            <StarIcon className="h-6 w-6 text-[#A8A8AA]" />
+          </div>
+          <p className="text-base font-semibold text-white">Aún no hay reseñas</p>
+          <p className="max-w-xs text-sm text-[#A8A8AA]">
+            Las opiniones de los clientes aparecerán aquí cuando comiencen a calificar el servicio.
+          </p>
+          <button
+            onClick={() => navigate(ROUTES.PROFESSIONAL_MARKETPLACE)}
+            className="mt-2 rounded-[6px] bg-[#F78736] px-6 py-2.5 text-sm font-medium text-white hover:bg-[#e06d00] transition-colors"
+          >
+            Enviar ofertas
+          </button>
         </div>
-        <p className="text-base font-semibold text-white">Aún no hay reseñas</p>
-        <p className="max-w-xs text-sm text-[#A8A8AA]">
-          Las opiniones de los clientes aparecerán aquí cuando comiencen a calificar el servicio.
-        </p>
-        <button
-          onClick={() => navigate(ROUTES.PROFESSIONAL_MARKETPLACE)}
-          className="mt-2 rounded-[6px] bg-[#F78736] px-6 py-2.5 text-sm font-medium text-white hover:bg-[#e06d00] transition-colors"
-        >
-          Enviar ofertas
-        </button>
-      </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {opiniones.map((opinion, index) => (
+            <div key={index} className="flex flex-col gap-2 rounded-[6px] border border-[#404040] bg-[#323232] p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-white">{opinion.authorName}</span>
+                <span className="text-xs text-[#A8A8AA]">
+                  {new Date(opinion.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <StarIconSolid 
+                    key={s} 
+                    className={`h-3.5 w-3.5 ${s <= opinion.rating ? 'text-[#F78736]' : 'text-[#404040]'}`} 
+                  />
+                ))}
+              </div>
+              {opinion.comment && (
+                <p className="text-sm text-[#E5E7EB] mt-1 line-clamp-3">"{opinion.comment}"</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -260,8 +309,9 @@ export function PublicProfileTab({ profile }) {
         <CalificacionesCard
           rating={profile.ratingAvg || 0}
           reviewsCount={profile.reviewsCount || 0}
+          tagsCount={profile.tagsCount}
         />
-        <OpinionesCard />
+        <OpinionesCard opiniones={profile.recentReviews || []} />
       </div>
     </div>
   );

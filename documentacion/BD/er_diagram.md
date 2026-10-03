@@ -8,22 +8,22 @@ erDiagram
         user_role role
         text first_name
         text last_name
-        varchar dni
-        boolean dni_verified
-        varchar phone
-        boolean phone_verified
-        account_status status
-        varchar location
-        numeric latitude
-        numeric longitude
-        boolean location_verified
         text avatar_url
-        text cover_url
-        text description
-        boolean email_alerts
-        boolean phone_alerts
+        text phone
+        account_status status
         timestamptz created_at
         timestamptz updated_at
+        varchar dni
+        boolean dni_verified
+        boolean phone_verified
+        varchar location
+        boolean location_verified
+        boolean email_alerts
+        boolean phone_alerts
+        text cover_url
+        text description
+        numeric latitude
+        numeric longitude
     }
 
     SERVICE_CATEGORIES {
@@ -145,6 +145,8 @@ erDiagram
         smallint rating
         text comment
         timestamptz created_at
+        uuid appointment_id FK, UK
+        jsonb tags
     }
 
     NOTIFICATIONS {
@@ -158,6 +160,7 @@ erDiagram
         varchar related_entity_type
         jsonb metadata
         timestamptz created_at
+        varchar href
     }
 
     ZONES {
@@ -168,25 +171,219 @@ erDiagram
         boolean active
     }
 
-    AUTH_USERS ||--|| PROFILES : "tiene perfil"
+    AUTH_USERS ||--|| PROFILES : "cuenta de Auth"
+    PROFILES ||--o| PROFESSIONAL_PROFILES : "perfil profesional"
+    SERVICE_CATEGORIES ||--o{ PROFESSIONAL_PROFILES : "categoría"
+    PROFESSIONAL_PROFILES ||--o{ PROFESSIONAL_AVAILABILITY : "disponibilidad"
+    PROFESSIONAL_PROFILES ||--o{ PROFESSIONAL_CERTIFICATIONS : "certificaciones"
 
-    PROFILES ||--o| PROFESSIONAL_PROFILES : "puede ser profesional"
-    SERVICE_CATEGORIES ||--o{ PROFESSIONAL_PROFILES : "clasifica"
+    PROFILES ||--o{ REQUESTS : "cliente"
+    SERVICE_CATEGORIES ||--o{ REQUESTS : "categoría"
+    REQUESTS ||--o{ REQUEST_PHOTOS : "fotos"
+    REQUESTS ||--o{ OFFERS : "ofertas"
+    PROFILES ||--o{ OFFERS : "profesional"
 
-    PROFESSIONAL_PROFILES ||--o{ PROFESSIONAL_AVAILABILITY : "define disponibilidad"
-    PROFESSIONAL_PROFILES ||--o{ PROFESSIONAL_CERTIFICATIONS : "tiene certificaciones"
+    OFFERS ||--o| APPOINTMENTS : "cita"
+    APPOINTMENTS ||--o| PAYMENTS : "pago"
+    APPOINTMENTS ||--o| REVIEWS : "reseña"
 
-    PROFILES ||--o{ REQUESTS : "crea solicitudes"
-    SERVICE_CATEGORIES ||--o{ REQUESTS : "categoriza"
-    REQUESTS ||--o{ REQUEST_PHOTOS : "incluye fotos"
+    PROFILES ||--o{ REVIEWS : "escribe"
+    PROFILES ||--o{ REVIEWS : "recibe"
+    PROFILES ||--o{ NOTIFICATIONS : "recibe"
 
-    REQUESTS ||--o{ OFFERS : "recibe ofertas"
-    PROFILES ||--o{ OFFERS : "realiza como profesional"
 
-    OFFERS ||--o| APPOINTMENTS : "genera cita"
-    APPOINTMENTS ||--o| PAYMENTS : "tiene pago"
+esquema Auth
 
-    PROFILES ||--o{ REVIEWS : "escribe reseñas"
-    PROFILES ||--o{ REVIEWS : "recibe reseñas"
+erDiagram
+    AUTH_USERS {
+        uuid id PK
+    }
+    AUTH_IDENTITIES {
+        uuid id PK
+        uuid user_id FK
+    }
+    AUTH_SESSIONS {
+        uuid id PK
+        uuid user_id FK
+        uuid oauth_client_id FK
+    }
+    AUTH_REFRESH_TOKENS {
+        bigint id PK
+        uuid session_id FK
+    }
+    AUTH_MFA_FACTORS {
+        uuid id PK
+        uuid user_id FK
+    }
+    AUTH_MFA_CHALLENGES {
+        uuid id PK
+        uuid factor_id FK
+    }
+    AUTH_MFA_AMR_CLAIMS {
+        uuid id PK
+        uuid session_id FK
+    }
+    AUTH_MFA_RECOVERY_CODE_SETS {
+        uuid id PK
+        uuid user_id FK
+        uuid mfa_factor_id FK
+    }
+    AUTH_MFA_RECOVERY_CODES {
+        uuid id PK
+        uuid mfa_recovery_code_set_id FK
+    }
+    AUTH_ONE_TIME_TOKENS {
+        uuid id PK
+        uuid user_id FK
+    }
+    AUTH_WEBAUTHN_CREDENTIALS {
+        uuid id PK
+        uuid user_id FK
+    }
+    AUTH_WEBAUTHN_CHALLENGES {
+        uuid id PK
+        uuid user_id FK
+    }
+    AUTH_SSO_PROVIDERS {
+        uuid id PK
+    }
+    AUTH_SSO_DOMAINS {
+        uuid id PK
+        uuid sso_provider_id FK
+    }
+    AUTH_SAML_PROVIDERS {
+        uuid id PK
+        uuid sso_provider_id FK
+    }
+    AUTH_SAML_RELAY_STATES {
+        uuid id PK
+        uuid sso_provider_id FK
+        uuid flow_state_id FK
+    }
+    AUTH_FLOW_STATE {
+        uuid id PK
+    }
+    AUTH_SCIM_USERS {
+        uuid id PK
+        uuid sso_provider_id FK
+        uuid user_id FK
+    }
+    AUTH_SCIM_TOKENS {
+        uuid id PK
+        uuid sso_provider_id FK
+    }
+    AUTH_OAUTH_CLIENTS {
+        uuid id PK
+    }
+    AUTH_OAUTH_AUTHORIZATIONS {
+        uuid id PK
+        uuid user_id FK
+        uuid client_id FK
+    }
+    AUTH_OAUTH_CONSENTS {
+        uuid id PK
+        uuid user_id FK
+        uuid client_id FK
+    }
+    AUTH_INSTANCES {
+        uuid id PK
+    }
+    AUTH_AUDIT_LOG_ENTRIES {
+        uuid id PK
+    }
+    AUTH_SCHEMA_MIGRATIONS {
+        varchar version PK
+    }
+    AUTH_OAUTH_CLIENT_STATES {
+        uuid id PK
+    }
+    AUTH_CUSTOM_OAUTH_PROVIDERS {
+        uuid id PK
+    }
+    PUBLIC_PROFILES {
+        uuid id PK, FK
+    }
 
-    PROFILES ||--o{ NOTIFICATIONS : "recibe notificaciones"
+    AUTH_USERS ||--o{ AUTH_IDENTITIES : "identidades"
+    AUTH_USERS ||--o{ AUTH_SESSIONS : "sesiones"
+    AUTH_SESSIONS ||--o{ AUTH_REFRESH_TOKENS : "tokens"
+    AUTH_USERS ||--o{ AUTH_MFA_FACTORS : "factores MFA"
+    AUTH_MFA_FACTORS ||--o{ AUTH_MFA_CHALLENGES : "desafíos"
+    AUTH_SESSIONS ||--o{ AUTH_MFA_AMR_CLAIMS : "métodos MFA"
+    AUTH_USERS ||--o| AUTH_MFA_RECOVERY_CODE_SETS : "códigos de recuperación"
+    AUTH_MFA_FACTORS ||--o| AUTH_MFA_RECOVERY_CODE_SETS : "factor asociado"
+    AUTH_MFA_RECOVERY_CODE_SETS ||--o{ AUTH_MFA_RECOVERY_CODES : "códigos"
+    AUTH_USERS ||--o{ AUTH_ONE_TIME_TOKENS : "tokens temporales"
+    AUTH_USERS ||--o{ AUTH_WEBAUTHN_CREDENTIALS : "credenciales WebAuthn"
+    AUTH_USERS ||--o{ AUTH_WEBAUTHN_CHALLENGES : "desafíos WebAuthn"
+
+    AUTH_SSO_PROVIDERS ||--o{ AUTH_SSO_DOMAINS : "dominios"
+    AUTH_SSO_PROVIDERS ||--o{ AUTH_SAML_PROVIDERS : "configuración SAML"
+    AUTH_SSO_PROVIDERS ||--o{ AUTH_SAML_RELAY_STATES : "estados SAML"
+    AUTH_FLOW_STATE ||--o{ AUTH_SAML_RELAY_STATES : "flujo"
+    AUTH_SSO_PROVIDERS ||--o{ AUTH_SCIM_USERS : "usuarios SCIM"
+    AUTH_SSO_PROVIDERS ||--o{ AUTH_SCIM_TOKENS : "tokens SCIM"
+    AUTH_USERS ||--o{ AUTH_SCIM_USERS : "cuenta vinculada"
+
+    AUTH_OAUTH_CLIENTS ||--o{ AUTH_SESSIONS : "cliente OAuth"
+    AUTH_OAUTH_CLIENTS ||--o{ AUTH_OAUTH_AUTHORIZATIONS : "autorizaciones"
+    AUTH_OAUTH_CLIENTS ||--o{ AUTH_OAUTH_CONSENTS : "consentimientos"
+    AUTH_USERS ||--o{ AUTH_OAUTH_AUTHORIZATIONS : "usuario"
+    AUTH_USERS ||--o{ AUTH_OAUTH_CONSENTS : "usuario"
+
+    AUTH_USERS ||--|| PUBLIC_PROFILES : "perfil de la aplicación"
+
+
+Storage, realtime y vault
+
+erDiagram
+    STORAGE_BUCKETS {
+        text id PK
+    }
+    STORAGE_OBJECTS {
+        uuid id PK
+        text bucket_id FK
+    }
+    STORAGE_S3_MULTIPART_UPLOADS {
+        text id PK
+        text bucket_id FK
+    }
+    STORAGE_S3_MULTIPART_UPLOADS_PARTS {
+        uuid id PK
+        text bucket_id FK
+        text upload_id FK
+    }
+    STORAGE_BUCKETS_ANALYTICS {
+        uuid id PK
+    }
+    STORAGE_BUCKETS_VECTORS {
+        text id PK
+    }
+    STORAGE_VECTOR_INDEXES {
+        text id PK
+        text bucket_id FK
+    }
+    STORAGE_MIGRATIONS {
+        integer id PK
+    }
+
+    REALTIME_MESSAGES {
+        uuid id PK
+        timestamptz inserted_at PK
+    }
+    REALTIME_SUBSCRIPTION {
+        bigint id PK
+    }
+    REALTIME_SCHEMA_MIGRATIONS {
+        bigint version PK
+    }
+
+    VAULT_SECRETS {
+        uuid id PK
+    }
+
+    STORAGE_BUCKETS ||--o{ STORAGE_OBJECTS : "contiene"
+    STORAGE_BUCKETS ||--o{ STORAGE_S3_MULTIPART_UPLOADS : "subidas"
+    STORAGE_BUCKETS ||--o{ STORAGE_S3_MULTIPART_UPLOADS_PARTS : "partes"
+    STORAGE_S3_MULTIPART_UPLOADS ||--o{ STORAGE_S3_MULTIPART_UPLOADS_PARTS : "partes de subida"
+    STORAGE_BUCKETS_VECTORS ||--o{ STORAGE_VECTOR_INDEXES : "índices"
