@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { StarIcon } from "@heroicons/react/24/outline";
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
@@ -44,7 +44,7 @@ export default function RecentReviewsCard({ reviews = [] }) {
             <div key={rev.id || index} className="py-4 flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-white">
-                  {rev.clientName || "Cliente"}
+                  {rev.authorName || rev.clientName || "Cliente"}
                 </span>
                 <div className="flex gap-0.5">
                   {[1, 2, 3, 4, 5].map((s) => (
@@ -58,9 +58,9 @@ export default function RecentReviewsCard({ reviews = [] }) {
                 </div>
               </div>
               <p className="text-xs sm:text-sm text-[#A8A8AA]">{rev.comment}</p>
-              {rev.date && (
+              {(rev.createdAt || rev.date) && (
                 <span className="text-xs text-[#737373]">
-                  {new Date(rev.date).toLocaleDateString()}
+                  {new Date(rev.createdAt || rev.date).toLocaleDateString()}
                 </span>
               )}
             </div>

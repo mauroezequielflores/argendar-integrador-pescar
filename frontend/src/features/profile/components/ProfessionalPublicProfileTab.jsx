@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import RecentReviewsCard from "./RecentReviewsCard";
 import ProfessionalInfoCard from "./ProfessionalInfoCard";
 import AvailabilityCard from "./AvailabilityCard";
@@ -18,7 +18,7 @@ export default function ProfessionalPublicProfileTab({ profile = {} }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start w-full">
       {/* ── Columna Izquierda: Opiniones recientes ──────────────────── */}
-      <RecentReviewsCard reviews={profile.reviews || []} />
+      <RecentReviewsCard reviews={profile.recentReviews || []} />
 
       {/* ── Columna Derecha: Info + Disponibilidad + Calificaciones ─── */}
       <div className="flex flex-col gap-6 w-full">
