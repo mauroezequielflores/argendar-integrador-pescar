@@ -42,8 +42,11 @@ export default function UserRow({
       }`}
     >
       {/* ── ID / N.º de Orden ── */}
-      <td className="px-4 py-3.5 font-mono text-xs font-semibold text-white tracking-wider">
-        {user.id}
+      <td
+        className="px-4 py-3.5 font-mono text-xs font-semibold text-white tracking-wider"
+        title={user.id}
+      >
+        {user.displayId ?? user.id}
       </td>
 
       {/* ── Usuario (Nombre + Badge de Estado) ── */}

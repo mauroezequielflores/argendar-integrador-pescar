@@ -1,34 +1,34 @@
-import {
-  mockSolicitudes,
-  mockOfertas,
-  mockCalificaciones,
-  mockTurnos,
-} from "../data/mockModerationData";
+import { api } from "../../../libs/axios";
+import { PANEL_ENTITIES } from "../constants/moderation.constants";
 
 /**
- * moderationService — Servicio de moderación preparado para futura conexión al backend.
- *
- * Por ahora retorna datos mock. En producción cada función reemplaza el mock
- * por una llamada HTTP real (axios u fetch).
+ * moderationService — Servicio de moderación (rol administrador).
+ * Endpoints: /api/v1/admin/moderation/{requests|offers|reviews|appointments}
  */
 export const moderationService = {
-  async getSolicitudes() {
-    await new Promise((r) => setTimeout(r, 250));
-    return [...mockSolicitudes];
+  /**
+   * Lista paginada de un panel.
+   * @param {"solicitudes"|"ofertas"|"calificaciones"|"turnos"} panel
+   * @param {object} [params]
+   * @param {string} [params.search] - Número de orden (125, ORD-00125) o UUID completo.
+   * @param {number} [params.page=1]
+   * @param {number} [params.limit=10]
+   */
+  async list(panel, { search, page = 1, limit = 10 } = {}) {
+    const { data } = await api.get(`/admin/moderation/${PANEL_ENTITIES[panel]}`, {
+      params: { search: search?.trim() || undefined, page, limit },
+    });
+    return data;
   },
 
-  async getOfertas() {
-    await new Promise((r) => setTimeout(r, 250));
-    return [...mockOfertas];
-  },
-
-  async getCalificaciones() {
-    await new Promise((r) => setTimeout(r, 250));
-    return [...mockCalificaciones];
-  },
-
-  async getTurnos() {
-    await new Promise((r) => setTimeout(r, 250));
-    return [...mockTurnos];
+  /**
+   * Cambia el estado de moderación de un ítem.
+   * @param {"active"|"disabled"|"deleted"} moderationStatus
+   */
+  async updateStatus(panel, id, moderationStatus) {
+    const { data } = await api.patch(`/admin/moderation/${PANEL_ENTITIES[panel]}/${id}`, {
+      moderationStatus,
+    });
+    return data;
   },
 };

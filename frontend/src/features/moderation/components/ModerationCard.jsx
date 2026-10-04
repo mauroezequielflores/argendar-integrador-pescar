@@ -1,5 +1,5 @@
 import Badge from "../../../components/ui/Badge";
-import { MODERATION_STATES } from "../data/mockModerationData";
+import { MODERATION_STATES } from "../constants/moderation.constants";
 import {
   NoSymbolIcon,
   TrashIcon,
@@ -60,7 +60,7 @@ export default function ModerationCard({ item, onActivate, onDisable, onDelete }
         {/* Fila ID + Badge */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-bold text-[#F78736] tracking-wider">
-            #{item.id}
+            #{item.codigo ?? item.id}
           </span>
           <Badge variant={STATE_BADGE_VARIANT[item.estado] || "default"}>
             {item.estado}

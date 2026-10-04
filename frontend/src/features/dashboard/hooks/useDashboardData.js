@@ -1,21 +1,25 @@
-﻿import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { dashboardService } from "../services/dashboardService";
 import {
-  mockDashboardMetrics,
-  mockMarketplaceActivity,
-  mockRecentActivity,
-} from "../data/mockDashboardData";
+  mapMetrics,
+  mapChartPoints,
+  mapActivity,
+  getDashboardErrorMessage,
+} from "../utils/dashboardMappers";
+
+const CHART_DAYS = 30;
 
 /**
- * useDashboardData — Hook personalizado para gestionar el estado de métricas, gráfico y actividad reciente.
+ * useDashboardData — Carga métricas, gráfico y actividad reciente desde el backend.
  * Maneja estados de carga (isLoading), error (error), datos y reintento (refetch).
  *
  * @param {object} [options]
- * @param {boolean} [options.initialEmpty=true] - Si es true, inicia con actividades vacías para coincidir con la captura.
+ * @param {number} [options.activityLimit=10] - Cantidad de eventos de actividad reciente a pedir.
  */
 export function useDashboardData(options = {}) {
-  const { initialEmpty = true } = options;
-  const [metrics, setMetrics] = useState(mockDashboardMetrics);
-  const [marketplaceData, setMarketplaceData] = useState(mockMarketplaceActivity);
+  const { activityLimit = 10 } = options;
+  const [metrics, setMetrics] = useState(() => mapMetrics());
+  const [marketplaceData, setMarketplaceData] = useState([]);
   const [activities, setActivities] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,17 +28,20 @@ export function useDashboardData(options = {}) {
     setIsLoading(true);
     setError(null);
     try {
-      // Simulación de carga asíncrona
-      await new Promise((resolve) => setTimeout(resolve, 150));
-      setMetrics(mockDashboardMetrics);
-      setMarketplaceData(mockMarketplaceActivity);
-      setActivities(initialEmpty ? [] : mockRecentActivity);
+      const [metricsData, chartData, activityData] = await Promise.all([
+        dashboardService.getMetrics(),
+        dashboardService.getActivityChart(CHART_DAYS),
+        dashboardService.getRecentActivity(activityLimit),
+      ]);
+      setMetrics(mapMetrics(metricsData));
+      setMarketplaceData(mapChartPoints(chartData));
+      setActivities(activityData.map(mapActivity));
     } catch (err) {
-      setError(err?.message || "No se pudieron cargar los datos del dashboard.");
+      setError(getDashboardErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
-  }, [initialEmpty]);
+  }, [activityLimit]);
 
   useEffect(() => {
     fetchData();

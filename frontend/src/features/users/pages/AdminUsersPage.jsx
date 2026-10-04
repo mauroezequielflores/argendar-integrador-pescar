@@ -26,7 +26,11 @@ export default function AdminUsersPage() {
     setActiveTab,
     searchTerms,
     setSearchTerm,
-    filteredUsers,
+    users,
+    totalCount,
+    page,
+    totalPages,
+    setPage,
     handleSuspend,
     handleActivate,
     handleDelete,
@@ -95,23 +99,22 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-      {/* ── Estado de Carga (CA07) ── */}
-      {isLoading ? (
-        <div className="flex h-64 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#F78736] border-t-transparent" />
-        </div>
-      ) : (
-        /* ── Panel Activo (CA04, CA05, CA06, CA07, CA08) ── */
-        <UsersPanel
-          panelKey={activeTab}
-          users={filteredUsers}
-          searchTerm={searchTerms[activeTab] || ""}
-          onSearchChange={setSearchTerm}
-          onSuspend={handleSuspend}
-          onActivate={handleActivate}
-          onDelete={handleDelete}
-        />
-      )}
+      {/* ── Panel Activo (CA04, CA05, CA06, CA07, CA08). La carga se muestra dentro del panel
+           para que el buscador no se desmonte (y pierda el foco) mientras se escribe. ── */}
+      <UsersPanel
+        panelKey={activeTab}
+        users={users}
+        totalCount={totalCount}
+        page={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        isLoading={isLoading}
+        searchTerm={searchTerms[activeTab] || ""}
+        onSearchChange={setSearchTerm}
+        onSuspend={handleSuspend}
+        onActivate={handleActivate}
+        onDelete={handleDelete}
+      />
     </div>
   );
 }

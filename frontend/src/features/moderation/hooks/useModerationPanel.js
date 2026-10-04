@@ -1,96 +1,108 @@
 import { useState, useEffect, useCallback } from "react";
 import { moderationService } from "../services/moderationService";
-import { MODERATION_STATES } from "../data/mockModerationData";
+import { MODERATION_STATES } from "../constants/moderation.constants";
+import { mapModerationItem, getModerationErrorMessage } from "../utils/moderationMappers";
+
+export const PAGE_SIZE = 10;
+const SEARCH_DEBOUNCE_MS = 400;
 
 /**
  * useModerationPanel — Hook reutilizable por cada panel de moderación.
  *
- * Encapsula: carga, error, búsqueda por ID y acciones de estado
- * (activar, desactivar, eliminar) de forma local (sin backend todavía).
+ * Carga paginada desde el backend, búsqueda por número de orden con espera (debounce)
+ * y acciones de estado (activar, desactivar, eliminar) que se aplican tras la confirmación del servidor.
  *
  * @param {"solicitudes"|"ofertas"|"calificaciones"|"turnos"} panel
  */
 export function useModerationPanel(panel) {
-  const [items, setItems] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQueryState] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [reloadToken, setReloadToken] = useState(0);
+  const [actionError, setActionError] = useState(null);
+  const [result, setResult] = useState({ key: null, items: [], totalCount: 0, error: null });
 
-  const fetchItems = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      let data = [];
-      switch (panel) {
-        case "solicitudes":
-          data = await moderationService.getSolicitudes();
-          break;
-        case "ofertas":
-          data = await moderationService.getOfertas();
-          break;
-        case "calificaciones":
-          data = await moderationService.getCalificaciones();
-          break;
-        case "turnos":
-          data = await moderationService.getTurnos();
-          break;
-        default:
-          data = [];
-      }
-      setItems(data);
-    } catch (err) {
-      setError(err?.message || "No se pudieron cargar los datos.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [panel]);
+  // La búsqueda se aplica recién cuando el usuario deja de escribir.
+  useEffect(() => {
+    const timer = setTimeout(() => setAppliedSearch(searchQuery), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Identifica la consulta actual: mientras result.key no coincida, el panel está cargando.
+  const requestKey = `${panel}|${appliedSearch}|${page}|${reloadToken}`;
 
   useEffect(() => {
-    fetchItems();
-  }, [fetchItems]);
+    let ignore = false;
+    moderationService
+      .list(panel, { search: appliedSearch, page, limit: PAGE_SIZE })
+      .then((data) => {
+        if (ignore) return;
+        setResult({
+          key: requestKey,
+          items: data.items.map(mapModerationItem),
+          totalCount: data.meta.totalCount,
+          error: null,
+        });
+      })
+      .catch((err) => {
+        if (ignore) return;
+        setResult({
+          key: requestKey,
+          items: [],
+          totalCount: 0,
+          error: getModerationErrorMessage(err, "No se pudieron cargar los datos."),
+        });
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [panel, appliedSearch, page, requestKey]);
 
-  // Filtrado dinámico por ID (número de orden)
-  const filteredItems = searchQuery.trim()
-    ? items.filter((item) =>
-        item.id.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : items;
+  const setSearchQuery = useCallback((query) => {
+    setSearchQueryState(query);
+    setPage(1);
+  }, []);
 
-  // ── Acciones de estado (CA05) ──────────────────────────────
-  const activateItem = (id) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, estado: MODERATION_STATES.ACTIVE } : item
-      )
-    );
-  };
+  const refetch = useCallback(() => {
+    setActionError(null);
+    setReloadToken((token) => token + 1);
+  }, []);
 
-  const disableItem = (id) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, estado: MODERATION_STATES.DISABLED } : item
-      )
-    );
-  };
+  // Cambia el estado de una tarjeta solo después de que el backend confirma.
+  const changeStatus = useCallback(
+    async (id, moderationStatus, estado) => {
+      setActionError(null);
+      try {
+        await moderationService.updateStatus(panel, id, moderationStatus);
+        setResult((prev) => ({
+          ...prev,
+          items: prev.items.map((item) => (item.id === id ? { ...item, estado } : item)),
+        }));
+      } catch (err) {
+        setActionError(getModerationErrorMessage(err, "No se pudo actualizar el elemento."));
+      }
+    },
+    [panel],
+  );
 
-  const deleteItem = (id) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, estado: MODERATION_STATES.DELETED } : item
-      )
-    );
-  };
+  const activateItem = useCallback((id) => changeStatus(id, "active", MODERATION_STATES.ACTIVE), [changeStatus]);
+  const disableItem = useCallback((id) => changeStatus(id, "disabled", MODERATION_STATES.DISABLED), [changeStatus]);
+  const deleteItem = useCallback((id) => changeStatus(id, "deleted", MODERATION_STATES.DELETED), [changeStatus]);
 
   return {
-    items,
-    filteredItems,
-    isLoading,
-    error,
+    items: result.items,
+    totalCount: result.totalCount,
+    page,
+    totalPages: Math.max(1, Math.ceil(result.totalCount / PAGE_SIZE)),
+    setPage,
+    isLoading: result.key !== requestKey,
+    error: result.error,
+    actionError,
     searchQuery,
     setSearchQuery,
     activateItem,
     disableItem,
     deleteItem,
-    refetch: fetchItems,
+    refetch,
   };
 }

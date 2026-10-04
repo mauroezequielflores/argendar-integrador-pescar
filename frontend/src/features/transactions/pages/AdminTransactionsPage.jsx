@@ -1,4 +1,3 @@
-﻿import { useState } from "react";
 import {
   MagnifyingGlassIcon,
   CreditCardIcon,
@@ -9,33 +8,10 @@ import DataTable from "../../../components/ui/DataTable";
 import Badge from "../../../components/ui/Badge";
 import EmptyState from "../../../components/ui/EmptyState";
 import Breadcrumbs from "../../../components/ui/Breadcrumbs";
+import Pagination from "../../../components/ui/Pagination";
 
-import { mockTransactions } from "../data/mockTransactions";
+import { useTransactionsData } from "../hooks/useTransactionsData";
 import { ROUTES } from "../../../constants/routes";
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function getStatusVariant(estado) {
-  switch (estado.toUpperCase()) {
-    case "COMPLETADO":
-      return "success";
-    case "PENDIENTE":
-      return "warning";
-    case "CANCELADO":
-      return "error";
-    case "REEMBOLSADO":
-    default:
-      return "default";
-  }
-}
-
-function formatFecha(fechaISO) {
-  const d = new Date(fechaISO);
-  const dia = String(d.getDate()).padStart(2, "0");
-  const mes = String(d.getMonth() + 1).padStart(2, "0");
-  const anio = d.getFullYear();
-  return `${dia}/${mes}/${anio}`;
-}
 
 // ─── Buscador inline (no usa prop "icon" del Input, construido ad-hoc) ───────
 
@@ -57,7 +33,7 @@ function SearchInput({ value, onChange }) {
 // ─── Columnas de la tabla ─────────────────────────────────────────────────────
 
 const TABLE_COLUMNS = [
-  { key: "id", label: "N.º Transacción", className: "font-mono text-xs text-white" },
+  { key: "numero", label: "N.º Transacción", className: "font-mono text-xs text-white" },
   { key: "usuario", label: "Usuario", className: "text-white" },
   { key: "rol", label: "Rol", className: "text-[#A8A8AA]" },
   {
@@ -67,18 +43,11 @@ const TABLE_COLUMNS = [
     render: (item) => `$${item.monto.toLocaleString("es-AR")}`,
   },
   { key: "metodo", label: "Método", className: "text-[#A8A8AA]" },
-  {
-    key: "fecha",
-    label: "Fecha",
-    className: "text-[#A8A8AA]",
-    render: (item) => formatFecha(item.fecha),
-  },
+  { key: "fecha", label: "Fecha", className: "text-[#A8A8AA]" },
   {
     key: "estado",
     label: "Estado",
-    render: (item) => (
-      <Badge variant={getStatusVariant(item.estado)}>{item.estado}</Badge>
-    ),
+    render: (item) => <Badge variant={item.estadoVariant}>{item.estado}</Badge>,
   },
   {
     key: "acciones",
@@ -105,22 +74,27 @@ const TABLE_COLUMNS = [
 // ─── Página principal ─────────────────────────────────────────────────────────
 
 export default function AdminTransactionsPage() {
-  const [searchTerm, setSearchTerm] = useState("");
-
-  // CA02 — Filtrado dinámico por número de transacción
-  const filteredTransactions = mockTransactions.filter((trx) =>
-    trx.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const {
+    searchTerm,
+    setSearchTerm,
+    transactions,
+    totalCount,
+    page,
+    totalPages,
+    setPage,
+    isLoading,
+    error,
+    refetch,
+  } = useTransactionsData();
 
   // Determinar el empty state correcto (CA02 / CA05)
-  const emptyTitle =
-    searchTerm.length > 0
-      ? "No se encontraron resultados"
-      : "No hay transacciones registradas";
-  const emptyDescription =
-    searchTerm.length > 0
-      ? `No hay transacciones que coincidan con "${searchTerm}".`
-      : "Cuando se realicen transacciones, aparecerán en este listado.";
+  const hasSearch = searchTerm.trim().length > 0;
+  const emptyTitle = hasSearch
+    ? "No se encontraron resultados"
+    : "No hay transacciones registradas";
+  const emptyDescription = hasSearch
+    ? `No hay transacciones que coincidan con "${searchTerm}".`
+    : "Cuando se realicen transacciones, aparecerán en este listado.";
 
   return (
     <div className="flex flex-col gap-6">
@@ -148,6 +122,24 @@ export default function AdminTransactionsPage() {
         </button>
       </div>
 
+      {/* Manejo de error con reintento */}
+      {error && (
+        <div
+          role="alert"
+          className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-[6px] border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400"
+        >
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={refetch}
+            className="flex items-center gap-2 rounded-[6px] bg-red-500/20 px-3 py-1.5 text-xs font-semibold text-red-300 transition-colors hover:bg-red-500/30 cursor-pointer"
+          >
+            <ArrowPathIcon className="h-4 w-4" />
+            Reintentar
+          </button>
+        </div>
+      )}
+
       {/* Buscador + Contador — CA02 */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <SearchInput
@@ -155,7 +147,7 @@ export default function AdminTransactionsPage() {
           onChange={(e) => setSearchTerm(e.target.value)}
         />
         <p className="shrink-0 text-sm text-[#A8A8AA]">
-          Mostrando {filteredTransactions.length} de {mockTransactions.length} transacciones
+          Mostrando {isLoading ? "…" : transactions.length} de {isLoading ? "…" : totalCount} transacciones
         </p>
       </div>
 
@@ -163,7 +155,8 @@ export default function AdminTransactionsPage() {
       <div className="overflow-hidden rounded-[6px] border border-[#323232] bg-[#292929]">
         <DataTable
           columns={TABLE_COLUMNS}
-          data={filteredTransactions}
+          data={transactions}
+          isLoading={isLoading}
           emptyState={
             <EmptyState
               icon={CreditCardIcon}
@@ -173,6 +166,8 @@ export default function AdminTransactionsPage() {
           }
         />
       </div>
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 }

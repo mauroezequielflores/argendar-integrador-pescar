@@ -12,7 +12,6 @@ import StatCard from "../../../components/ui/StatCard";
 import MarketplaceActivityCard from "../components/MarketplaceActivityCard";
 import RecentActivityCard from "../components/RecentActivityCard";
 import { useDashboardData } from "../hooks/useDashboardData";
-import { mockRecentActivity } from "../data/mockDashboardData";
 import { ROUTES } from "../../../constants/routes";
 
 /**
@@ -28,10 +27,10 @@ import { ROUTES } from "../../../constants/routes";
  * - CA06: Manejo de errores con reintento y estados de carga.
  */
 export default function AdminDashboardPage() {
-  const [showSampleData, setShowSampleData] = useState(false);
+  const [showAllActivity, setShowAllActivity] = useState(false);
   const navigate = useNavigate();
   const { metrics, marketplaceData, activities, isLoading, error, refetch } = useDashboardData({
-    initialEmpty: true,
+    activityLimit: showAllActivity ? 50 : 10,
   });
 
   // Breadcrumbs según CA01 y captura de referencia ("Actividad / Dashboard")
@@ -39,9 +38,6 @@ export default function AdminDashboardPage() {
     { label: "Actividad", href: ROUTES.ADMIN_DASHBOARD },
     { label: "Dashboard" },
   ];
-
-  // Si showSampleData está activado (mediante "Ver todo"), mostramos los eventos mock
-  const displayedActivities = showSampleData ? mockRecentActivity : activities;
 
   return (
     <div className="flex flex-col gap-6">
@@ -118,9 +114,9 @@ export default function AdminDashboardPage() {
 
       {/* ── Sección de Actividad Reciente (CA04) ────────────────── */}
       <RecentActivityCard
-        activities={displayedActivities}
+        activities={activities}
         isLoading={isLoading}
-        onViewAll={() => setShowSampleData(!showSampleData)}
+        onViewAll={() => setShowAllActivity((prev) => !prev)}
       />
     </div>
   );

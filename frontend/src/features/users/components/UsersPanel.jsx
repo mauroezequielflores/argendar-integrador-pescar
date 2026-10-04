@@ -1,5 +1,6 @@
 import React from "react";
 import SearchInput from "../../../components/ui/SearchInput";
+import Pagination from "../../../components/ui/Pagination";
 import UsersTable from "./UsersTable";
 import UsersEmptyState from "./UsersEmptyState";
 import { TAB_CONFIG } from "../constants/users.constants";
@@ -8,7 +9,12 @@ import { TAB_CONFIG } from "../constants/users.constants";
  * UsersPanel — Contenedor de un panel de usuarios (Profesionales / Clientes / Administradores).
  *
  * @param {string} panelKey - Clave del panel ("profesionales" | "clientes" | "administradores").
- * @param {Array} users - Lista de usuarios filtrados para este panel.
+ * @param {Array} users - Usuarios de la página actual.
+ * @param {number} totalCount - Total de usuarios que coinciden con la búsqueda (todas las páginas).
+ * @param {number} page - Página actual.
+ * @param {number} totalPages - Cantidad total de páginas.
+ * @param {function} onPageChange - Callback al elegir otra página.
+ * @param {boolean} isLoading - Si es true, muestra el indicador de carga en lugar de la lista.
  * @param {string} searchTerm - Término de búsqueda actual para este panel.
  * @param {function} onSearchChange - Callback al cambiar la búsqueda.
  * @param {function} onSuspend - Callback al suspender.
@@ -18,6 +24,11 @@ import { TAB_CONFIG } from "../constants/users.constants";
 export default function UsersPanel({
   panelKey,
   users = [],
+  totalCount = 0,
+  page = 1,
+  totalPages = 1,
+  onPageChange,
+  isLoading = false,
   searchTerm = "",
   onSearchChange,
   onSuspend,
@@ -49,19 +60,26 @@ export default function UsersPanel({
       {/* ── Contador Contextual (CA02) ── */}
       <div>
         <p className="text-sm font-semibold text-white">
-          Se encontraron {users.length} {config.pluralLabel}
+          Se encontraron {isLoading ? "…" : totalCount} {config.pluralLabel}
         </p>
       </div>
 
-      {/* ── Contenido: Tabla o Empty State (CA05, CA07, CA08) ── */}
-      {users.length > 0 ? (
-        <UsersTable
-          users={users}
-          isReadOnly={isReadOnly}
-          onSuspend={(id) => onSuspend(panelKey, id)}
-          onActivate={(id) => onActivate(panelKey, id)}
-          onDelete={(id) => onDelete(panelKey, id)}
-        />
+      {/* ── Contenido: Carga, Tabla o Empty State (CA05, CA07, CA08) ── */}
+      {isLoading ? (
+        <div className="flex h-64 items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#F78736] border-t-transparent" />
+        </div>
+      ) : users.length > 0 ? (
+        <>
+          <UsersTable
+            users={users}
+            isReadOnly={isReadOnly}
+            onSuspend={(id) => onSuspend(panelKey, id)}
+            onActivate={(id) => onActivate(panelKey, id)}
+            onDelete={(id) => onDelete(panelKey, id)}
+          />
+          <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} />
+        </>
       ) : (
         <UsersEmptyState
           title={hasSearch ? "No se encontraron resultados" : config.emptyTitle}

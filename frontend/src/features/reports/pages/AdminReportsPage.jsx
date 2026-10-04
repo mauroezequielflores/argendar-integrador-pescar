@@ -2,6 +2,7 @@ import React from "react";
 import { InboxIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import Breadcrumbs from "../../../components/ui/Breadcrumbs";
 import SearchInput from "../../../components/ui/SearchInput";
+import Pagination from "../../../components/ui/Pagination";
 import InquiriesTable from "../components/InquiriesTable";
 import InquiryDetailModal from "../components/InquiryDetailModal";
 import InquiriesEmptyState from "../components/InquiriesEmptyState";
@@ -22,11 +23,15 @@ import { ROUTES } from "../../../constants/routes";
 export default function AdminReportsPage() {
   const {
     inquiries,
-    filteredInquiries,
+    totalCount,
+    page,
+    totalPages,
+    setPage,
     searchTerm,
     setSearchTerm,
     selectedInquiry,
-    setSelectedInquiry,
+    openInquiry,
+    closeInquiry,
     handleSendReply,
     isLoading,
     error,
@@ -94,7 +99,7 @@ export default function AdminReportsPage() {
           />
         </div>
         <p className="shrink-0 text-sm text-[#A8A8AA]">
-          Mostrando {filteredInquiries.length} de {inquiries.length} solicitudes
+          Mostrando {isLoading ? "…" : inquiries.length} de {isLoading ? "…" : totalCount} solicitudes
         </p>
       </div>
 
@@ -103,11 +108,11 @@ export default function AdminReportsPage() {
         <div className="flex h-64 items-center justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#F78736] border-t-transparent" />
         </div>
-      ) : filteredInquiries.length > 0 ? (
-        <InquiriesTable
-          inquiries={filteredInquiries}
-          onSelectInquiry={(inquiry) => setSelectedInquiry(inquiry)}
-        />
+      ) : inquiries.length > 0 ? (
+        <>
+          <InquiriesTable inquiries={inquiries} onSelectInquiry={openInquiry} />
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        </>
       ) : (
         <InquiriesEmptyState
           title={hasSearch ? "No se encontraron resultados" : "No hay consultas registradas"}
@@ -122,7 +127,7 @@ export default function AdminReportsPage() {
       {/* ── Modal de Detalle y Respuesta (CA03, CA04) ── */}
       <InquiryDetailModal
         isOpen={!!selectedInquiry}
-        onClose={() => setSelectedInquiry(null)}
+        onClose={closeInquiry}
         inquiry={selectedInquiry}
         onSendReply={handleSendReply}
       />
