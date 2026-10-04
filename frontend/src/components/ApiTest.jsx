@@ -6,12 +6,10 @@ export default function ApiTest() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const API_URL = import.meta.env.VITE_API_URL;
-
     const fetchUsuarios = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API_URL}/api/v1/usuarios`);
+        const response = await fetch(`/api/v1/usuarios`);
         
         if (!response.ok) {
           throw new Error(`Error HTTP! Estado: ${response.status}`);
