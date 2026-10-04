@@ -13,6 +13,8 @@ const Select = forwardRef(function Select(
     options = [],
     error,
     className = "",
+    classNameLabel = "",
+    classNameSelect = "",
     ...props
   },
   ref
@@ -22,7 +24,7 @@ const Select = forwardRef(function Select(
       {label && (
         <label
           htmlFor={id}
-          className="text-xs font-medium text-white"
+          className={classNameLabel || "text-xs font-medium text-white"}
         >
           {label}
         </label>
@@ -34,9 +36,8 @@ const Select = forwardRef(function Select(
           id={id}
           aria-invalid={!!error}
           aria-describedby={error ? `${id}-error` : undefined}
-          className={`
-           appearance-none rounded-[6px] border border-[#323232] bg-[#292929] py-1 pl-3 pr-7 text-xs text-white transition-colors hover:border-[#555] focus:border-[#F78736] focus:outline-none cursor-pointer
-          
+          className={`${classNameSelect}
+           rounded-[6px] w-full border border-[#323232] bg-[#202020] text-white transition-colors hover:border-[#555] focus:border-[#F78736] focus:outline-none cursor-pointer 
             ${error
               ? "border-red-500 focus:ring-red-500"
               : "border-[#3f3f3f] hover:border-[#555] focus:border-[#F78736]"
@@ -53,9 +54,6 @@ const Select = forwardRef(function Select(
             </option>
           ))}
         </select>
-        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-[#A8A8AA]">
-          <ChevronDownIcon className="h-4 w-4" />
-        </div>
       </div>
 
       {error && (

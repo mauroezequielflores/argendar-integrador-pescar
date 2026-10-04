@@ -85,6 +85,7 @@ export default function LoginPage() {
           placeholder="Ej: ejemplo11@gmail.com"
           error={errors.email?.message}
           {...register("email")}
+          className="bg-[#202020] text-xs p-4"
         />
 
         <Input
@@ -94,6 +95,7 @@ export default function LoginPage() {
           placeholder="Ej: ejEmplo123"
           error={errors.password?.message}
           {...register("password")}
+          className="bg-[#202020] text-xs p-4"
         />
 
         {/* Recordarme */}

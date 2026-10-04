@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { 
-  MapPinIcon, 
-  HomeIcon, 
-  EnvelopeIcon, 
+import {
+  MapPinIcon,
+  HomeIcon,
+  EnvelopeIcon,
   ClipboardDocumentListIcon,
   ShieldCheckIcon,
   MapIcon,
@@ -70,11 +70,11 @@ export default function CreateRequestLocationPage() {
 
   const handleBack = () => {
     // Para guardar los cambios actuales al volver, usamos watch y update:
-    updateRequestData({ 
-      address: addressValue, 
-      apartment: apartmentValue, 
-      zipCode: zipCodeValue, 
-      additionalDetails: additionalDetailsValue 
+    updateRequestData({
+      address: addressValue,
+      apartment: apartmentValue,
+      zipCode: zipCodeValue,
+      additionalDetails: additionalDetailsValue
     });
     navigate("/client/agenda/create-request");
   };
@@ -91,7 +91,7 @@ export default function CreateRequestLocationPage() {
         <Breadcrumbs items={[{ label: "Solicitud" }, { label: "Detalle" }, { label: "Ubicación" }]} />
       </div>
 
-      <div className="bg-[#292929] rounded-[16px] p-8 md:p-10 border border-[#3f3f3f]">
+      <div className="bg-[#292929] rounded-[12px] p-8 pt-40 md:p-10 border border-[#3f3f3f]">
         {/* Stepper */}
         <div className="mb-10">
           <Stepper steps={["DETALLE", "UBICACIÓN", "REVISIÓN"]} currentStep={2} />
@@ -109,12 +109,12 @@ export default function CreateRequestLocationPage() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-10">
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-            
+
             {/* Left Column: Form Fields */}
             <div className="flex flex-col gap-6">
-              
+
               <AddressAutocomplete
                 label="Dirección completa"
                 defaultValue={addressValue}
@@ -161,11 +161,11 @@ export default function CreateRequestLocationPage() {
 
             {/* Right Column: Dynamic Summary */}
             <div className="flex flex-col gap-6">
-              
+
               {/* Summary Card */}
               <div className="border border-[#3f3f3f] bg-[#202020] rounded-[8px] p-6">
                 <h2 className="text-sm font-bold text-white mb-6">Resumen de ubicación</h2>
-                
+
                 <div className="flex flex-col gap-5 text-sm text-white">
                   {/* Address block with distinct background */}
                   <div className="bg-[#2a2a2a] rounded-[8px] p-4 flex flex-col gap-3">
@@ -173,9 +173,9 @@ export default function CreateRequestLocationPage() {
                       <MapPinIcon className="h-5 w-5 text-[#A8A8AA] shrink-0" />
                       <span className="font-semibold text-white">{addressValue || "-"}</span>
                     </div>
-                    <Button 
+                    <Button
                       type="button"
-                      variant="outline" 
+                      variant="outline"
                       className="w-full flex items-center justify-center gap-2 border-[#555] text-white hover:bg-[#333] transition-colors py-2 text-xs"
                       onClick={() => setShowMap(!showMap)}
                     >

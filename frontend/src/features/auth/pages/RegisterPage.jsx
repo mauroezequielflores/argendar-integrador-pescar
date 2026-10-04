@@ -119,6 +119,7 @@ export default function RegisterPage() {
             placeholder="Ej: Lucía"
             error={errors.nombre?.message}
             {...register("nombre")}
+            className="bg-[#202020] text-xs p-4"
           />
           <Input
             id="apellido"
@@ -127,6 +128,7 @@ export default function RegisterPage() {
             placeholder="Ej: González"
             error={errors.apellido?.message}
             {...register("apellido")}
+            className="bg-[#202020] text-xs p-4"
           />
         </div>
 
@@ -137,6 +139,7 @@ export default function RegisterPage() {
           placeholder="Ej: ejemplo01@gmail.com"
           error={errors.email?.message}
           {...register("email")}
+          className="bg-[#202020] text-xs p-4"
         />
 
         <div className="flex flex-col gap-1">
@@ -147,6 +150,7 @@ export default function RegisterPage() {
             placeholder="Ej: ejEmplo123"
             error={errors.password?.message}
             {...register("password")}
+            className="bg-[#202020] text-xs p-4"
           />
 
           {/* Indicador de fortaleza */}
@@ -197,6 +201,7 @@ export default function RegisterPage() {
             placeholder="Ej: 10"
             error={errors.coverageRadiusKm?.message}
             {...register("coverageRadiusKm", { valueAsNumber: true })}
+            className="bg-[#202020] text-xs p-4"
           />
         )}
 

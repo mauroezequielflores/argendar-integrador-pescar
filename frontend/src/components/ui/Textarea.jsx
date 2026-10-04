@@ -45,7 +45,7 @@ const Textarea = forwardRef(function Textarea(
           aria-describedby={error ? `${id}-error` : undefined}
           onChange={handleChange}
           className={`
-            w-full rounded-[6px] border bg-transparent px-3 py-2.5 text-xs
+            w-full rounded-[6px] border px-3 py-2.5 
             text-sm text-white placeholder-[#A8A8AA]
             transition-colors duration-200 resize-y min-h-[120px]
             focus:outline-none focus:ring-2 focus:ring-[#F78736] focus:ring-offset-0
@@ -57,7 +57,7 @@ const Textarea = forwardRef(function Textarea(
           `}
           {...props}
         />
-        
+
         {maxLength && (
           <div className="absolute bottom-3 right-3 text-xs text-[#A8A8AA]">
             {charCount} / {maxLength}

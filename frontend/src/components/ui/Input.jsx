@@ -16,6 +16,7 @@ const Input = forwardRef(function Input(
     error,
     prefix,
     className = "",
+    classNameLabel = "",
     ...props
   },
   ref
@@ -29,7 +30,7 @@ const Input = forwardRef(function Input(
       {label && (
         <label
           htmlFor={id}
-          className="text-xs font-medium text-white"
+          className={classNameLabel || "text-xs font-medium text-white"}
         >
           {label}
         </label>
@@ -44,10 +45,9 @@ const Input = forwardRef(function Input(
           aria-invalid={!!error}
           aria-describedby={error ? `${id}-error` : undefined}
           className={`
-            w-full rounded-[6px] border bg-transparent py-2.5 text-xs
-            text-sm text-white placeholder-[#A8A8AA]
-            transition-colors duration-200
-            focus:outline-none focus:ring-2 focus:ring-[#F78736] focus:ring-offset-0
+            w-full rounded-[6px] border py-2.5 text-white placeholder-[#A8A8AA]
+             duration-50
+            focus:outline-none focus:ring-0.5 focus:ring-[#F78736] focus:ring-offset-0
             ${error
               ? "border-red-500 focus:ring-red-500"
               : "border-[#3a3a3a] hover:border-[#555] focus:border-[#F78736]"
