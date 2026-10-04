@@ -174,9 +174,8 @@ function FilterPanel({
 
 function ActiveChips({ sortLabel, appliedSearch, onRemoveSearch, appliedCategories, onRemoveCategory, appliedWithinRadius, onRemoveWithinRadius }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="text-xs text-[#A8A8AA]">Filtros</span>
-      <span className="text-xs text-[#A8A8AA]">|</span>
+    <div className="flex flex-wrap items-center gap-3 rounded-[6px] bg-[#292929] px-4 py-2">
+      <span className="text-xs text-[#A8A8AA] font-normal">Filtros |</span>
       <span className="rounded-[6px] bg-[#323232] px-2 py-1 text-xs text-white">
         {sortLabel}
       </span>
