@@ -1,3 +1,40 @@
+## [04/10/2026] (HU admin 05 — Bandeja de consultas)
+**Hecho:** `GET /api/v1/admin/inquiries`, `GET /api/v1/admin/inquiries/:id`, `POST /api/v1/admin/inquiries/:id/reply` y `POST /api/v1/support/tickets` (cliente/profesional). Archivos: `services/adminInquiriesService.js`, `controllers/adminInquiriesController.js`, `middlewares/schemas/adminInquiriesSchemas.js`, `services/supportService.js`, `controllers/supportController.js`, `routes/supportRoutes.js`, `middlewares/schemas/supportSchemas.js`; rutas admin en `routes/adminRoutes.js` y montaje de `/api/v1/support` en `app.js`. Frontend: bandeja de `/admin/reports` conectada (service, hook, mappers, paginación, modal con detalle/respuesta) y formularios de Ayuda de cliente (`ContactFormCard.jsx`) y profesional (`ProfessionalHelpPage.jsx`) enviando de verdad (`features/help/services/supportService.js`).
+**Migración ejecutada por el usuario en Supabase:** tabla `support_tickets` (con índices y RLS activado sin políticas; solo el backend con service_role la lee/escribe).
+**Pendiente:** el usuario ve la respuesta solo como notificación (`type: support_reply`, ícono de campana por defecto en ambos centros de notificaciones); no hay pantalla donde releer el historial de sus consultas. El contador `ticket_number` consumió el 1 en una prueba (la primera consulta real será CON-000002; reiniciable con `ALTER TABLE public.support_tickets ALTER COLUMN ticket_number RESTART WITH 1;`).
+**Decisiones:** Código `CON-000001` (no `REQ-`). La búsqueda acepta número, UUID completo o texto del asunto. El email solo viaja en el detalle (sale de Auth). Responder es único: 409 `INQUIRY_ALREADY_ANSWERED`, protegido contra respuestas simultáneas. Prueba end-to-end con datos creados y borrados por el script.
+
+## [04/10/2026] (HU admin 04 — Moderación)
+**Hecho:** `GET /api/v1/admin/moderation/:entity` y `PATCH /api/v1/admin/moderation/:entity/:id` (entity: requests | offers | reviews | appointments; 10 por página; búsqueda por número de orden o UUID). Archivos: `services/adminModerationService.js`, `controllers/adminModerationController.js`, `middlewares/schemas/adminModerationSchemas.js`, rutas en `routes/adminRoutes.js`; `utils/adminLookups.js` ampliado (`fetchProfileSummaries`, `fetchRowsByIds`, `pick`). Frontend de `/admin/moderation` conectado (service, hook, mappers, constantes, paginación en cada pestaña).
+**Migración ejecutada por el usuario en Supabase:** `moderation_status TEXT NOT NULL DEFAULT 'active' CHECK (...)` y `order_number BIGINT GENERATED ALWAYS AS IDENTITY` en `requests`, `offers`, `reviews` y `appointments` (todos los registros existentes quedaron `active`).
+**Pendiente:** EFECTO REAL (decisión del usuario: hacerlo después, en un paso aparte y acotado): que desactivar/eliminar oculte la solicitud del marketplace, la oferta de las ofertas del cliente (y no se pueda aceptar) y la calificación de los perfiles y del promedio. Los turnos quedan SOLO como estado. Hay ~60 puntos de lectura en 12 servicios + 3 funciones SQL (`get_marketplace_requests`, `create_offer_and_notify`, `accept_offer_and_schedule`); la propuesta es filtrar en Node, uno por uno. Verificar que el trigger de `rating_avg`/`reviews_count` considere `moderation_status`.
+**Decisiones:** Estado `disabled` (no `hidden`) para coincidir con "Desactivar". `deleted` es definitivo (409 `ITEM_DELETED`). El admin ve los tres estados en el listado.
+
+## [04/10/2026] (HU admin 03 — Transacciones)
+**Hecho:** `GET /api/v1/admin/transactions` (search, page, limit; 10 por defecto), solo lectura. Archivos: `services/adminTransactionsService.js`, `controllers/adminTransactionsController.js`, `middlewares/schemas/adminTransactionsSchemas.js`, ruta en `routes/adminRoutes.js`. Nuevo `utils/adminLookups.js` (fullName, fetchProfileNames, resolvePaymentParties) compartido con el dashboard, que se refactorizó para usarlo. Frontend de `/admin/transactions` conectado (service, hook, mappers, paginación).
+**Migración ejecutada por el usuario en Supabase:** `ALTER TABLE public.payments ADD COLUMN transaction_number BIGINT GENERATED ALWAYS AS IDENTITY;` (los 5 pagos existentes quedaron numerados 1–5).
+**Pendiente:** Reembolsar/cancelar (botón desactivado; sin endpoints a propósito). Probar con un token de admin desde `api.http`.
+**Decisiones:** `user` = cliente que pagó, `professional` aparte. La búsqueda acepta número (`126`, `TRX-000126`) o UUID completo; cualquier otro texto devuelve vacío. Estados: paid→COMPLETADO, pending→PENDIENTE, partial→PARCIAL, refunded→REEMBOLSADO.
+
+## [04/10/2026] (HU admin 02 — Usuarios)
+**Hecho:** `GET /api/v1/admin/users` (role, search, page, limit; 10 por defecto), `PATCH /api/v1/admin/users/:id/status` y `DELETE /api/v1/admin/users/:id` (borrado lógico). Archivos: `services/adminUsersService.js`, `controllers/adminUsersController.js`, `middlewares/schemas/adminUsersSchemas.js`, rutas en `routes/adminRoutes.js`. Frontend de `/admin/users` conectado (service, hook, mappers, `components/ui/Pagination.jsx`).
+**Pendiente:** El bloqueo solo guarda `profiles.status`; `authMiddleware` y `loginUser` no rechazan cuentas `disabled`/`deleted` (decisión del usuario: dejarlo para más adelante). Probar PATCH/DELETE exitosos desde la UI (no se probaron contra datos reales).
+**Decisiones:** Los administradores no se pueden modificar (409 `ADMIN_ACCOUNT_PROTECTED` / `SELF_MODIFICATION_NOT_ALLOWED`). Búsqueda por palabras en nombre/apellido o UUID completo. Página fuera de rango devuelve lista vacía (no error).
+
+## [04/10/2026] (ampliación)
+**Hecho:** `loginUser` ahora devuelve `role` desde `profiles.role` (fallback a `user_metadata.role`). Antes usaba solo los metadatos de Auth y un admin cambiado desde el panel seguía redirigiendo como su rol anterior. `recent-activity` incluye `actor {name, role}` y, en pagos, `status`. Frontend del dashboard conectado a los 3 endpoints (`dashboardService`, `useDashboardData`, `utils/dashboardMappers.js`, ejes dinámicos del gráfico).
+**Pendiente:** Probar con un token de admin los 400 de validación. Corregir `code` de AppError en 401/403 (hoy `INTERNAL_SERVER_ERROR`).
+**Decisiones:** "Ver todo" pide 50 eventos en vez de 10 (no hay pantalla de destino en Figma). Los estados de la tabla se derivan del tipo de evento.
+
+## [04/10/2026]
+**Hecho:** HU admin 01 (Dashboard). Endpoints `GET /api/v1/admin/dashboard/metrics`, `/activity-chart` y `/recent-activity`.
+- `src/routes/adminRoutes.js` (auth + `requireRole(ROLES.ADMIN)` para todo `/admin/*`), `src/controllers/adminDashboardController.js`, `src/services/adminDashboardService.js`, `src/middlewares/schemas/adminDashboardSchemas.js`.
+- `src/app.js`: import y montaje en `/api/v1/admin`.
+- `backend/API_DOCS.md` y `backend/api.http` creados (solo endpoints de admin por ahora).
+
+**Pendiente:** Prueba real contra Supabase (el entorno corre en Docker; solo se verificó la sintaxis). Frontend del dashboard sigue con datos mock.
+**Decisiones:** `recent-activity` se arma con un UNION de `created_at` de `profiles`, `requests`, `offers` y `payments`; NO se creó la tabla `platform_activity_logs` (se podrá migrar más adelante). `activeRequests` no respeta `period` porque es un estado actual. Los nombres se resuelven con una consulta aparte a `profiles` para no depender de nombres de FK.
+
 ## [23/09/2026]
 **Hecho:** Implementación de los 5 endpoints de detalle del profesional (HU: Vistas de Detalles).
 - `GET /api/v1/professional/offers/:id`

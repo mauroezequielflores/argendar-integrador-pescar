@@ -13,6 +13,8 @@ import professionalNotificationRoutes from './routes/professionalNotificationRou
 import professionalDetailsRoutes from './routes/professionalDetailsRoutes.js';
 import clientReviewRoutes from './routes/clientReviewRoutes.js';
 import chatbotRoutes from './routes/chatbotRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
+import supportRoutes from './routes/supportRoutes.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 
 const app = express();
@@ -34,6 +36,8 @@ app.use('/api/v1/chatbot', chatbotRoutes);
 app.use('/api/v1/job-requests', jobRequestsRoutes);
 app.use('/api/v1/offers', offersRoutes);
 app.use('/api/v1/appointments', appointmentsRoutes);
+app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/support', supportRoutes);
 
 // --- Rutas de Diagnóstico (Pruebas iniciales) ---
 // NOTA: Más adelante, las rutas de la aplicación se separarán en la carpeta src/routes/

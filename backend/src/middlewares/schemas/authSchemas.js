@@ -23,6 +23,7 @@ export const registerSchema = z.object({
       required_error: 'El rol es obligatorio.',
       invalid_type_error: 'Rol inválido. Debe ser client o professional.',
     }),
+    location: z.string().optional().nullable(),
     latitude: z.number().optional().nullable(),
     longitude: z.number().optional().nullable(),
     coverageRadiusKm: z.number().optional().nullable(),

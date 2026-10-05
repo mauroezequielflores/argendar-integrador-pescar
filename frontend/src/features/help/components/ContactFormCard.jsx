@@ -1,19 +1,33 @@
 ﻿import React, { useState } from "react";
+import { createTicket, getSupportErrorMessage } from "../services/supportService";
 
 export default function ContactFormCard() {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!subject.trim() || !message.trim()) return;
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      setSubject("");
-      setMessage("");
-    }, 3000);
+    if (!subject.trim() || !message.trim() || isSending) return;
+
+    setIsSending(true);
+    setError(null);
+    try {
+      await createTicket({ subject, message });
+      setSubmitted(true);
+      setTimeout(() => {
+        setSubmitted(false);
+        setSubject("");
+        setMessage("");
+      }, 3000);
+    } catch (err) {
+      // Se conserva lo que escribió el usuario para que pueda reintentar.
+      setError(getSupportErrorMessage(err));
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleCancel = () => {
@@ -70,6 +84,16 @@ export default function ContactFormCard() {
           </div>
         )}
 
+        {/* Error al enviar */}
+        {error && (
+          <div
+            role="alert"
+            className="rounded-[6px] bg-[#202020] border border-red-500/50 p-2.5 text-xs text-red-400"
+          >
+            {error}
+          </div>
+        )}
+
         {/* Botones de acción */}
         <div className="flex items-center justify-end gap-2.5 pt-1">
           <button
@@ -81,9 +105,10 @@ export default function ContactFormCard() {
           </button>
           <button
             type="submit"
-            className="rounded-[6px] bg-[#F78736] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#e5782c] cursor-pointer"
+            disabled={isSending}
+            className="rounded-[6px] bg-[#F78736] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#e5782c] cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Enviar consulta
+            {isSending ? "Enviando..." : "Enviar consulta"}
           </button>
         </div>
       </form>

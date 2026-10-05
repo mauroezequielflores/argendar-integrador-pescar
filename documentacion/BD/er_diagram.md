@@ -77,6 +77,8 @@ erDiagram
         text title
         text description
         request_status status
+        text moderation_status
+        bigint order_number
         date_preference date_preference
         text address
         text floor_apt
@@ -111,6 +113,8 @@ erDiagram
         time proposed_time
         text message
         offer_status status
+        text moderation_status
+        bigint order_number
         timestamptz created_at
         timestamptz updated_at
     }
@@ -120,6 +124,8 @@ erDiagram
         uuid offer_id FK, UK
         timestamptz scheduled_at
         appointment_status status
+        text moderation_status
+        bigint order_number
         text notes
         timestamptz created_at
         timestamptz updated_at
@@ -134,6 +140,7 @@ erDiagram
         numeric remaining_amount
         payment_status status
         text external_operation_id
+        bigint transaction_number
         timestamptz created_at
         timestamptz updated_at
     }
@@ -144,6 +151,8 @@ erDiagram
         uuid reviewee_id FK
         smallint rating
         text comment
+        text moderation_status
+        bigint order_number
         timestamptz created_at
         uuid appointment_id FK, UK
         jsonb tags
@@ -171,6 +180,20 @@ erDiagram
         boolean active
     }
 
+    SUPPORT_TICKETS {
+        uuid id PK
+        bigint ticket_number
+        uuid user_id FK
+        text subject
+        text message
+        text status
+        text reply_subject
+        text reply_message
+        text replied_by
+        timestamptz replied_at
+        timestamptz created_at
+    }
+
     AUTH_USERS ||--|| PROFILES : "cuenta de Auth"
     PROFILES ||--o| PROFESSIONAL_PROFILES : "perfil profesional"
     SERVICE_CATEGORIES ||--o{ PROFESSIONAL_PROFILES : "categoría"
@@ -190,6 +213,7 @@ erDiagram
     PROFILES ||--o{ REVIEWS : "escribe"
     PROFILES ||--o{ REVIEWS : "recibe"
     PROFILES ||--o{ NOTIFICATIONS : "recibe"
+    PROFILES ||--o{ SUPPORT_TICKETS : "crea consulta"
 
 
 esquema Auth
