@@ -348,6 +348,10 @@ class AppointmentsService {
       throw new AppError('Pago no encontrado', 404, 'RECURSO_NO_ENCONTRADO');
     }
 
+    if (payment.status === 'paid' || payment.status === 'PAID') {
+      throw new AppError('El pago ya ha sido confirmado anteriormente', 400, 'ACCION_NO_PERMITIDA');
+    }
+
     // 3. Actualizar estado del pago
     const { error: updateError } = await supabase
       .from('payments')
