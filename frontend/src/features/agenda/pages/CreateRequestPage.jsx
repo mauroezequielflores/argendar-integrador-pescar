@@ -90,8 +90,8 @@ export default function CreateRequestPage() {
         <Breadcrumbs items={[{ label: "Solicitud" }, { label: "Categoría" }]} />
       </div>
 
-      <div className="bg-[#292929] rounded-[6px] p-8 md:p-10 border border-[#3f3f3f]">
-        <div className="mb-15 pt-13 ">
+      <div className="bg-[#292929] rounded-[12px] p-8 pt-40 md:p-10 border border-[#3f3f3f]">
+        <div className="mb-10 pb-8 pt-8">
           <Stepper steps={["DETALLE", "UBICACIÓN", "REVISIÓN"]} currentStep={1} />
         </div>
 

@@ -27,7 +27,10 @@ export default function AddressAutocomplete({
   defaultValue = "",
   error,
   showMap = true,
-  label = "Dirección"
+  label = "Dirección",
+  className = "",
+  classNameLabel = "",
+
 }) {
   const [query, setQuery] = useState(defaultValue);
   const [results, setResults] = useState([]);
@@ -169,7 +172,7 @@ export default function AddressAutocomplete({
   return (
     <div className="flex flex-col gap-1 w-full" ref={wrapperRef}>
       {label && (
-        <label className="text-xs font-medium text-white">
+        <label className={classNameLabel || "text-xs font-medium text-white"}>
           {label}
         </label>
       )}
@@ -181,9 +184,9 @@ export default function AddressAutocomplete({
           onChange={handleInputChange}
           onFocus={() => { if (query.length > 3) setIsOpen(true) }}
           placeholder="Ej: Corrientes Av. 1234, CABA"
-          className={`
-            w-full rounded-[6px] border bg-transparent py-2.5 text-sm text-white placeholder-[#A8A8AA]
-            transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#F78736] focus:ring-offset-0
+          className={` ${className}
+            w-full rounded-[6px] border text-sm text-white placeholder-[#A8A8AA]
+            transition-colors duration-200 focus:outline-none focus:ring-0.5 focus:ring-[#F78736] focus:ring-offset-0
             pl-10 pr-3
             ${error ? "border-red-500 focus:ring-red-500" : "border-[#3a3a3a] hover:border-[#555] focus:border-[#F78736]"}
           `}

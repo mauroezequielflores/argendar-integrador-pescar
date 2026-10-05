@@ -13,6 +13,7 @@ const Textarea = forwardRef(function Textarea(
     placeholder,
     error,
     className = "",
+    classLabel = "",
     maxLength,
     ...props
   },
@@ -30,7 +31,7 @@ const Textarea = forwardRef(function Textarea(
   return (
     <div className="flex flex-col gap-1 w-full">
       {label && (
-        <label htmlFor={id} className="text-xs font-medium text-white">
+        <label htmlFor={id} className={classLabel || "text-xs font-medium text-white"}>
           {label}
         </label>
       )}
