@@ -12,7 +12,7 @@ import { formatStatus } from "../../../utils/formatters";
 export default function TurnoCard({ turno, onVerDetalle }) {
   let formattedFecha = turno.fecha;
   let formattedHorario = turno.horario;
-  
+
   if (turno.fecha && turno.fecha.includes('T')) {
     const d = new Date(turno.fecha);
     const day = String(d.getDate()).padStart(2, "0");
@@ -23,7 +23,7 @@ export default function TurnoCard({ turno, onVerDetalle }) {
   }
 
   return (
-    <Card rounded="sm" className="flex flex-col gap-0 border border-[#323232] bg-[#222222] p-5 hover:border-[#404040] transition-colors">
+    <Card rounded="sm" className="flex flex-col gap-0 border border-[#323232] bg-[#222222] pl-4 pr-4 pt-2.5 pb-2.5  hover:border-[#404040] transition-colors">
       {/* Top Row */}
       <div className="flex flex-wrap items-center justify-between gap-2 pb-4">
         <div className="flex items-center gap-2">
@@ -43,22 +43,22 @@ export default function TurnoCard({ turno, onVerDetalle }) {
       </div>
 
       {/* Middle Row */}
-      <div className="flex items-center gap-4 pb-5 pt-1">
+      <div className="flex items-center gap-3 pb-3">
         <div className="h-14 w-14 shrink-0 rounded-full bg-[#727272] flex items-center justify-center overflow-hidden">
           {(turno.persona?.foto || turno.cliente?.foto) ? (
-             <img src={turno.persona?.foto || turno.cliente?.foto} alt="avatar" className="h-full w-full object-cover" />
+            <img src={turno.persona?.foto || turno.cliente?.foto} alt="avatar" className="h-full w-full object-cover" />
           ) : (
             <UserIcon className="h-7 w-7 text-white" />
           )}
         </div>
         <div className="flex flex-col gap-1.5">
-          <h3 className="text-xl font-bold text-white leading-tight">{turno.titulo}</h3>
+          <h3 className="text-sm font-bold text-white leading-tight">{turno.titulo}</h3>
           <span className="text-[13px] text-[#A8A8AA] font-medium">{turno.persona?.nombre || turno.cliente?.nombre}</span>
         </div>
       </div>
 
       {/* Bottom Row */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[#323232]">
+      <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-[#323232]">
         <div className="flex items-center gap-2 text-[#888888] text-[13px]">
           <CalendarDaysIcon className="h-4 w-4" />
           <span>Programado :</span>

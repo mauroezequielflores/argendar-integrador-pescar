@@ -12,14 +12,14 @@ export default function RecentReviewsCard({ reviews = [] }) {
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col gap-4 rounded-[6px] border border-[#323232] bg-[#292929] p-5 sm:p-6 w-full font-sans">
+    <div className="flex flex-col gap-4 rounded-[6px] border border-[#323232] p-5 sm:p-6 w-full font-sans">
       <h2 className="text-base sm:text-lg font-semibold text-white">
         Opiniones recientes
       </h2>
 
       {reviews.length === 0 ? (
         /* Estado vacío */
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 py-10 sm:py-14 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 py-10 sm:py-14  text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#323232]">
             <StarIcon className="h-6 w-6 text-[#A8A8AA]" />
           </div>
@@ -39,9 +39,9 @@ export default function RecentReviewsCard({ reviews = [] }) {
         </div>
       ) : (
         /* Listado de reseñas si existen */
-        <div className="flex flex-col divide-y divide-[#323232]">
+        <div className="flex flex-col divide-y divide-[#323232] ">
           {reviews.map((rev, index) => (
-            <div key={rev.id || index} className="py-4 flex flex-col gap-2">
+            <div key={rev.id || index} className="py-4 flex bg-[#292929] p-5 rounded-[6px] flex-col gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-white">
                   {rev.authorName || rev.clientName || "Cliente"}
@@ -50,9 +50,8 @@ export default function RecentReviewsCard({ reviews = [] }) {
                   {[1, 2, 3, 4, 5].map((s) => (
                     <StarIconSolid
                       key={s}
-                      className={`h-4 w-4 ${
-                        s <= (rev.rating || 5) ? "text-[#F78736]" : "text-[#323232]"
-                      }`}
+                      className={`h-4 w-4 ${s <= (rev.rating || 5) ? "text-[#F78736]" : "text-[#323232]"
+                        }`}
                     />
                   ))}
                 </div>
