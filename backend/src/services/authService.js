@@ -2,7 +2,7 @@ import { supabase, createThrowawayClient } from '../config/supabase.js';
 import { AppError, ConflictError, UnauthorizedError } from '../utils/errors.js';
 import { ERROR_CODES, ROLES } from '../utils/constants.js';
 
-export const registerUser = async ({ nombre, apellido, email, password, role, latitude, longitude, coverageRadiusKm }) => {
+export const registerUser = async ({ nombre, apellido, email, password, role, location, latitude, longitude, coverageRadiusKm }) => {
   // We MUST create a throwaway client here because signUp mutates the client's internal auth state,
   // which poisons the global singleton for all future requests (causing RLS to apply instead of SERVICE_ROLE).
   const tempSupabase = createThrowawayClient();
@@ -26,9 +26,14 @@ export const registerUser = async ({ nombre, apellido, email, password, role, la
     throw new AppError(error.message, error.status || 500, ERROR_CODES.INTERNAL_SERVER_ERROR);
   }
 
-  // Actualizar perfiles con datos geográficos usando el cliente con service_role (supabase)
-  if (latitude && longitude) {
-    await supabase.from('profiles').update({ latitude, longitude }).eq('id', data.user.id);
+  // Actualizar perfiles con datos geográficos y ubicación usando el cliente con service_role (supabase)
+  if (location || latitude || longitude) {
+    const updateData = {};
+    if (location) updateData.location = location;
+    if (latitude !== undefined && latitude !== null) updateData.latitude = latitude;
+    if (longitude !== undefined && longitude !== null) updateData.longitude = longitude;
+    
+    await supabase.from('profiles').update(updateData).eq('id', data.user.id);
   }
 
   if (role === ROLES.PROFESSIONAL) {

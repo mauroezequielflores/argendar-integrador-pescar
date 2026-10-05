@@ -2,9 +2,9 @@ import * as authService from '../services/authService.js';
 
 export const register = async (req, res, next) => {
   try {
-    const { nombre, apellido, email, password, role } = req.body;
+    const { nombre, apellido, email, password, role, location, latitude, longitude, coverageRadiusKm } = req.body;
     
-    const user = await authService.registerUser({ nombre, apellido, email, password, role });
+    const user = await authService.registerUser({ nombre, apellido, email, password, role, location, latitude, longitude, coverageRadiusKm });
 
     // Respuesta pelada (sin envoltorio `data`) como indica la regla
     return res.status(201).json(user);
