@@ -15,10 +15,9 @@ export default function CategoryCard({
       onClick={onClick}
       className={`
         flex min-w-[200px] flex-1 flex-col items-center justify-center gap-3 rounded-[8px] border p-6 cursor-pointer transition-colors text-center
-        ${
-          isSelected
-            ? "border-[#F78736] bg-[#292929]"
-            : "border-[#3f3f3f] bg-[#202020] hover:border-[#555]"
+        ${isSelected
+          ? "border-[#F78736] bg-[#292929]"
+          : "border-[#3f3f3f] bg-[#202020] hover:border-[#555]"
         }
       `}
     >
@@ -27,7 +26,7 @@ export default function CategoryCard({
       )}
       <div className="mt-2">
         <h3 className={`text-sm font-bold ${isSelected ? "text-[#F78736]" : "text-white"}`}>{title}</h3>
-        <p className="text-[11px] text-[#A8A8AA] mt-1 line-clamp-2 leading-tight px-2">{description}</p>
+        <p className="text-[13px] text-[#A8A8AA] mt-1 line-clamp-2 leading-tight px-2">{description}</p>
       </div>
     </div>
   );

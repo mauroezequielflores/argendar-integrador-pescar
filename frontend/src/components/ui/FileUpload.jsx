@@ -66,7 +66,7 @@ export default function FileUpload({
         {/* Upload Zone (Left) */}
         <div className="flex-1 w-full">
           <div
-            className="flex flex-col items-center justify-center py-10 px-4 border border-dashed border-[#555] rounded-[12px] bg-[#292929] hover:bg-[#333] transition-colors cursor-pointer text-center h-full"
+            className="flex flex-col items-center justify-center py-10 px-4 border border-dashed border-[#555] rounded-[12px] bg-[#202020] hover:bg-[#333] transition-colors cursor-pointer text-center h-full"
             onClick={() => fileInputRef.current?.click()}
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleDrop}
@@ -91,7 +91,7 @@ export default function FileUpload({
               onChange={handleFileChange}
             />
           </div>
-          
+
           <div className="flex items-center justify-between mt-3 text-xs">
             <div className="flex items-center gap-1.5 text-[#A8A8AA]">
               <InformationCircleIcon className="h-4 w-4 text-[#F78736]" />
@@ -131,7 +131,7 @@ export default function FileUpload({
             {files.map((file, idx) => (
               <div key={idx} className="flex items-center gap-2 bg-[#292929] border border-[#3f3f3f] rounded-[6px] px-3 py-1.5">
                 <div className="bg-[#3f3f3f] p-1 rounded">
-                  <ArrowUpTrayIcon className="h-3 w-3 text-white transform rotate-180" /> 
+                  <ArrowUpTrayIcon className="h-3 w-3 text-white transform rotate-180" />
                   {/* El ícono de clip no está en heroicons por defecto, uso otro que parece un archivo */}
                 </div>
                 <span className="text-xs text-white max-w-[120px] truncate">{file.name}</span>

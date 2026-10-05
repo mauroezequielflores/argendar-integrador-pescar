@@ -38,7 +38,7 @@ export default function AgendaPage() {
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [isSolicitudDetalleOpen, setIsSolicitudDetalleOpen] = useState(false);
   const [selectedSolicitud, setSelectedSolicitud] = useState(null);
-  
+
   const [isTurnoDetalleOpen, setIsTurnoDetalleOpen] = useState(false);
   const [selectedTurno, setSelectedTurno] = useState(null);
   const navigate = useNavigate();
@@ -131,10 +131,10 @@ export default function AgendaPage() {
           return (
             <div className="flex flex-col gap-4">
               {sortedSolicitudes.map((sol) => (
-                <SolicitudCard 
-                  key={sol.id} 
-                  solicitud={sol} 
-                  onVerDetalle={() => handleVerDetalle(sol)} 
+                <SolicitudCard
+                  key={sol.id}
+                  solicitud={sol}
+                  onVerDetalle={() => handleVerDetalle(sol)}
                   onVerOfertas={() => handleVerOfertas(sol.id)}
                 />
               ))}
@@ -172,10 +172,10 @@ export default function AgendaPage() {
           return (
             <div className="flex flex-col gap-4">
               {sortedAppointments.map((app) => (
-                <TurnoCard 
-                  key={app.id} 
-                  turno={app} 
-                  onVerDetalle={() => handleVerDetalleTurno(app)} 
+                <TurnoCard
+                  key={app.id}
+                  turno={app}
+                  onVerDetalle={() => handleVerDetalleTurno(app)}
                 />
               ))}
             </div>
@@ -233,6 +233,7 @@ export default function AgendaPage() {
                 options={sortOptions}
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value)}
+                classNameSelect="px-2 py-1 text-xs border border-[#3f3f3f] bg-[#292929]"
               />
             </div>
           </div>
@@ -293,9 +294,9 @@ export default function AgendaPage() {
           isOpen={isTurnoDetalleOpen}
           turno={selectedTurno}
           onClose={() => setIsTurnoDetalleOpen(false)}
-          onConfirmarPago={() => {}}
-          onReprogramar={() => {}}
-          onFinalizar={() => {}}
+          onConfirmarPago={() => { }}
+          onReprogramar={() => { }}
+          onFinalizar={() => { }}
           isHistory={activeTab === "historial"}
         />
       )}

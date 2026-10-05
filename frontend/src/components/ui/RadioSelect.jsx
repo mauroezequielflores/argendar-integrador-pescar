@@ -15,6 +15,7 @@ const RadioSelect = forwardRef(function RadioSelect(
     error,
     placeholder = "Selecciona una opción",
     className = "",
+    classNameLabel = "",
     icon: Icon,
   },
   ref
@@ -35,9 +36,9 @@ const RadioSelect = forwardRef(function RadioSelect(
   const selectedOption = options.find((opt) => opt.value === value);
 
   return (
-    <div className="flex flex-col gap-1 w-full" ref={containerRef}>
+    <div className="flex flex-col gap-2 w-full" ref={containerRef}>
       {label && (
-        <label className="text-xs font-medium text-white mb-1">
+        <label className={classNameLabel || "text-xs font-medium text-white mb-1"}>
           {label}
         </label>
       )}
@@ -48,7 +49,7 @@ const RadioSelect = forwardRef(function RadioSelect(
           type="button"
           onClick={() => setIsOpen(!isOpen)}
           className={`
-            w-full flex items-center justify-between rounded-[6px] border bg-[#292929] py-2.5 px-3
+            w-full flex items-center justify-between rounded-[6px] border bg-[#202020] py-2.5 px-3
             text-sm transition-colors duration-200 focus:outline-none
             ${error ? "border-red-500" : isOpen ? "border-[#F78736]" : "border-[#3f3f3f] hover:border-[#555]"}
             ${selectedOption ? "text-white" : "text-[#A8A8AA]"}
@@ -63,7 +64,7 @@ const RadioSelect = forwardRef(function RadioSelect(
         </button>
 
         {isOpen && (
-          <div className="absolute top-full left-0 mt-1 w-full bg-[#292929] border border-[#3f3f3f] rounded-[6px] shadow-lg z-50 overflow-hidden flex flex-col">
+          <div className="absolute top-full left-0 mt-1 w-full bg-[#202020] border border-[#3f3f3f] rounded-[6px] shadow-lg z-50 overflow-hidden flex flex-col">
             {options.map((opt, idx) => {
               const isSelected = value === opt.value;
               return (
