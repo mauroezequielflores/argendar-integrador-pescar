@@ -11,7 +11,6 @@ import { ROUTES } from "../../../constants/routes";
 import AuthCard from "../components/AuthCard";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
-import AddressAutocomplete from "../../../components/ui/AddressAutocomplete";
 
 import authBg from "../../../assets/images/auth-bg.png";
 
@@ -56,19 +55,8 @@ export default function RegisterPage() {
       email: "",
       password: "",
       aceptarTerminos: false,
-      location: "",
-      latitude: null,
-      longitude: null,
-      coverageRadiusKm: 10,
     },
   });
-
-  // Custom setter for React Hook Form since AddressAutocomplete is controlled internally
-  const handleAddressSelect = ({ address, lat, lng }) => {
-    setValue("location", address, { shouldValidate: true });
-    setValue("latitude", lat, { shouldValidate: true });
-    setValue("longitude", lng, { shouldValidate: true });
-  };
 
   // Indicador de fortaleza de contraseña en tiempo real
   const passwordValue = watch("password", "");
@@ -169,36 +157,6 @@ export default function RegisterPage() {
             </div>
           )}
         </div>
-
-        {/* Ubicación */}
-        <div className="flex flex-col gap-1">
-          <AddressAutocomplete
-            onAddressSelect={handleAddressSelect}
-            error={errors.location?.message}
-            showMap={true}
-          />
-          {/* Inputs ocultos para que React Hook Form envíe lat/lng */}
-          <input type="hidden" {...register("location")} />
-          <input type="hidden" {...register("latitude")} />
-          <input type="hidden" {...register("longitude")} />
-          {errors.latitude && (
-            <p role="alert" className="text-xs text-red-400">Debes seleccionar una ubicación válida del listado.</p>
-          )}
-        </div>
-
-        {/* Radio de Cobertura (Sólo profesionales) */}
-        {currentRole === ROLES.PROFESIONAL && (
-          <Input
-            id="coverageRadiusKm"
-            label="Radio de cobertura de trabajo (km)"
-            type="number"
-            min="1"
-            max="100"
-            placeholder="Ej: 10"
-            error={errors.coverageRadiusKm?.message}
-            {...register("coverageRadiusKm", { valueAsNumber: true })}
-          />
-        )}
 
         {/* Aceptar términos */}
         <div className="flex flex-col gap-1">

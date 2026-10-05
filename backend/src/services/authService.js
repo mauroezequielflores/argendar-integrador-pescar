@@ -37,14 +37,29 @@ export const registerUser = async ({ nombre, apellido, email, password, role, lo
   }
 
   if (role === ROLES.PROFESSIONAL) {
+    // Buscar una categoría por defecto para no violar la restricción NOT NULL de category_id
+    const { data: categoryData } = await supabase
+      .from('service_categories')
+      .select('id')
+      .limit(1);
+
+    const categoryId = (categoryData && categoryData.length > 0) ? categoryData[0].id : null;
+
     // Si es profesional, nos aseguramos de que su registro en professional_profiles exista 
     // y tenga el radio configurado.
-    await supabase.from('professional_profiles').upsert({
+    const { error: profError } = await supabase.from('professional_profiles').upsert({
       profile_id: data.user.id,
+      category_id: categoryId, // Necesario para la restricción NOT NULL
       coverage_radius_km: coverageRadiusKm || 10,
       latitude,
-      longitude
-    });
+      longitude,
+      service_area: location
+    }, { onConflict: 'profile_id' });
+    
+    if (profError) {
+      console.error("Error upserting professional_profiles:", profError);
+      throw new AppError('Error al guardar datos profesionales: ' + profError.message, 500);
+    }
   }
 
   return {

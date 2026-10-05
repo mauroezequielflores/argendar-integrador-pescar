@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   PencilSquareIcon,
@@ -9,6 +9,7 @@ import {
 
 import headerDefaultPhoto from "../../../assets/images/header-default-photo.svg";
 import profileDefaultPhoto from "../../../assets/images/profile-default-photo.svg";
+import { useAuth } from "../../../context/AuthContext";
 
 /**
  * ProfileHeader — Encabezado reutilizable de perfil (Cliente / Profesional).
@@ -29,6 +30,7 @@ export default function ProfileHeader({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   // Detectar automáticamente el rol basado en la ruta actual o en el prop
   const isClientPath = location.pathname.startsWith("/client");
@@ -54,7 +56,7 @@ export default function ProfileHeader({
       ? profile.description
       : "Hola! Bienvenidos a mi perfil.";
 
-  const email = profile.email || "correoejemplo@gmail.com";
+  const email = profile.email || user?.email || "";
 
   const memberSince = profile.memberSince
     ? typeof profile.memberSince === "string" && profile.memberSince.includes("T")
@@ -128,12 +130,14 @@ export default function ProfileHeader({
         {/* Metadatos en una única línea horizontal con íconos */}
         <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-3 text-xs text-[#A8A8AA]">
           {/* Correo electrónico */}
-          <div className="flex items-center gap-1.5">
-            <EnvelopeIcon className="h-4 w-4 text-[#A8A8AA]" />
-            <span>
-              Correo electronico: <span className="text-white">{email}</span>
-            </span>
-          </div>
+          {email && (
+            <div className="flex items-center gap-1.5">
+              <EnvelopeIcon className="h-4 w-4 text-[#A8A8AA]" />
+              <span>
+                Correo electrónico: <span className="text-white">{email}</span>
+              </span>
+            </div>
+          )}
 
           {/* Miembro desde */}
           <div className="flex items-center gap-1.5">

@@ -249,14 +249,15 @@ export default function EditProfileSettingsPage() {
     const payload = {
       firstName: form.firstName,
       lastName: form.lastName,
-      dni: form.dni,
       location: form.location,
       latitude: form.latitude,
       longitude: form.longitude,
-      phone: form.phone,
       emailAlerts: form.emailAlerts,
       phoneAlerts: form.phoneAlerts
     };
+    
+    if (form.dni) payload.dni = form.dni;
+    if (form.phone) payload.phone = form.phone;
     
     if (role === "professional") {
       payload.coverageRadiusKm = form.coverageRadiusKm;
