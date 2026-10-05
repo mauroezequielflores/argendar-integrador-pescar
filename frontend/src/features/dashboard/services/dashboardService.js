@@ -1,26 +1,34 @@
-import { mockDashboardMetrics, mockRecentActivity } from "../data/mockDashboardData";
+import { api } from "../../../libs/axios";
 
 /**
  * Servicio para obtener datos del Dashboard de Administrador.
- * Preparado para futura conexión con API backend / endpoints REST.
+ * Endpoints: /api/v1/admin/dashboard/* (requiere rol administrator).
  */
 export const dashboardService = {
   /**
-   * Obtiene las métricas globales del dashboard.
+   * Métricas globales con tendencia.
+   * @param {"7days"|"30days"|"all_time"} [period="all_time"]
    */
-  async getMetrics() {
-    // Simula retardo de red
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    return { ...mockDashboardMetrics };
+  async getMetrics(period = "all_time") {
+    const { data } = await api.get("/admin/dashboard/metrics", { params: { period } });
+    return data;
   },
 
   /**
-   * Obtiene la lista de actividades recientes.
+   * Volumen diario de operaciones del marketplace.
+   * @param {number} [days=30]
    */
-  async getRecentActivity() {
-    // Simula retardo de red
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    // Por defecto retornamos un array vacío o los mocks según estado inicial
-    return [...mockRecentActivity];
+  async getActivityChart(days = 30) {
+    const { data } = await api.get("/admin/dashboard/activity-chart", { params: { days } });
+    return data;
+  },
+
+  /**
+   * Últimos eventos de la plataforma.
+   * @param {number} [limit=10]
+   */
+  async getRecentActivity(limit = 10) {
+    const { data } = await api.get("/admin/dashboard/recent-activity", { params: { limit } });
+    return data;
   },
 };

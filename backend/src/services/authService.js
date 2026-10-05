@@ -65,10 +65,11 @@ export const loginUser = async ({ email, password }) => {
     throw new AppError(error.message, error.status || 500, ERROR_CODES.INTERNAL_SERVER_ERROR);
   }
 
-  // Fetch the user's profile to get their name, avatar and location
+  // Fetch the user's profile to get their role, name, avatar and location.
+  // profiles.role es la fuente de verdad (la misma que usa authMiddleware).
   const { data: profile } = await supabase
     .from('profiles')
-    .select('first_name, last_name, avatar_url, location, latitude, longitude')
+    .select('role, first_name, last_name, avatar_url, location, latitude, longitude')
     .eq('id', data.user.id)
     .single();
 
@@ -76,7 +77,7 @@ export const loginUser = async ({ email, password }) => {
     user: {
       id: data.user.id,
       email: data.user.email,
-      role: data.user.user_metadata?.role,
+      role: profile?.role ?? data.user.user_metadata?.role,
       name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : null,
       first_name: profile?.first_name,
       last_name: profile?.last_name,

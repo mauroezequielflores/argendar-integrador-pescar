@@ -1,123 +1,108 @@
-import { useState, useMemo, useCallback } from "react";
-import { USER_STATES } from "../constants/users.constants";
-import {
-  mockProfesionales,
-  mockClientes,
-  mockAdministradores,
-} from "../data/mockUsersData";
+import { useState, useCallback, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchUsers, updateUserStatus, deleteUser } from "../services/usersService";
+import { TAB_ROLES, mapUser, getUsersErrorMessage } from "../utils/usersMappers";
+import { usersKeys } from "../constants/users.queryKeys";
 
-/**
- * useUsersData — Hook para manejar el estado de usuarios, filtros de búsqueda,
- * conteos dinámicos y mutaciones de estado en la pantalla de administración.
- */
+export const PAGE_SIZE = 10;
+const initialByTab = (value) => ({ profesionales: value, clientes: value, administradores: value });
+
 export function useUsersData() {
-  const [usersByTab, setUsersByTab] = useState({
-    profesionales: mockProfesionales,
-    clientes: mockClientes,
-    administradores: mockAdministradores,
-  });
-
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("profesionales");
-  const [searchTerms, setSearchTerms] = useState({
-    profesionales: "",
-    clientes: "",
-    administradores: "",
+  const [searchTerms, setSearchTerms] = useState(initialByTab(""));
+  const [pages, setPages] = useState(initialByTab(1));
+
+  const searchTerm = searchTerms[activeTab];
+  const [appliedSearches, setAppliedSearches] = useState(initialByTab(""));
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAppliedSearches((prev) => (prev[activeTab] === searchTerm ? prev : { ...prev, [activeTab]: searchTerm }));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm, activeTab]);
+
+  const appliedSearch = appliedSearches[activeTab];
+  const page = pages[activeTab];
+  const role = TAB_ROLES[activeTab];
+
+  const queryParams = { role, search: appliedSearch, page, limit: PAGE_SIZE };
+
+  const { data, isLoading, isError, error: queryError, refetch } = useQuery({
+    queryKey: usersKeys.list(queryParams),
+    queryFn: () => fetchUsers(queryParams),
+    staleTime: 1000 * 60 * 5,
   });
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const users = data?.items?.map(mapUser) || [];
+  const totalCount = data?.meta?.totalCount || 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const error = isError ? getUsersErrorMessage(queryError, "No se pudieron cargar los usuarios.") : null;
 
-  // Actualizar término de búsqueda para un panel específico
   const setSearchTerm = useCallback((panelKey, term) => {
-    setSearchTerms((prev) => ({
-      ...prev,
-      [panelKey]: term,
-    }));
+    setSearchTerms((prev) => ({ ...prev, [panelKey]: term }));
+    setPages((prev) => ({ ...prev, [panelKey]: 1 }));
   }, []);
 
-  // Lista sin filtrar del panel activo
-  const currentTabUsers = usersByTab[activeTab] || [];
-  const currentSearchTerm = searchTerms[activeTab] || "";
+  const setPage = useCallback(
+    (nextPage) => setPages((prev) => ({ ...prev, [activeTab]: nextPage })),
+    [activeTab],
+  );
 
-  // Filtrado dinámico por número de orden / ID (CA04)
-  const filteredUsers = useMemo(() => {
-    const term = currentSearchTerm.trim().toLowerCase();
-    if (!term) return currentTabUsers;
-    return currentTabUsers.filter(
-      (u) =>
-        u.id.toLowerCase().includes(term) ||
-        (u.nombre && u.nombre.toLowerCase().includes(term))
-    );
-  }, [currentTabUsers, currentSearchTerm]);
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }) => updateUserStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: usersKeys.lists() });
+    }
+  });
 
-  // Contador total de usuarios registrados en la plataforma (CA02)
-  const totalUsersCount = useMemo(() => {
-    return (
-      usersByTab.profesionales.filter((u) => u.estado !== USER_STATES.ELIMINADO).length +
-      usersByTab.clientes.filter((u) => u.estado !== USER_STATES.ELIMINADO).length +
-      usersByTab.administradores.filter((u) => u.estado !== USER_STATES.ELIMINADO).length
-    );
-  }, [usersByTab]);
+  const deleteMutation = useMutation({
+    mutationFn: (id) => deleteUser(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: usersKeys.lists() });
+      if (users.length === 1 && page > 1) {
+        setPage(page - 1);
+      }
+    }
+  });
 
-  // Cambiar estado a Suspendido (CA06)
-  const handleSuspend = useCallback((panelKey, id) => {
-    setUsersByTab((prev) => ({
-      ...prev,
-      [panelKey]: prev[panelKey].map((user) =>
-        user.id === id ? { ...user, estado: USER_STATES.SUSPENDIDO } : user
-      ),
-    }));
-  }, []);
+  const handleSuspend = useCallback(
+    (panelKey, id) => statusMutation.mutate({ id, status: "disabled" }),
+    [statusMutation]
+  );
+  
+  const handleActivate = useCallback(
+    (panelKey, id) => statusMutation.mutate({ id, status: "active" }),
+    [statusMutation]
+  );
 
-  // Cambiar estado a Activo (CA06)
-  const handleActivate = useCallback((panelKey, id) => {
-    setUsersByTab((prev) => ({
-      ...prev,
-      [panelKey]: prev[panelKey].map((user) =>
-        user.id === id ? { ...user, estado: USER_STATES.ACTIVO } : user
-      ),
-    }));
-  }, []);
+  const handleDelete = useCallback(
+    (panelKey, id) => deleteMutation.mutate(id),
+    [deleteMutation]
+  );
 
-  // Cambiar estado a Eliminado (CA06)
-  const handleDelete = useCallback((panelKey, id) => {
-    setUsersByTab((prev) => ({
-      ...prev,
-      [panelKey]: prev[panelKey].map((user) =>
-        user.id === id ? { ...user, estado: USER_STATES.ELIMINADO } : user
-      ),
-    }));
-  }, []);
-
-  // Función de reintento en caso de simulación de error
-  const refetch = useCallback(() => {
-    setIsLoading(true);
-    setError(null);
-    setTimeout(() => {
-      setUsersByTab({
-        profesionales: mockProfesionales,
-        clientes: mockClientes,
-        administradores: mockAdministradores,
-      });
-      setIsLoading(false);
-    }, 300);
-  }, []);
+  const actionError = statusMutation.error 
+    ? getUsersErrorMessage(statusMutation.error, "No se pudo actualizar el usuario.") 
+    : deleteMutation.error 
+      ? getUsersErrorMessage(deleteMutation.error, "No se pudo eliminar el usuario.") 
+      : null;
 
   return {
-    usersByTab,
     activeTab,
     setActiveTab,
     searchTerms,
     setSearchTerm,
-    currentSearchTerm,
-    currentTabUsers,
-    filteredUsers,
-    totalUsersCount,
+    users,
+    totalCount,
+    page,
+    totalPages,
+    setPage,
     handleSuspend,
     handleActivate,
     handleDelete,
-    isLoading,
-    error,
+    isLoading: isLoading || statusMutation.isPending || deleteMutation.isPending,
+    error: error || actionError,
     refetch,
   };
 }

@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { createTicket, getSupportErrorMessage } from "../services/supportService";
 import {
   MagnifyingGlassIcon,
   ChevronRightIcon,
@@ -98,19 +99,36 @@ function ContactForm() {
   const [asunto, setAsunto] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [modal, setModal] = useState(null); // null | "success" | "error"
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
 
   const handleCancel = () => {
     setAsunto("");
     setMensaje("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simula envío: éxito si hay asunto y mensaje, error si están vacíos
-    if (asunto.trim() && mensaje.trim()) {
-      setModal("success");
-    } else {
+    if (isSending) return;
+
+    if (!asunto.trim() || !mensaje.trim()) {
+      setErrorMessage("Completá los campos Asunto y Mensaje antes de enviar.");
       setModal("error");
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      await createTicket({ subject: asunto, message: mensaje });
+      setAsunto("");
+      setMensaje("");
+      setModal("success");
+    } catch (err) {
+      // Se conserva lo que escribió el profesional para que pueda reintentar.
+      setErrorMessage(getSupportErrorMessage(err));
+      setModal("error");
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -160,9 +178,10 @@ function ContactForm() {
             </button>
             <button
               type="submit"
-              className="rounded-[6px] bg-[#F78736] px-4 py-2.5 text-xs font-medium text-white hover:bg-[#e06d00] transition-colors"
+              disabled={isSending}
+              className="rounded-[6px] bg-[#F78736] px-4 py-2.5 text-xs font-medium text-white hover:bg-[#e06d00] transition-colors disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Enviar consulta
+              {isSending ? "Enviando..." : "Enviar consulta"}
             </button>
           </div>
         </form>
@@ -190,9 +209,7 @@ function ContactForm() {
               <>
                 <ExclamationCircleIcon className="h-12 w-12 text-red-500" />
                 <p className="text-base font-semibold text-white">No pudimos enviar tu consulta</p>
-                <p className="text-sm text-[#A8A8AA]">
-                  Completá los campos Asunto y Mensaje antes de enviar.
-                </p>
+                <p className="text-sm text-[#A8A8AA]">{errorMessage}</p>
               </>
             )}
             <button

@@ -1,96 +1,79 @@
 import { useState, useEffect, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { moderationService } from "../services/moderationService";
-import { MODERATION_STATES } from "../data/mockModerationData";
+import { mapModerationItem, getModerationErrorMessage } from "../utils/moderationMappers";
+import { moderationKeys } from "../constants/moderation.queryKeys";
 
-/**
- * useModerationPanel — Hook reutilizable por cada panel de moderación.
- *
- * Encapsula: carga, error, búsqueda por ID y acciones de estado
- * (activar, desactivar, eliminar) de forma local (sin backend todavía).
- *
- * @param {"solicitudes"|"ofertas"|"calificaciones"|"turnos"} panel
- */
+export const PAGE_SIZE = 10;
+const SEARCH_DEBOUNCE_MS = 400;
+
 export function useModerationPanel(panel) {
-  const [items, setItems] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const fetchItems = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      let data = [];
-      switch (panel) {
-        case "solicitudes":
-          data = await moderationService.getSolicitudes();
-          break;
-        case "ofertas":
-          data = await moderationService.getOfertas();
-          break;
-        case "calificaciones":
-          data = await moderationService.getCalificaciones();
-          break;
-        case "turnos":
-          data = await moderationService.getTurnos();
-          break;
-        default:
-          data = [];
-      }
-      setItems(data);
-    } catch (err) {
-      setError(err?.message || "No se pudieron cargar los datos.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [panel]);
+  const queryClient = useQueryClient();
+  const [searchQuery, setSearchQueryState] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
-    fetchItems();
-  }, [fetchItems]);
+    const timer = setTimeout(() => setAppliedSearch(searchQuery), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-  // Filtrado dinámico por ID (número de orden)
-  const filteredItems = searchQuery.trim()
-    ? items.filter((item) =>
-        item.id.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : items;
+  const queryParams = { search: appliedSearch, page, limit: PAGE_SIZE };
 
-  // ── Acciones de estado (CA05) ──────────────────────────────
-  const activateItem = (id) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, estado: MODERATION_STATES.ACTIVE } : item
-      )
-    );
-  };
+  const { data, isLoading, isError, error: queryError, refetch } = useQuery({
+    queryKey: moderationKeys.list(panel, queryParams),
+    queryFn: () => moderationService.list(panel, queryParams),
+    staleTime: 1000 * 60 * 5,
+  });
 
-  const disableItem = (id) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, estado: MODERATION_STATES.DISABLED } : item
-      )
-    );
-  };
+  const items = data?.items?.map(mapModerationItem) || [];
+  const totalCount = data?.meta?.totalCount || 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const error = isError ? getModerationErrorMessage(queryError, "No se pudieron cargar los datos.") : null;
 
-  const deleteItem = (id) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, estado: MODERATION_STATES.DELETED } : item
-      )
-    );
-  };
+  const setSearchQuery = useCallback((query) => {
+    setSearchQueryState(query);
+    setPage(1);
+  }, []);
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }) => moderationService.updateStatus(panel, id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: moderationKeys.lists() });
+    }
+  });
+
+  const activateItem = useCallback(
+    (id) => statusMutation.mutate({ id, status: "active" }),
+    [statusMutation]
+  );
+  
+  const disableItem = useCallback(
+    (id) => statusMutation.mutate({ id, status: "disabled" }),
+    [statusMutation]
+  );
+  
+  const deleteItem = useCallback(
+    (id) => statusMutation.mutate({ id, status: "deleted" }),
+    [statusMutation]
+  );
+
+  const actionError = statusMutation.error ? getModerationErrorMessage(statusMutation.error, "No se pudo actualizar el elemento.") : null;
 
   return {
     items,
-    filteredItems,
-    isLoading,
+    totalCount,
+    page,
+    totalPages,
+    setPage,
+    isLoading: isLoading || statusMutation.isPending,
     error,
+    actionError,
     searchQuery,
     setSearchQuery,
     activateItem,
     disableItem,
     deleteItem,
-    refetch: fetchItems,
+    refetch,
   };
 }

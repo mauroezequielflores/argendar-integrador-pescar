@@ -1,89 +1,93 @@
-import { useState, useMemo, useCallback } from "react";
-import { mockInquiries } from "../data/mockReportsData";
-import { INQUIRY_STATES } from "../constants/reports.constants";
+import { useState, useEffect, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchInquiries, fetchInquiry, replyInquiry } from "../services/reportsService";
+import { mapInquiry, getReportsErrorMessage } from "../utils/reportsMappers";
+import { reportsKeys } from "../constants/reports.queryKeys";
 
-/**
- * useReportsData — Hook para manejar el listado, filtrado, detalle y respuesta a consultas de usuarios.
- */
+export const PAGE_SIZE = 10;
+const SEARCH_DEBOUNCE_MS = 400;
+
 export function useReportsData() {
-  const [inquiries, setInquiries] = useState(mockInquiries);
-  const [searchTerm, setSearchTerm] = useState("");
+  const queryClient = useQueryClient();
+  const [searchTerm, setSearchTermState] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [actionError, setActionError] = useState(null);
 
-  // Filtrado dinámico por nombre de usuario, asunto o ID (CA02)
-  const filteredInquiries = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return inquiries;
-    return inquiries.filter(
-      (inq) =>
-        (inq.usuario && inq.usuario.toLowerCase().includes(term)) ||
-        (inq.asunto && inq.asunto.toLowerCase().includes(term)) ||
-        (inq.id && inq.id.toLowerCase().includes(term)) ||
-        (inq.rol && inq.rol.toLowerCase().includes(term))
-    );
-  }, [inquiries, searchTerm]);
+  useEffect(() => {
+    const timer = setTimeout(() => setAppliedSearch(searchTerm), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-  // Enviar respuesta a una consulta (CA04)
-  const handleSendReply = useCallback((inquiryId, replyData) => {
-    const now = new Date();
-    const formattedDate = `${String(now.getDate()).padStart(2, "0")}/${String(
-      now.getMonth() + 1
-    ).padStart(2, "0")}/${now.getFullYear()} ${String(
-      now.getHours()
-    ).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")} PM`;
+  const queryParams = { search: appliedSearch, page, limit: PAGE_SIZE };
 
-    setInquiries((prev) =>
-      prev.map((inq) => {
-        if (inq.id === inquiryId) {
-          return {
-            ...inq,
-            estado: INQUIRY_STATES.ANSWERED,
-            respuesta: replyData.mensaje,
-            asuntoRespuesta: replyData.asunto,
-            fechaRespuesta: formattedDate,
-          };
-        }
-        return inq;
-      })
-    );
+  const { data, isLoading, isError, error: queryError, refetch } = useQuery({
+    queryKey: reportsKeys.list(queryParams),
+    queryFn: () => fetchInquiries(queryParams),
+    staleTime: 1000 * 60 * 5,
+  });
 
-    // Actualizar también la consulta seleccionada si está abierta
-    setSelectedInquiry((prev) => {
-      if (prev && prev.id === inquiryId) {
-        return {
-          ...prev,
-          estado: INQUIRY_STATES.ANSWERED,
-          respuesta: replyData.mensaje,
-          asuntoRespuesta: replyData.asunto,
-          fechaRespuesta: formattedDate,
-        };
-      }
-      return prev;
-    });
+  const inquiries = data?.items?.map(mapInquiry) || [];
+  const totalCount = data?.meta?.totalCount || 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const error = isError ? getReportsErrorMessage(queryError, "No se pudieron cargar las consultas.") : null;
+
+  const setSearchTerm = useCallback((term) => {
+    setSearchTermState(term);
+    setPage(1);
   }, []);
 
-  // Recarga / Reintento
-  const refetch = useCallback(() => {
-    setIsLoading(true);
-    setError(null);
-    setTimeout(() => {
-      setInquiries([...mockInquiries]);
-      setIsLoading(false);
-    }, 300);
+  const openInquiry = useCallback(async (inquiry) => {
+    setActionError(null);
+    try {
+      const detail = await queryClient.fetchQuery({
+        queryKey: reportsKeys.detail(inquiry.id),
+        queryFn: () => fetchInquiry(inquiry.id),
+        staleTime: 1000 * 60 * 5,
+      });
+      setSelectedInquiry(mapInquiry(detail));
+    } catch (err) {
+      setActionError(getReportsErrorMessage(err, "No se pudo abrir la consulta."));
+    }
+  }, [queryClient]);
+
+  const closeInquiry = useCallback(() => {
+    setSelectedInquiry(null);
+    setActionError(null);
   }, []);
+
+  const replyMutation = useMutation({
+    mutationFn: ({ id, data }) => replyInquiry(id, data),
+    onSuccess: (detail) => {
+      setSelectedInquiry(mapInquiry(detail));
+      queryClient.invalidateQueries({ queryKey: reportsKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: reportsKeys.detail(detail.id) });
+    }
+  });
+
+  const handleSendReply = useCallback(async (inquiryId, replyData) => {
+    try {
+      await replyMutation.mutateAsync({ id: inquiryId, data: { subject: replyData.asunto, message: replyData.mensaje } });
+    } catch (err) {
+      throw new Error(getReportsErrorMessage(err, "No se pudo enviar la respuesta."), { cause: err });
+    }
+  }, [replyMutation]);
 
   return {
     inquiries,
-    filteredInquiries,
+    totalCount,
+    page,
+    totalPages,
+    setPage,
     searchTerm,
     setSearchTerm,
     selectedInquiry,
-    setSelectedInquiry,
+    openInquiry,
+    closeInquiry,
     handleSendReply,
-    isLoading,
-    error,
+    isLoading: isLoading || replyMutation.isPending,
+    error: error || actionError,
     refetch,
   };
 }

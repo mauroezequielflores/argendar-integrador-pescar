@@ -1,0 +1,252 @@
+### Requests de prueba — Administrador (extensión "REST Client" de VS Code)
+###
+### Variables: completar loginEmail y loginPassword SOLO en tu copia local y pegar el access_token en adminToken.
+### Para probar el 403 usá el token de un cliente o profesional; para el resto, el de un administrador.
+### NUNCA commitear credenciales ni tokens reales.
+
+@baseUrl = http://localhost:3000/api/v1
+@loginEmail =
+@loginPassword =
+@adminToken = PEGAR_TOKEN_AQUI
+
+### ── LOGIN (para obtener el token) ─────────────────────────
+### Respuesta: copiar session.access_token en adminToken
+
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{loginEmail}}",
+  "password": "{{loginPassword}}"
+}
+
+### ── DASHBOARD ─────────────────────────────────────────────
+
+### Métricas (por defecto all_time)
+GET {{baseUrl}}/admin/dashboard/metrics
+Authorization: Bearer {{adminToken}}
+
+### Métricas de los últimos 7 días
+GET {{baseUrl}}/admin/dashboard/metrics?period=7days
+Authorization: Bearer {{adminToken}}
+
+### Métricas de los últimos 30 días
+GET {{baseUrl}}/admin/dashboard/metrics?period=30days
+Authorization: Bearer {{adminToken}}
+
+### Error 400: period inválido
+GET {{baseUrl}}/admin/dashboard/metrics?period=ayer
+Authorization: Bearer {{adminToken}}
+
+### Gráfico de actividad (30 días por defecto)
+GET {{baseUrl}}/admin/dashboard/activity-chart
+Authorization: Bearer {{adminToken}}
+
+### Gráfico de actividad (7 días)
+GET {{baseUrl}}/admin/dashboard/activity-chart?days=7
+Authorization: Bearer {{adminToken}}
+
+### Error 400: days fuera de rango (máximo 90)
+GET {{baseUrl}}/admin/dashboard/activity-chart?days=500
+Authorization: Bearer {{adminToken}}
+
+### Actividad reciente (10 por defecto)
+GET {{baseUrl}}/admin/dashboard/recent-activity
+Authorization: Bearer {{adminToken}}
+
+### Actividad reciente (25)
+GET {{baseUrl}}/admin/dashboard/recent-activity?limit=25
+Authorization: Bearer {{adminToken}}
+
+### ── USUARIOS ──────────────────────────────────────────────
+### Para PATCH y DELETE reemplazar USER_ID por el id de un cliente o profesional (los administradores no se pueden modificar).
+
+### Profesionales (página 1, 10 por página)
+GET {{baseUrl}}/admin/users?role=professional
+Authorization: Bearer {{adminToken}}
+
+### Clientes, página 2
+GET {{baseUrl}}/admin/users?role=client&page=2&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Administradores
+GET {{baseUrl}}/admin/users?role=administrator
+Authorization: Bearer {{adminToken}}
+
+### Búsqueda por nombre y/o apellido
+GET {{baseUrl}}/admin/users?role=client&search=elena
+Authorization: Bearer {{adminToken}}
+
+### Búsqueda por ID exacto (UUID completo)
+GET {{baseUrl}}/admin/users?role=client&search=USER_ID
+Authorization: Bearer {{adminToken}}
+
+### Error 400: falta role
+GET {{baseUrl}}/admin/users
+Authorization: Bearer {{adminToken}}
+
+### Bloquear usuario
+PATCH {{baseUrl}}/admin/users/USER_ID/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{ "status": "disabled" }
+
+### Desbloquear usuario
+PATCH {{baseUrl}}/admin/users/USER_ID/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{ "status": "active" }
+
+### Error 400: status inválido
+PATCH {{baseUrl}}/admin/users/USER_ID/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{ "status": "deleted" }
+
+### Eliminar usuario (borrado lógico)
+DELETE {{baseUrl}}/admin/users/USER_ID
+Authorization: Bearer {{adminToken}}
+
+### Error 409: intentar modificar a un administrador (usar el id de un admin)
+DELETE {{baseUrl}}/admin/users/ID_DE_UN_ADMIN
+Authorization: Bearer {{adminToken}}
+
+### ── TRANSACCIONES ─────────────────────────────────────────
+
+### Listado (10 por página)
+GET {{baseUrl}}/admin/transactions
+Authorization: Bearer {{adminToken}}
+
+### Búsqueda por número de transacción (también acepta TRX-000003 o 000003)
+GET {{baseUrl}}/admin/transactions?search=3
+Authorization: Bearer {{adminToken}}
+
+### Búsqueda con prefijo TRX
+GET {{baseUrl}}/admin/transactions?search=TRX-000003
+Authorization: Bearer {{adminToken}}
+
+### Paginación
+GET {{baseUrl}}/admin/transactions?page=2&limit=2
+Authorization: Bearer {{adminToken}}
+
+### Error 400: limit fuera de rango (máximo 100)
+GET {{baseUrl}}/admin/transactions?limit=500
+Authorization: Bearer {{adminToken}}
+
+### ── MODERACIÓN ────────────────────────────────────────────
+### entity: requests | offers | reviews | appointments
+### Para PATCH reemplazar ITEM_ID por el id de un elemento (sale del listado).
+
+### Solicitudes (10 por página)
+GET {{baseUrl}}/admin/moderation/requests
+Authorization: Bearer {{adminToken}}
+
+### Ofertas
+GET {{baseUrl}}/admin/moderation/offers
+Authorization: Bearer {{adminToken}}
+
+### Calificaciones
+GET {{baseUrl}}/admin/moderation/reviews
+Authorization: Bearer {{adminToken}}
+
+### Turnos
+GET {{baseUrl}}/admin/moderation/appointments
+Authorization: Bearer {{adminToken}}
+
+### Búsqueda por número de orden (también acepta ORD-00003 o 00003)
+GET {{baseUrl}}/admin/moderation/requests?search=3
+Authorization: Bearer {{adminToken}}
+
+### Paginación
+GET {{baseUrl}}/admin/moderation/requests?page=2&limit=5
+Authorization: Bearer {{adminToken}}
+
+### Error 400: entidad inválida
+GET {{baseUrl}}/admin/moderation/users
+Authorization: Bearer {{adminToken}}
+
+### Desactivar un elemento
+PATCH {{baseUrl}}/admin/moderation/reviews/ITEM_ID
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{ "moderationStatus": "disabled" }
+
+### Reactivar un elemento
+PATCH {{baseUrl}}/admin/moderation/reviews/ITEM_ID
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{ "moderationStatus": "active" }
+
+### Error 400: estado inválido
+PATCH {{baseUrl}}/admin/moderation/reviews/ITEM_ID
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{ "moderationStatus": "hidden" }
+
+### ── BANDEJA DE CONSULTAS ──────────────────────────────────
+### Para GET/POST por id reemplazar INQUIRY_ID por el id de una consulta (sale del listado).
+
+### Listado (10 por página)
+GET {{baseUrl}}/admin/inquiries
+Authorization: Bearer {{adminToken}}
+
+### Solo pendientes
+GET {{baseUrl}}/admin/inquiries?status=open
+Authorization: Bearer {{adminToken}}
+
+### Búsqueda por número (también acepta CON-000002) o por texto del asunto
+GET {{baseUrl}}/admin/inquiries?search=foto
+Authorization: Bearer {{adminToken}}
+
+### Detalle (incluye email del usuario)
+GET {{baseUrl}}/admin/inquiries/INQUIRY_ID
+Authorization: Bearer {{adminToken}}
+
+### Responder una consulta (crea una notificación para el usuario)
+POST {{baseUrl}}/admin/inquiries/INQUIRY_ID/reply
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "subject": "Re: tu consulta",
+  "message": "Hola, gracias por escribirnos. Te contamos cómo resolverlo..."
+}
+
+### Error 400: respuesta sin mensaje
+POST {{baseUrl}}/admin/inquiries/INQUIRY_ID/reply
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{ "subject": "Re: tu consulta", "message": "   " }
+
+### ── SOPORTE (token de un CLIENTE o PROFESIONAL) ───────────
+
+### Enviar una consulta desde Ayuda
+POST {{baseUrl}}/support/tickets
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "subject": "No puedo subir mi foto",
+  "message": "Cuando intento subir la foto de perfil me da un error."
+}
+
+### Error 403: con token de administrador no se pueden enviar consultas
+POST {{baseUrl}}/support/tickets
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{ "subject": "Prueba", "message": "Prueba" }
+
+### Error 401: sin token
+GET {{baseUrl}}/admin/dashboard/metrics
+
+### Error 403: usar el token de un cliente o profesional en adminToken
+GET {{baseUrl}}/admin/dashboard/metrics
+Authorization: Bearer {{adminToken}}

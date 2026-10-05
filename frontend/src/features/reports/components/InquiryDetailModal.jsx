@@ -20,35 +20,47 @@ export default function InquiryDetailModal({
   const [replySubject, setReplySubject] = useState("");
   const [replyMessage, setReplyMessage] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState(null);
 
-  // Inicializar campos cuando se abre una consulta
+  // Inicializar campos solo cuando se abre OTRA consulta (no al actualizarse la misma tras responder,
+  // para que el aviso de éxito no se borre).
   useEffect(() => {
     if (inquiry) {
-      setReplySubject(`Re: ${inquiry.asunto}`);
+      setReplySubject(inquiry.asuntoRespuesta || `Re: ${inquiry.asunto}`);
       setReplyMessage(inquiry.respuesta || "");
       setIsSuccess(false);
+      setSendError(null);
     }
-  }, [inquiry]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inquiry?.id]);
 
   if (!inquiry) return null;
 
   const isAnswered = inquiry.estado === INQUIRY_STATES.ANSWERED;
   const isSubmitDisabled = !replyMessage.trim();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isSubmitDisabled) return;
+    if (isSubmitDisabled || isSending) return;
 
-    onSendReply(inquiry.id, {
-      asunto: replySubject.trim(),
-      mensaje: replyMessage.trim(),
-    });
-
-    setIsSuccess(true);
-    setTimeout(() => {
-      setIsSuccess(false);
-      onClose();
-    }, 1800);
+    setIsSending(true);
+    setSendError(null);
+    try {
+      await onSendReply(inquiry.id, {
+        asunto: replySubject.trim(),
+        mensaje: replyMessage.trim(),
+      });
+      setIsSuccess(true);
+      setTimeout(() => {
+        setIsSuccess(false);
+        onClose();
+      }, 1800);
+    } catch (err) {
+      setSendError(err.message);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -112,6 +124,16 @@ export default function InquiryDetailModal({
           </div>
         )}
 
+        {/* ── Error al enviar la respuesta ── */}
+        {sendError && (
+          <div
+            role="alert"
+            className="rounded-[6px] border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-400"
+          >
+            {sendError}
+          </div>
+        )}
+
         {/* ── Formulario de Respuesta (CA04) ── */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
           <div className="border-t border-[#323232] pt-4">
@@ -169,10 +191,10 @@ export default function InquiryDetailModal({
             {!isAnswered && (
               <button
                 type="submit"
-                disabled={isSubmitDisabled}
+                disabled={isSubmitDisabled || isSending}
                 className="rounded-[6px] bg-[#F78736] px-5 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#e0752b] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
-                Enviar respuesta
+                {isSending ? "Enviando..." : "Enviar respuesta"}
               </button>
             )}
           </div>

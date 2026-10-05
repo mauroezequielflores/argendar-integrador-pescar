@@ -1,5 +1,6 @@
 import { MagnifyingGlassIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import ModerationCard from "./ModerationCard";
+import Pagination from "../../../components/ui/Pagination";
 import { useModerationPanel } from "../hooks/useModerationPanel";
 
 /**
@@ -50,10 +51,14 @@ const PANEL_LABEL = {
  */
 export default function ModerationPanel({ panelKey }) {
   const {
-    filteredItems,
     items,
+    totalCount,
+    page,
+    totalPages,
+    setPage,
     isLoading,
     error,
+    actionError,
     searchQuery,
     setSearchQuery,
     activateItem,
@@ -85,7 +90,7 @@ export default function ModerationPanel({ panelKey }) {
 
       {/* Contador */}
       <span className="shrink-0 text-xs text-[#A8A8AA]">
-        Mostrando {filteredItems.length} de {items.length} {label}
+        Mostrando {isLoading ? "…" : items.length} de {isLoading ? "…" : totalCount} {label}
       </span>
     </div>
   );
@@ -126,9 +131,19 @@ export default function ModerationPanel({ panelKey }) {
     <div className="space-y-4">
       {searchBar}
 
+      {/* Error de una acción (activar / desactivar / eliminar) */}
+      {actionError && (
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-3 rounded-[6px] border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-400"
+        >
+          <span>{actionError}</span>
+        </div>
+      )}
+
       {/* Área de tarjetas o empty state */}
       <div className="min-h-[380px] rounded-[12px] bg-[#202020]">
-        {filteredItems.length === 0 ? (
+        {items.length === 0 ? (
           /* ── Empty State (CA06) ──────────────────────────────── */
           <div className="flex h-full min-h-[340px] flex-col items-center justify-center gap-3 text-center">
             {/* Ícono contextualizado */}
@@ -144,7 +159,7 @@ export default function ModerationPanel({ panelKey }) {
 
             <p className="max-w-xs text-xs text-[#A8A8AA] leading-relaxed">
               {searchQuery.trim()
-                ? `No se encontraron ${label} con el ID "${searchQuery}".`
+                ? `No se encontraron ${label} con el número "${searchQuery}".`
                 : emptyConfig.description}
             </p>
 
@@ -162,7 +177,7 @@ export default function ModerationPanel({ panelKey }) {
         ) : (
           /* ── Lista de tarjetas (CA04) ────────────────────────── */
           <div className="flex flex-col gap-3">
-            {filteredItems.map((item) => (
+            {items.map((item) => (
               <ModerationCard
                 key={item.id}
                 item={item}
@@ -174,6 +189,8 @@ export default function ModerationPanel({ panelKey }) {
           </div>
         )}
       </div>
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 }

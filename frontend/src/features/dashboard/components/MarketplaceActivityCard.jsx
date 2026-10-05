@@ -9,7 +9,31 @@
  * @param {Array<{x: number|string, y: number}>} [props.data] - Puntos de datos para el gráfico
  * @param {boolean} [props.isLoading=false] - Estado de carga
  */
+const TICK_COUNT = 4;
+const NICE_STEPS = [1, 2, 5];
+
+/** Eje Y adaptado al máximo real: 4 tramos con un paso "redondo" (1, 2, 5, 10, 20, 50…). */
+function getYAxis(data) {
+  const maxValue = Math.max(...data.map((point) => point.y), 0);
+  let magnitude = 1;
+  for (;;) {
+    const step = NICE_STEPS.map((base) => base * magnitude).find(
+      (candidate) => candidate * TICK_COUNT >= maxValue,
+    );
+    if (step) {
+      const maxY = step * TICK_COUNT;
+      return {
+        maxY,
+        ticks: Array.from({ length: TICK_COUNT + 1 }, (_, i) => maxY - i * step),
+      };
+    }
+    magnitude *= 10;
+  }
+}
+
 export default function MarketplaceActivityCard({ data = [], isLoading = false }) {
+  const { maxY, ticks } = getYAxis(data);
+
   return (
     <div className="flex flex-col gap-1 rounded-[6px] border border-[#323232] bg-[#292929] p-5 sm:p-6">
       {/* Encabezado */}
@@ -26,9 +50,9 @@ export default function MarketplaceActivityCard({ data = [], isLoading = false }
       <div className="mt-2 w-full">
         <LineChart
           data={data}
-          yAxisTicks={[800, 600, 400, 200, 0]}
+          yAxisTicks={ticks}
           xAxisTicks={[0, 5, 10, 15, 20, 25, 30]}
-          maxY={850}
+          maxY={maxY}
           minY={0}
         />
       </div>

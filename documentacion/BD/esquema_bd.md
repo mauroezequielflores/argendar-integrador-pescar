@@ -43,6 +43,7 @@ Ubicaciones y zonas de cobertura o agrupación geográfica.
 #### `requests`
 Solicitudes de trabajo publicadas por los clientes.
 - **Campos clave:** `id`, `client_id` (FK a `profiles`), `category_id` (FK a `service_categories`), `status` (enum: `open`, `offered`, `scheduled`, `completed`, `cancelled`).
+- **Moderación:** `moderation_status` (`active`, `disabled`, `deleted`), `order_number` (autonumérico).
 - **Detalles del trabajo:** `title`, `description`, `date_preference`, `estimated_budget`, `is_emergency`, `has_materials`, `installation_age`, `time_preference`.
 - **Ubicación:** `address`, `neighborhood`, `city`, `latitude`, `longitude`.
 
@@ -53,6 +54,7 @@ Imágenes adjuntas a una solicitud de trabajo para dar más contexto.
 #### `offers`
 Propuestas económicas o presupuestos enviados por los profesionales a una solicitud.
 - **Campos clave:** `id`, `request_id`, `professional_id`.
+- **Moderación:** `moderation_status` (`active`, `disabled`, `deleted`), `order_number` (autonumérico).
 - **Condiciones:** `amount`, `proposed_deposit`, `proposed_date`, `proposed_time`, `message`.
 - **Estado:** `status` (enum: `pending`, `accepted`, `rejected`, `withdrawn`).
 
@@ -61,24 +63,33 @@ Propuestas económicas o presupuestos enviados por los profesionales a una solic
 #### `appointments`
 Trabajos o turnos confirmados luego de que un cliente acepta una oferta.
 - **Campos clave:** `id`, `offer_id` (único, FK a `offers`), `scheduled_at`, `status` (enum: `confirmed`, `rescheduled`, `completed`, `cancelled`).
+- **Moderación:** `moderation_status` (`active`, `disabled`, `deleted`), `order_number` (autonumérico).
 - **Otros:** `notes`.
 
 #### `payments`
 Registro y seguimiento de pagos para los turnos confirmados.
 - **Campos clave:** `id`, `appointment_id` (único, FK a `appointments`).
+- **Transacción:** `transaction_number` (autonumérico).
 - **Monto:** `total_amount`, `deposit_amount`, `remaining_amount` (columna calculada).
-- **Transacción:** `method` (enum: `cash`, `mercadopago`, `transfer`, `credit_card`), `status` (enum: `pending`, `partial`, `paid`, `refunded`), `external_operation_id`.
+- **Detalle de operación:** `method` (enum: `cash`, `mercadopago`, `transfer`, `credit_card`), `status` (enum: `pending`, `partial`, `paid`, `refunded`), `external_operation_id`.
 
 ### 5. Reseñas y Notificaciones
 
 #### `reviews`
 Calificaciones y comentarios dejados de un usuario a otro (generalmente de cliente a profesional tras finalizar un trabajo).
 - **Campos clave:** `reviewer_id`, `reviewee_id`, `rating` (1 al 5), `comment`.
+- **Moderación:** `moderation_status` (`active`, `disabled`, `deleted`), `order_number` (autonumérico).
 
 #### `notifications`
 Sistema de alertas in-app para los usuarios.
 - **Campos clave:** `user_id`, `type`, `title`, `description`, `is_read`.
 - **Relaciones dinámicas:** `related_entity_id`, `related_entity_type`, `metadata` (JSONB).
+
+#### `support_tickets`
+Consultas o tickets de soporte generados por los usuarios hacia el administrador.
+- **Campos clave:** `id`, `ticket_number` (autonumérico), `user_id`, `status` (enum: `open`, `answered`).
+- **Detalles:** `subject`, `message`.
+- **Respuesta del administrador:** `reply_subject`, `reply_message`, `replied_by`, `replied_at`.
 
 ### 6. Funciones de Base de Datos (RPC)
 

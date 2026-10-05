@@ -96,3 +96,5 @@ docs/
 context/
 
 mcp.json
+# --- Claude Code (config local privada) ---
+.claude/
