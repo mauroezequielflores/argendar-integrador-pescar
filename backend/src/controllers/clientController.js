@@ -46,3 +46,12 @@ export const updateSettings = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getMarketplaceProfessionals = async (req, res, next) => {
+  try {
+    const data = await clientService.getMarketplaceProfessionals(req.query);
+    res.status(200).json(data);
+  } catch (error) {
+    next(error);
+  }
+};

@@ -15,14 +15,13 @@ import Header from "./Header";
 import Sidebar from "./Sidebar";
 import ChatbotWidget from "../../components/ui/ChatbotWidget";
 import LogoutModal from "../../components/ui/LogoutModal";
-import { mockClientHeaderNotifications } from "../../features/notifications/data/mockClientNotifications";
 import { api } from "../../libs/axios";
 
 export default function ClientLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // Desktop collapse state
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [headerNotifications, setHeaderNotifications] = useState(mockClientHeaderNotifications);
+  const [headerNotifications, setHeaderNotifications] = useState([]);
   const [userProfile, setUserProfile] = useState({ firstName: "", lastName: "", avatarUrl: null });
   const { logout } = useAuth();
   const navigate = useNavigate();

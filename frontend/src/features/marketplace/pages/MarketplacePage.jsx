@@ -18,10 +18,10 @@ import MarketplaceFilterSidebar from "../components/MarketplaceFilterSidebar";
 import MarketplaceActiveChips from "../components/MarketplaceActiveChips";
 import ProfessionalCard from "../components/ProfessionalCard";
 import SolicitudCard from "../components/SolicitudCard";
+import { useProfessionalsMarketplace } from "../hooks/useMarketplaceQueries";
 
 // Mock Data (Listas vacías por defecto según diseño)
 import {
-  mockProfessionals,
   mockSolicitudes,
   CATEGORIAS_MARKETPLACE,
   UBICACION_CLIENTE_DEFAULT,
@@ -118,6 +118,12 @@ export default function MarketplacePage() {
   // ─── Ordenamiento ──────────────────────────────────────────────────────────
   const [sortOrder, setSortOrder] = useState("newest");
 
+  // ─── Query a base de datos ────────────────────────────────────────────────
+  const { 
+    data: dbProfessionals = [], 
+    isLoading: isLoadingProfessionals 
+  } = useProfessionalsMarketplace({ search: appliedProfSearch });
+
   // ─── Handlers de Selección de Categorías ──────────────────────────────────
   const handleProfCategoryToggle = (cat) => {
     setProfCategories((prev) =>
@@ -185,21 +191,14 @@ export default function MarketplacePage() {
 
   // ─── Filtrado de Resultados ────────────────────────────────────────────────
   const filteredProfessionals = useMemo(() => {
-    return mockProfessionals.filter((p) => {
-      const search = appliedProfSearch.trim().toLowerCase();
-      const matchesSearch =
-        search === "" ||
-        p.nombre.toLowerCase().includes(search) ||
-        p.profesion.toLowerCase().includes(search) ||
-        p.descripcion.toLowerCase().includes(search);
-
+    return dbProfessionals.filter((p) => {
       const matchesCategory =
         appliedProfCategories.length === 0 ||
         appliedProfCategories.includes(p.categoria);
 
-      return matchesSearch && matchesCategory;
+      return matchesCategory;
     });
-  }, [appliedProfSearch, appliedProfCategories]);
+  }, [dbProfessionals, appliedProfCategories]);
 
   const filteredSolicitudes = useMemo(() => {
     return mockSolicitudes.filter((s) => {
@@ -367,9 +366,14 @@ export default function MarketplacePage() {
               : "Solicitudes nuevas"}
           </h2>
 
-          {/* ── Contenedor Vacío (Empty State) según la imagen (CA06) ──────── */}
+          {/* ── Contenedor Vacío (Empty State) / Loading según la imagen (CA06) ──────── */}
           {activeTab === "profesionales" ? (
-            filteredProfessionals.length === 0 ? (
+            isLoadingProfessionals ? (
+              <div className="rounded-[6px] bg-[#292929] min-h-[460px] flex flex-col items-center justify-center p-8 text-center border border-transparent">
+                <div className="w-10 h-10 border-4 border-[#F78736] border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p className="text-sm font-semibold text-white">Cargando profesionales...</p>
+              </div>
+            ) : filteredProfessionals.length === 0 ? (
               <div className="rounded-[6px] bg-[#292929] min-h-[460px] flex flex-col items-center justify-center p-8 text-center border border-transparent">
                 <div className="rounded-full bg-[#323232] p-3.5 mb-3 flex items-center justify-center">
                   <BuildingStorefrontIcon className="h-7 w-7 text-[#A8A8AA]" />

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getProfile, updateProfile, getSettings, updateSettings, getProfessionalPublicProfile } from '../controllers/clientController.js';
+import { getProfile, updateProfile, getSettings, updateSettings, getProfessionalPublicProfile, getMarketplaceProfessionals } from '../controllers/clientController.js';
 import { authMiddleware } from '../middlewares/authMiddleware.js';
 import { requireRole } from '../middlewares/roleMiddleware.js';
 import { validateRequest } from '../middlewares/validateRequest.js';
@@ -11,6 +11,7 @@ router.use(authMiddleware);
 router.use(requireRole('client'));
 
 router.get('/professional/:id/profile', getProfessionalPublicProfile);
+router.get('/marketplace/professionals', getMarketplaceProfessionals);
 
 router.get('/profile', getProfile);
 router.patch('/profile', validateRequest(updateClientProfileSchema), updateProfile);

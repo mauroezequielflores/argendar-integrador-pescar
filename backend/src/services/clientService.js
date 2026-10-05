@@ -32,11 +32,14 @@ export const getClientProfile = async (userId, userEmail) => {
     ? (reviewsData.reduce((acc, rev) => acc + rev.rating, 0) / reviewsData.length).toFixed(1)
     : 0;
 
+  const { data: userData } = await supabase.auth.admin.getUserById(userId);
+  const clientEmail = userData?.user?.email;
+
   return {
     id: user.id,
     firstName: user.first_name,
     lastName: user.last_name,
-    email: userEmail,
+    email: clientEmail,
     isVerified: false,
     memberSince: user.created_at,
     location: user.location,
@@ -190,4 +193,55 @@ export const updateClientSettings = async (userId, data) => {
     emailAlerts: updated.email_alerts,
     phoneAlerts: updated.phone_alerts
   };
+};
+
+export const getMarketplaceProfessionals = async (filters = {}) => {
+  let query = supabase
+    .from('profiles')
+    .select(`
+      id,
+      first_name,
+      last_name,
+      avatar_url,
+      description,
+      professional_profiles!inner (
+        hourly_rate,
+        service_area,
+        rating_avg,
+        reviews_count,
+        category:service_categories ( name )
+      )
+    `)
+    .eq('role', 'professional')
+    .eq('status', 'active');
+
+  if (filters.search) {
+    query = query.or(`first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%`);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new AppError('Error al obtener profesionales del marketplace', 500);
+  }
+
+  // Map to match frontend ProfessionalCard requirements
+  let professionals = data.map(prof => {
+    const profDetails = Array.isArray(prof.professional_profiles) ? prof.professional_profiles[0] : (prof.professional_profiles || {});
+    const catName = Array.isArray(profDetails.category) ? profDetails.category[0]?.name : (profDetails.category?.name);
+    
+    return {
+      id: prof.id,
+      nombre: `${prof.first_name || ''} ${prof.last_name || ''}`.trim(),
+      avatar_url: prof.avatar_url,
+      descripcion: prof.description,
+      categoria: catName || 'General',
+      ubicacion: profDetails.service_area,
+      calificacion: profDetails.rating_avg ? Number(profDetails.rating_avg).toFixed(1) : null,
+      resenasCount: profDetails.reviews_count || 0,
+      precioBase: profDetails.hourly_rate
+    };
+  });
+
+  return professionals;
 };

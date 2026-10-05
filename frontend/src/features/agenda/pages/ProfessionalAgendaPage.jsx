@@ -297,7 +297,7 @@ export default function ProfessionalAgendaPage() {
   });
 
   const handleFinalizarClick = () => {
-    if (selectedTurno?.pago?.estado === "PENDIENTE") {
+    if (selectedTurno?.pago?.estado === "PENDIENTE" || selectedTurno?.pago?.estado === "pending") {
       setIsDetalleOpen(false);
       setIsRechazoOpen(true);
       return;

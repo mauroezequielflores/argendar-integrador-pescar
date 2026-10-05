@@ -70,9 +70,13 @@ export const getProfessionalProfile = async (userId) => {
     });
   }
   
+  const { data: userData } = await supabase.auth.admin.getUserById(userId);
+  const userEmail = userData?.user?.email;
+
   return {
     firstName: data.first_name,
     lastName: data.last_name,
+    email: userEmail,
     title: profData.category?.name || 'PROFESIONAL',
     avatarUrl: data.avatar_url,
     coverUrl: data.cover_url,

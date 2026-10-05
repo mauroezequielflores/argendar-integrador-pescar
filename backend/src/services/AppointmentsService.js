@@ -74,7 +74,31 @@ class AppointmentsService {
       if (role === 'professional') {
         query = query.eq('offers.professional_id', userId);
       } else {
-        query = query.eq('offers.requests.client_id', userId);
+        const { data: clientRequests, error: crError } = await supabase
+          .from('requests')
+          .select('id')
+          .eq('client_id', userId);
+          
+        if (crError) throw new AppError(`Error al obtener solicitudes del cliente: ${crError.message}`, 500, 'DB_ERROR');
+        
+        const requestIds = clientRequests.map(r => r.id);
+        
+        if (requestIds.length === 0) {
+          return { data: [], total: 0, page: Number(page), limit: Number(limit) };
+        }
+
+        const { data: clientOffers, error: coError } = await supabase
+          .from('offers')
+          .select('id')
+          .in('request_id', requestIds);
+          
+        if (coError) throw new AppError(`Error al obtener ofertas del cliente: ${coError.message}`, 500, 'DB_ERROR');
+        
+        const offerIds = clientOffers.map(o => o.id);
+        if (offerIds.length === 0) {
+          return { data: [], total: 0, page: Number(page), limit: Number(limit) };
+        }
+        query = query.in('offer_id', offerIds);
       }
 
       if (tab === 'proximos') {
@@ -357,8 +381,8 @@ class AppointmentsService {
       throw new AppError('Turno no encontrado', 404, 'RECURSO_NO_ENCONTRADO');
     }
 
-    // Permitir completado si está confirmado
-    if (app.status !== APPOINTMENT_STATUS.CONFIRMED && app.status !== 'IN_PROGRESS') {
+    // Permitir completado si está confirmado o scheduled
+    if (app.status !== APPOINTMENT_STATUS.CONFIRMED && app.status !== 'IN_PROGRESS' && app.status !== 'scheduled') {
       throw new AppError('El turno no está en estado válido para finalizar', 403, 'ACCION_NO_PERMITIDA');
     }
 
@@ -373,11 +397,16 @@ class AppointmentsService {
     await supabase.from('requests').update({ status: REQUEST_STATUS.COMPLETED }).eq('id', app.offers.requests.id);
 
     // 3. Notificar
+    const isProfessional = userId === app.offers.professional_id;
+    const targetUserId = isProfessional ? app.offers.requests.client_id : app.offers.professional_id;
+    
     await supabase.from('notifications').insert({
-      user_id: app.offers.professional_id,
+      user_id: targetUserId,
       type: 'appointment_completed',
       title: 'Trabajo Finalizado',
-      description: 'El cliente ha confirmado la finalización del trabajo.',
+      description: isProfessional 
+        ? 'El profesional ha finalizado el trabajo. ¡Por favor deja una reseña!' 
+        : 'El cliente ha confirmado la finalización del trabajo.',
       related_entity_id: appointmentId,
       related_entity_type: 'appointment'
     });

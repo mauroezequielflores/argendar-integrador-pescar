@@ -9,7 +9,6 @@ import {
 
 import headerDefaultPhoto from "../../../assets/images/header-default-photo.svg";
 import profileDefaultPhoto from "../../../assets/images/profile-default-photo.svg";
-import { useAuth } from "../../../context/AuthContext";
 
 /**
  * ProfileHeader — Encabezado reutilizable de perfil (Cliente / Profesional).
@@ -27,10 +26,10 @@ export default function ProfileHeader({
   profile = {},
   editRoute,
   role,
+  isPublic = false,
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
 
   // Detectar automáticamente el rol basado en la ruta actual o en el prop
   const isClientPath = location.pathname.startsWith("/client");
@@ -56,7 +55,7 @@ export default function ProfileHeader({
       ? profile.description
       : "Hola! Bienvenidos a mi perfil.";
 
-  const email = profile.email || user?.email || "";
+  const email = profile.email || "";
 
   const memberSince = profile.memberSince
     ? typeof profile.memberSince === "string" && profile.memberSince.includes("T")
@@ -112,14 +111,16 @@ export default function ProfileHeader({
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => navigate(resolvedEditRoute)}
-            className="flex items-center gap-2 rounded-[6px] border border-[#3f3f3f] bg-transparent px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#292929] cursor-pointer self-start sm:self-auto"
-          >
-            <PencilSquareIcon className="h-4 w-4 text-white" />
-            <span>Editar perfil público</span>
-          </button>
+          {!isPublic && (
+            <button
+              type="button"
+              onClick={() => navigate(resolvedEditRoute)}
+              className="flex items-center gap-2 rounded-[6px] border border-[#3f3f3f] bg-transparent px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#292929] cursor-pointer self-start sm:self-auto"
+            >
+              <PencilSquareIcon className="h-4 w-4 text-white" />
+              <span>Editar perfil público</span>
+            </button>
+          )}
         </div>
 
         {/* Descripción tipo "Sobre mí" */}
@@ -130,7 +131,7 @@ export default function ProfileHeader({
         {/* Metadatos en una única línea horizontal con íconos */}
         <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-3 text-xs text-[#A8A8AA]">
           {/* Correo electrónico */}
-          {email && (
+          {email && !isPublic && (
             <div className="flex items-center gap-1.5">
               <EnvelopeIcon className="h-4 w-4 text-[#A8A8AA]" />
               <span>

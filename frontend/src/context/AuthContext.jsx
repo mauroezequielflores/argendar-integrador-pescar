@@ -1,12 +1,14 @@
 
 import { createContext, useContext, useState } from "react";
 import { api } from "../libs/axios"; //instancia de Axios 
+import { useQueryClient } from "@tanstack/react-query";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const queryClient = useQueryClient();
 
   const isAuthenticated = !!user;
 
@@ -58,6 +60,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('access_token');
+    queryClient.clear();
   };
 
   const value = {

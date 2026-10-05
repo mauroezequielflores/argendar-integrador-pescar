@@ -406,6 +406,7 @@ export const getNotifications = async (userId, page = 1, limit = 10) => {
     let mappedTipo = notification.tipo;
     if (notification.tipo === 'nueva_oferta') mappedTipo = 'new_offer';
     if (notification.tipo === 'appointment_reminder') mappedTipo = 'reminder';
+    if (notification.tipo === 'appointment_completed') mappedTipo = 'rating';
 
     return {
       id: notification.id,

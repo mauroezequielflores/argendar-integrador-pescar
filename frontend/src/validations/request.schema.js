@@ -3,7 +3,7 @@ import { z } from "zod";
 export const createRequestStep1Schema = z.object({
   category: z.union([z.string(), z.number()]).refine((val) => val !== "", "Debes seleccionar una categoría"),
   title: z.string().min(5, "El título debe tener al menos 5 caracteres").max(100, "El título es demasiado largo"),
-  description: z.string().max(500, "La descripción no puede superar los 500 caracteres").optional(),
+  description: z.string().max(1000, "La descripción no puede superar los 1000 caracteres").optional(),
   age: z.string().optional(),
   isEmergency: z.enum(["SI", "NO"], { required_error: "Debes indicar si es una emergencia" }),
   hasMaterials: z.enum(["SI", "NO"], { required_error: "Debes indicar si tienes los materiales" }),

@@ -16,7 +16,6 @@ import Header from "./Header";
 import Sidebar from "./Sidebar";
 import ChatbotWidget from "../../components/ui/ChatbotWidget";
 import LogoutModal from "../../components/ui/LogoutModal";
-import { mockNotificaciones } from "../../features/notifications/data/mockProfessionalNotifications";
 
 export default function ProfessionalLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -36,6 +35,13 @@ export default function ProfessionalLayout() {
       }
     };
     fetchProfile();
+
+    const handleProfileUpdate = () => {
+      fetchProfile();
+    };
+
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+    return () => window.removeEventListener('profileUpdated', handleProfileUpdate);
   }, []);
 
   const handleLogout = () => {
@@ -91,7 +97,7 @@ export default function ProfessionalLayout() {
         userInitials={profileData ? `${profileData.firstName?.charAt(0) || ""}${profileData.lastName?.charAt(0) || ""}` : "JD"}
         userName={profileData ? `${profileData.firstName} ${profileData.lastName}` : "Cargando..."}
         avatarUrl={profileData?.avatarUrl || null}
-        notifications={mockNotificaciones}
+        notifications={[]}
       />
 
       {/* ── Cuerpo Inferior (Sidebar + Contenido) ────────────────── */}

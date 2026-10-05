@@ -4,7 +4,7 @@ export const createJobRequestSchema = z.object({
   body: z.object({
     categoryId: z.coerce.number().int().positive("El ID de la categoría debe ser un número válido"),
     title: z.string().min(5, "El título debe tener al menos 5 caracteres").max(100, "El título no puede exceder los 100 caracteres"),
-    description: z.string().max(500, "La descripción no puede exceder los 500 caracteres").optional(),
+    description: z.string().max(1000, "La descripción no puede exceder los 1000 caracteres").optional(),
     datePreference: z.string().optional(),
     timePreference: z.string().optional(),
     estimatedBudget: z.coerce.number().positive("El presupuesto estimado debe ser positivo").optional(),

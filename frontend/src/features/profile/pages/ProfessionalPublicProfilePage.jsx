@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { usePublicProfessionalProfile } from "../hooks/useProfileQueries";
@@ -51,7 +51,7 @@ export default function ProfessionalPublicProfilePage() {
       </Button>
 
       <div className="flex flex-col gap-6">
-        <ProfileHeader profile={profile} role="Profesional" />
+        <ProfileHeader profile={profile} role="Profesional" isPublic={true} />
         <ProfessionalPublicProfileTab profile={profile} />
       </div>
     </div>
