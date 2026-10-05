@@ -1,9 +1,9 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCrearSolicitud } from "../hooks/useAgendaQueries";
-import { 
-  MapPinIcon, 
-  WrenchScrewdriverIcon, 
+import {
+  MapPinIcon,
+  WrenchScrewdriverIcon,
   ClipboardDocumentListIcon,
   CalendarDaysIcon,
   PhotoIcon,
@@ -45,7 +45,7 @@ export default function CreateRequestRevisionPage() {
   const handlePublish = async () => {
     if (submitLockRef.current || isPublishing) return;
     submitLockRef.current = true;
-    
+
     try {
       const toBase64 = (file) => new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -86,7 +86,7 @@ export default function CreateRequestRevisionPage() {
       };
 
       await publicarSolicitud(payload);
-      
+
       setAlertConfig({
         isOpen: true,
         type: "success",
@@ -119,16 +119,16 @@ export default function CreateRequestRevisionPage() {
         <Breadcrumbs items={[{ label: "Solicitud" }, { label: "Detalles" }, { label: "Ubicación" }, { label: "Revisión" }]} />
       </div>
 
-      <div className="bg-[#292929] rounded-[16px] p-8 md:p-10 border border-[#3f3f3f]">
-        {/* Stepper */}
-        <div className="mb-10">
+      {/* Stepper */}
+      <div className="bg-[#292929] rounded-[12px] p-8 pt-40 md:p-10 border border-[#3f3f3f]">
+        <div className="mb-10 pb-8 pt-8">
           <Stepper steps={["DETALLE", "UBICACIÓN", "REVISIÓN"]} currentStep={3} />
         </div>
 
         {/* Page Header */}
         <div className="mb-8 border-b border-[#3f3f3f] pb-6 flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Revisá tu Solicitud</h1>
+            <h1 className="text-2xl font-bold mb-2">Revisá tu Solicitud</h1>
             <p className="text-sm text-[#A8A8AA]">Verificá toda la información antes de publicarla.</p>
           </div>
           <div className="bg-[#F78736]/10 border border-[#F78736] text-[#F78736] text-[10px] font-bold px-3 py-1 rounded-[4px] tracking-widest uppercase shrink-0">
@@ -136,22 +136,22 @@ export default function CreateRequestRevisionPage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-6">
-          
+        <div className="flex flex-col gap-6 mb-8">
+
           {/* UBICACIÓN */}
           <section className="flex items-start gap-4 pb-6 px-8 md:px-10 -mx-8 md:-mx-10 border-b border-[#3f3f3f]">
             <div className="w-12 h-12 rounded-lg bg-[#323232] flex items-center justify-center shrink-0">
               <MapPinIcon className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1 flex flex-col gap-1 mt-1">
-              <span className="text-[10px] text-[#A8A8AA] font-bold tracking-widest uppercase">UBICACIÓN</span>
+              <span className="text-xs text-[#A8A8AA] font-bold tracking-widest uppercase">UBICACIÓN</span>
               <span className="text-sm text-white font-bold">{requestData.address || "-"}</span>
               {requestData.apartment && <span className="text-xs text-[#A8A8AA]">{requestData.apartment}</span>}
             </div>
-            <button 
+            <button
               type="button"
               onClick={() => handleEdit("/location")}
-              className="flex items-center gap-1.5 text-[#F78736] text-xs font-bold shrink-0 self-start mt-1 hover:text-[#e0752b] transition-colors"
+              className="flex items-center gap-1.5 text-[#F78736] border-1 rounded-[6px] p-2 text-xs font-bold shrink-0 self-start mt-1 hover:text-[#e0752b] transition-colors"
             >
               <PencilIcon className="h-4 w-4 stroke-2" /> Editar
             </button>
@@ -163,14 +163,14 @@ export default function CreateRequestRevisionPage() {
               <WrenchScrewdriverIcon className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1 flex flex-col gap-1 mt-1">
-              <span className="text-[10px] text-[#A8A8AA] font-bold tracking-widest uppercase">CATEGORÍA</span>
+              <span className="text-xs text-[#A8A8AA] font-bold tracking-widest uppercase">CATEGORÍA</span>
               <span className="text-sm text-white font-bold">{requestData.category || "-"}</span>
-              <span className="text-xs text-[#A8A8AA]">{requestData.title || "-"}</span>
+              <span className="text-sm text-[#A8A8AA]">{requestData.title || "-"}</span>
             </div>
-            <button 
+            <button
               type="button"
               onClick={() => handleEdit("")}
-              className="flex items-center gap-1.5 text-[#F78736] text-xs font-bold shrink-0 self-start mt-1 hover:text-[#e0752b] transition-colors"
+              className="flex items-center gap-1.5 text-[#F78736] border-1 rounded-[6px] p-2  text-xs font-bold shrink-0 self-start mt-1 hover:text-[#e0752b] transition-colors"
             >
               <PencilIcon className="h-4 w-4 stroke-2" /> Editar
             </button>
@@ -182,35 +182,35 @@ export default function CreateRequestRevisionPage() {
               <ClipboardDocumentListIcon className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1 flex flex-col gap-4 mt-1">
-              <span className="text-[10px] text-[#A8A8AA] font-bold tracking-widest uppercase">CUESTIONARIO DE DETALLES</span>
-              
+              <span className="text-xs text-[#A8A8AA] font-bold tracking-widest uppercase">CUESTIONARIO DE DETALLES</span>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8">
                 <div className="flex flex-col gap-1">
-                  <span className="text-[10px] text-[#A8A8AA] uppercase tracking-wider">¿ES UNA EMERGENCIA?</span>
+                  <span className="text-xs text-[#A8A8AA] uppercase tracking-wider">¿ES UNA EMERGENCIA?</span>
                   <span className="text-sm text-white font-bold">{requestData.isEmergency || "-"}</span>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="text-[10px] text-[#A8A8AA] uppercase tracking-wider">¿CUÁNDO LO NECESITA?</span>
+                  <span className="text-xs text-[#A8A8AA] uppercase tracking-wider">¿CUÁNDO LO NECESITA?</span>
                   <span className="text-sm text-white font-bold">{requestData.date || "-"}</span>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="text-[10px] text-[#A8A8AA] uppercase tracking-wider">¿TIENE LOS MATERIALES?</span>
+                  <span className="text-xs text-[#A8A8AA] uppercase tracking-wider">¿TIENE LOS MATERIALES?</span>
                   <span className="text-sm text-white font-bold">{requestData.hasMaterials || "-"}</span>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="text-[10px] text-[#A8A8AA] uppercase tracking-wider">¿CUÁNTOS AÑOS DE ANTIGÜEDAD TIENE EL EQUIPO O INSTALACIÓN?</span>
+                  <span className="text-xs text-[#A8A8AA] uppercase tracking-wider">¿CUÁNTOS AÑOS DE ANTIGÜEDAD TIENE EL EQUIPO O INSTALACIÓN?</span>
                   <span className="text-sm text-white font-bold">{requestData.age ? `${requestData.age} AÑOS` : "-"}</span>
                 </div>
                 <div className="flex flex-col gap-1 sm:col-span-2">
-                  <span className="text-[10px] text-[#A8A8AA] uppercase tracking-wider">DESCRIPCIÓN GENERAL DEL PROBLEMA</span>
+                  <span className="text-xs text-[#A8A8AA] uppercase tracking-wider">DESCRIPCIÓN GENERAL DEL PROBLEMA</span>
                   <span className="text-sm text-white font-bold leading-relaxed">{requestData.description || "-"}</span>
                 </div>
               </div>
             </div>
-            <button 
+            <button
               type="button"
               onClick={() => handleEdit("")}
-              className="flex items-center gap-1.5 text-[#F78736] text-xs font-bold shrink-0 self-start mt-1 hover:text-[#e0752b] transition-colors"
+              className="flex items-center gap-1.5 text-[#F78736] border-1 rounded-[6px] p-2 text-xs font-bold shrink-0 self-start mt-1 hover:text-[#e0752b] transition-colors"
             >
               <PencilIcon className="h-4 w-4 stroke-2" /> Editar
             </button>
@@ -222,14 +222,14 @@ export default function CreateRequestRevisionPage() {
               <CalendarDaysIcon className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1 flex flex-col gap-1 mt-1">
-              <span className="text-[10px] text-[#A8A8AA] font-bold tracking-widest uppercase">DISPONIBILIDAD</span>
-              <span className="text-[10px] text-[#A8A8AA] uppercase tracking-wider mt-2">RANGO HORARIO SELECCIONADO</span>
+              <span className="text-xs text-[#A8A8AA] font-bold tracking-widest uppercase">DISPONIBILIDAD</span>
+              <span className="text-xs text-[#A8A8AA] uppercase tracking-wider mt-2">RANGO HORARIO SELECCIONADO</span>
               <span className="text-sm text-white font-bold">{requestData.time || "-"}</span>
             </div>
-            <button 
+            <button
               type="button"
               onClick={() => handleEdit("")}
-              className="flex items-center gap-1.5 text-[#F78736] text-xs font-bold shrink-0 self-start mt-1 hover:text-[#e0752b] transition-colors"
+              className="flex items-center gap-1.5 text-[#F78736] border-1 rounded-[6px] p-2  text-xs font-bold shrink-0 self-start mt-1 hover:text-[#e0752b] transition-colors"
             >
               <PencilIcon className="h-4 w-4 stroke-2" /> Editar
             </button>
@@ -241,31 +241,31 @@ export default function CreateRequestRevisionPage() {
               <PhotoIcon className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1 flex flex-col gap-4 mt-1">
-              <span className="text-[10px] text-[#A8A8AA] font-bold tracking-widest uppercase">FOTOS</span>
+              <span className="text-xs text-[#A8A8AA] font-bold tracking-widest uppercase">FOTOS</span>
               <div className="flex flex-wrap gap-4">
                 {(requestData.photos && requestData.photos.length > 0) ? requestData.photos.map((file, idx) => {
                   const src = file.preview || (typeof file === 'string' ? getSupabasePublicUrl(file) : '');
                   return (
-                    <div 
-                      key={idx} 
+                    <div
+                      key={idx}
                       className="w-28 h-28 shrink-0 bg-[#323232] rounded-[8px] flex items-center justify-center overflow-hidden border border-[#3f3f3f] cursor-pointer hover:border-[#F78736] transition-colors relative group"
                       onClick={() => setSelectedImage(src)}
                     >
-                       <img src={src} alt="Preview" className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" />
-                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                         <span className="text-white text-xs font-semibold">Ver</span>
-                       </div>
+                      <img src={src} alt="Preview" className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="text-white text-xs font-semibold">Ver</span>
+                      </div>
                     </div>
                   );
                 }) : (
-                  <div className="text-xs text-[#A8A8AA]">Sin fotos adjuntas</div>
+                  <div className="text-sm text-[#A8A8AA]">Sin fotos adjuntas</div>
                 )}
               </div>
             </div>
-            <button 
+            <button
               type="button"
               onClick={() => handleEdit("")}
-              className="flex items-center gap-1.5 text-[#F78736] text-xs font-bold shrink-0 self-start mt-1 hover:text-[#e0752b] transition-colors"
+              className="flex items-center gap-1.5 text-[#F78736] border-1 rounded-[6px] p-2 text-xs font-bold shrink-0 self-start mt-1 hover:text-[#e0752b] transition-colors"
             >
               <PencilIcon className="h-4 w-4 stroke-2" /> Editar
             </button>
@@ -275,7 +275,7 @@ export default function CreateRequestRevisionPage() {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-[#3f3f3f] gap-4 mt-4">
-          <Button type="button" variant="ghost" onClick={handleBack} className="w-full sm:w-auto px-6 flex items-center justify-center gap-2 border border-[#3f3f3f]">
+          <Button type="button" variant="ghost" onClick={handleBack} className="w-full sm:w-auto px-6 text-white border-[#727272] flex items-center justify-center gap-2 border border-[#3f3f3f]">
             <ArrowLeftIcon className="h-4 w-4" /> Volver
           </Button>
           <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-4">
@@ -290,10 +290,10 @@ export default function CreateRequestRevisionPage() {
 
       </div>
 
-      <ImagePreviewModal 
-        isOpen={!!selectedImage} 
-        onClose={() => setSelectedImage(null)} 
-        imageUrl={selectedImage} 
+      <ImagePreviewModal
+        isOpen={!!selectedImage}
+        onClose={() => setSelectedImage(null)}
+        imageUrl={selectedImage}
       />
 
       <StatusModal

@@ -272,7 +272,7 @@ export default function CreateRequestPage() {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-[#3f3f3f] gap-4 mt-4">
-            <Button variant="ghost" onClick={handleCancel} className="w-full sm:w-auto px-6 flex items-center justify-center gap-2">
+            <Button variant="ghost" onClick={handleCancel} className="w-full sm:w-auto px-6 text-white border-[#727272] flex items-center justify-center gap-2">
               <ArrowLeftIcon className="h-4 w-4" /> Volver
             </Button>
             <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-4">
