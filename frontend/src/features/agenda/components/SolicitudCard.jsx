@@ -15,7 +15,7 @@ import { useAuth } from "../../../context/AuthContext";
 
 export default function SolicitudCard({ solicitud, onVerDetalle, onVerOfertas }) {
   const { user } = useAuth();
-  
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'open': return 'text-[#F78736] border-[#F78736]/30 bg-[#F78736]/10';
@@ -27,8 +27,9 @@ export default function SolicitudCard({ solicitud, onVerDetalle, onVerOfertas })
   };
 
   return (
-    <Card rounded="sm" className="flex flex-col gap-0 border border-[#323232] bg-[#222222] p-5 hover:border-[#404040] transition-colors">
+    <Card rounded="sm" className="flex flex-col gap-0 border border-[#323232] bg-[#222222] pl-4 pt-2.5 pr-4 pb-2 hover:border-[#404040] transition-colors">
       {/* Top Row */}
+
       <div className="flex flex-wrap items-center justify-between gap-2 pb-4">
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-bold text-[#888888] tracking-wide mr-1">SOLICITUD <span className="mx-0.5 text-[#555]">•</span></span>
@@ -47,7 +48,7 @@ export default function SolicitudCard({ solicitud, onVerDetalle, onVerOfertas })
       </div>
 
       {/* Middle Row */}
-      <div className="flex items-center gap-4 pb-5 pt-1">
+      <div className="flex items-center gap-3 pb-3 ">
         <div className="h-14 w-14 shrink-0 rounded-full bg-[#323232] flex items-center justify-center overflow-hidden border border-[#404040]">
           {user?.avatar_url ? (
             <img src={getSupabasePublicUrl(user.avatar_url, 'avatars')} alt="avatar" className="h-full w-full object-cover" />
@@ -56,13 +57,13 @@ export default function SolicitudCard({ solicitud, onVerDetalle, onVerOfertas })
           )}
         </div>
         <div className="flex flex-col gap-1.5">
-          <h3 className="text-xl font-bold text-white leading-tight">{solicitud.title}</h3>
+          <h3 className="text-sm font-bold text-white leading-tight">{solicitud.title}</h3>
           <span className="text-[13px] text-[#A8A8AA] font-medium line-clamp-1">{solicitud.description}</span>
         </div>
       </div>
 
       {/* Bottom Row */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[#323232]">
+      <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-[#323232]">
         <div className="flex items-center gap-2 text-[#888888] text-[13px]">
           <CalendarDaysIcon className="h-4 w-4" />
           <span>Preferencia :</span>
@@ -75,9 +76,9 @@ export default function SolicitudCard({ solicitud, onVerDetalle, onVerOfertas })
 
         <div className="flex items-center gap-3">
           {solicitud.offers && solicitud.offers.length > 0 && (
-            <Button 
-              variant="primary" 
-              onClick={onVerOfertas} 
+            <Button
+              variant="primary"
+              onClick={onVerOfertas}
               className="bg-[#F78736] hover:bg-[#E0722D] text-white text-[13px] font-medium px-4 py-1.5 rounded-[6px] h-auto"
             >
               Ver ofertas ({solicitud.offers.length})
