@@ -1,102 +1,73 @@
 import { useState, useEffect, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { moderationService } from "../services/moderationService";
-import { MODERATION_STATES } from "../constants/moderation.constants";
 import { mapModerationItem, getModerationErrorMessage } from "../utils/moderationMappers";
+import { moderationKeys } from "../constants/moderation.queryKeys";
 
 export const PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 400;
 
-/**
- * useModerationPanel — Hook reutilizable por cada panel de moderación.
- *
- * Carga paginada desde el backend, búsqueda por número de orden con espera (debounce)
- * y acciones de estado (activar, desactivar, eliminar) que se aplican tras la confirmación del servidor.
- *
- * @param {"solicitudes"|"ofertas"|"calificaciones"|"turnos"} panel
- */
 export function useModerationPanel(panel) {
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQueryState] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [reloadToken, setReloadToken] = useState(0);
-  const [actionError, setActionError] = useState(null);
-  const [result, setResult] = useState({ key: null, items: [], totalCount: 0, error: null });
 
-  // La búsqueda se aplica recién cuando el usuario deja de escribir.
   useEffect(() => {
     const timer = setTimeout(() => setAppliedSearch(searchQuery), SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Identifica la consulta actual: mientras result.key no coincida, el panel está cargando.
-  const requestKey = `${panel}|${appliedSearch}|${page}|${reloadToken}`;
+  const queryParams = { search: appliedSearch, page, limit: PAGE_SIZE };
 
-  useEffect(() => {
-    let ignore = false;
-    moderationService
-      .list(panel, { search: appliedSearch, page, limit: PAGE_SIZE })
-      .then((data) => {
-        if (ignore) return;
-        setResult({
-          key: requestKey,
-          items: data.items.map(mapModerationItem),
-          totalCount: data.meta.totalCount,
-          error: null,
-        });
-      })
-      .catch((err) => {
-        if (ignore) return;
-        setResult({
-          key: requestKey,
-          items: [],
-          totalCount: 0,
-          error: getModerationErrorMessage(err, "No se pudieron cargar los datos."),
-        });
-      });
-    return () => {
-      ignore = true;
-    };
-  }, [panel, appliedSearch, page, requestKey]);
+  const { data, isLoading, isError, error: queryError, refetch } = useQuery({
+    queryKey: moderationKeys.list(panel, queryParams),
+    queryFn: () => moderationService.list(panel, queryParams),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const items = data?.items?.map(mapModerationItem) || [];
+  const totalCount = data?.meta?.totalCount || 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const error = isError ? getModerationErrorMessage(queryError, "No se pudieron cargar los datos.") : null;
 
   const setSearchQuery = useCallback((query) => {
     setSearchQueryState(query);
     setPage(1);
   }, []);
 
-  const refetch = useCallback(() => {
-    setActionError(null);
-    setReloadToken((token) => token + 1);
-  }, []);
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }) => moderationService.updateStatus(panel, id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: moderationKeys.lists() });
+    }
+  });
 
-  // Cambia el estado de una tarjeta solo después de que el backend confirma.
-  const changeStatus = useCallback(
-    async (id, moderationStatus, estado) => {
-      setActionError(null);
-      try {
-        await moderationService.updateStatus(panel, id, moderationStatus);
-        setResult((prev) => ({
-          ...prev,
-          items: prev.items.map((item) => (item.id === id ? { ...item, estado } : item)),
-        }));
-      } catch (err) {
-        setActionError(getModerationErrorMessage(err, "No se pudo actualizar el elemento."));
-      }
-    },
-    [panel],
+  const activateItem = useCallback(
+    (id) => statusMutation.mutate({ id, status: "active" }),
+    [statusMutation]
+  );
+  
+  const disableItem = useCallback(
+    (id) => statusMutation.mutate({ id, status: "disabled" }),
+    [statusMutation]
+  );
+  
+  const deleteItem = useCallback(
+    (id) => statusMutation.mutate({ id, status: "deleted" }),
+    [statusMutation]
   );
 
-  const activateItem = useCallback((id) => changeStatus(id, "active", MODERATION_STATES.ACTIVE), [changeStatus]);
-  const disableItem = useCallback((id) => changeStatus(id, "disabled", MODERATION_STATES.DISABLED), [changeStatus]);
-  const deleteItem = useCallback((id) => changeStatus(id, "deleted", MODERATION_STATES.DELETED), [changeStatus]);
+  const actionError = statusMutation.error ? getModerationErrorMessage(statusMutation.error, "No se pudo actualizar el elemento.") : null;
 
   return {
-    items: result.items,
-    totalCount: result.totalCount,
+    items,
+    totalCount,
     page,
-    totalPages: Math.max(1, Math.ceil(result.totalCount / PAGE_SIZE)),
+    totalPages,
     setPage,
-    isLoading: result.key !== requestKey,
-    error: result.error,
+    isLoading: isLoading || statusMutation.isPending,
+    error,
     actionError,
     searchQuery,
     setSearchQuery,

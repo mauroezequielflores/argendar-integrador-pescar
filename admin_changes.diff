@@ -1,0 +1,4462 @@
+diff --git a/.gitignore b/.gitignore
+index f39aca6..53d05dd 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -95,4 +95,6 @@ documentacion/
+ docs/
+ context/
+ 
+-mcp.json
+\ No newline at end of file
++mcp.json
++# --- Claude Code (config local privada) ---
++.claude/
+diff --git a/backend/API_DOCS.md b/backend/API_DOCS.md
+new file mode 100644
+index 0000000..4c51dff
+--- /dev/null
++++ b/backend/API_DOCS.md
+@@ -0,0 +1,426 @@
++# API Docs — Argendar (Administrador)
++
++Base URL: `http://localhost:3000/api/v1`
++
++> Este archivo documenta por ahora solo los endpoints del rol **administrador**.
++> Todas las rutas requieren `Authorization: Bearer <JWT de Supabase>` y rol `administrator`.
++
++## Errores comunes
++
++Forma única de error:
++
++```json
++{ "error": { "code": "FORBIDDEN", "message": "Acceso no autorizado" } }
++```
++
++| Código | Cuándo |
++|---|---|
++| 400 | Query param inválido (`VALIDATION_ERROR`) |
++| 401 | Token ausente, inválido o vencido |
++| 403 | El usuario no es `administrator` |
++| 404 | El recurso no existe |
++| 409 | Acción no permitida sobre ese recurso (ver cada endpoint) |
++| 500 | Error al consultar la base de datos |
++
++---
++
++## Dashboard
++
++### GET `/admin/dashboard/metrics`
++
++KPIs globales del dashboard, con una tendencia de 4 tramos para el mini gráfico de cada tarjeta.
++
++- **Auth:** Bearer, rol `administrator`
++- **Query:**
++  - `period` (opcional): `7days` | `30days` | `all_time` (por defecto `all_time`)
++
++**200 OK**
++```json
++{
++  "period": "30days",
++  "totalUsers":        { "value": 1542, "trend": [12, 18, 9, 22] },
++  "activeRequests":    { "value": 340,  "trend": [5, 8, 7, 11] },
++  "totalOffers":       { "value": 1205, "trend": [20, 14, 25, 30] },
++  "totalTransactions": { "value": 850,  "trend": [3, 6, 4, 9] }
++}
++```
++
++Definiciones:
++- `totalUsers`: perfiles con `status <> 'deleted'` creados en el periodo.
++- `activeRequests`: solicitudes en estado `open` u `offered`. **No depende de `period`** (es un estado actual).
++- `totalOffers`: ofertas creadas en el periodo.
++- `totalTransactions`: pagos con `status = 'paid'` creados en el periodo.
++- `trend`: 4 tramos consecutivos del periodo (en `all_time`, los últimos 28 días).
++
++**400** — `period` inválido
++```json
++{ "error": { "code": "VALIDATION_ERROR", "message": "period debe ser 7days, 30days o all_time" } }
++```
++
++---
++
++### GET `/admin/dashboard/activity-chart`
++
++Volumen diario de operaciones del marketplace (solicitudes + ofertas + pagos creados cada día), para el gráfico de líneas.
++
++- **Auth:** Bearer, rol `administrator`
++- **Query:**
++  - `days` (opcional): entero de 1 a 90 (por defecto `30`)
++
++**200 OK**
++```json
++{
++  "days": 7,
++  "points": [
++    { "date": "2026-09-28", "total": 41 },
++    { "date": "2026-09-29", "total": 0 }
++  ]
++}
++```
++
++- Siempre se devuelven todos los días del rango, con `total: 0` si no hubo actividad.
++- Los días se calculan en zona `America/Argentina/Buenos_Aires`.
++
++**400** — `days` fuera de rango o no numérico.
++
++---
++
++### GET `/admin/dashboard/recent-activity`
++
++Últimos eventos de la plataforma.
++
++- **Auth:** Bearer, rol `administrator`
++- **Query:**
++  - `limit` (opcional): entero de 1 a 50 (por defecto `10`)
++
++**200 OK**
++```json
++[
++  {
++    "id": "uuid",
++    "action": "NUEVO_USUARIO",
++    "description": "Se registró Juan Pérez como cliente.",
++    "actor": { "name": "Juan Pérez", "role": "client" },
++    "createdAt": "2026-09-28T14:30:00.000Z"
++  },
++  {
++    "id": "uuid",
++    "action": "PAGO_REGISTRADO",
++    "description": "Se registró un pago de $15.000 (pagado).",
++    "actor": { "name": "María Gómez", "role": "client" },
++    "status": "paid",
++    "createdAt": "2026-09-28T13:10:00.000Z"
++  }
++]
++```
++
++- `action`: `NUEVO_USUARIO` | `SOLICITUD_PUBLICADA` | `OFERTA_ENVIADA` | `PAGO_REGISTRADO`.
++- `actor`: quién generó el evento (`name` y `role`). En pagos es el cliente que pagó. Puede ser `null` si no se pudo determinar.
++- `status`: solo en `PAGO_REGISTRADO` (`pending` | `partial` | `paid` | `refunded`).
++- Se arma consultando `profiles`, `requests`, `offers` y `payments` (no usa una tabla de logs). Los eventos se ordenan por fecha descendente.
++- Sin actividad devuelve `[]` (nunca `null`).
++
++**400** — `limit` fuera de rango o no numérico.
++
++---
++
++## Usuarios
++
++### GET `/admin/users`
++
++Lista paginada de usuarios de un rol. Excluye los eliminados (`status = 'deleted'`) y se ordena por fecha de registro, del más nuevo al más viejo.
++
++- **Auth:** Bearer, rol `administrator`
++- **Query:**
++  - `role` (obligatorio): `client` | `professional` | `administrator`
++  - `search` (opcional, máx. 100): nombre y/o apellido (cada palabra debe coincidir, sin distinguir mayúsculas) o un UUID completo para buscar por ID exacto
++  - `page` (opcional, por defecto `1`)
++  - `limit` (opcional, 1 a 100, por defecto `10`)
++
++**200 OK**
++```json
++{
++  "items": [
++    { "id": "uuid", "name": "Elena Martínez", "role": "client", "status": "active", "createdAt": "2026-08-17T23:00:00.000Z" }
++  ],
++  "meta": { "totalCount": 28, "page": 1, "limit": 10, "hasMore": true }
++}
++```
++
++- `status`: `active` | `disabled`.
++- Sin resultados, o una página posterior a la última: `items: []` (200).
++
++**400** — `role` ausente o inválido, `limit` fuera de rango, etc.
++
++---
++
++### PATCH `/admin/users/:id/status`
++
++Bloquea o desbloquea una cuenta.
++
++- **Auth:** Bearer, rol `administrator`
++- **Body:** `{ "status": "active" | "disabled" }`
++
++**200 OK**
++```json
++{ "id": "uuid", "status": "disabled" }
++```
++
++**Errores**
++- 400 — `:id` no es UUID o `status` inválido.
++- 404 — el usuario no existe o está eliminado.
++- 409 `SELF_MODIFICATION_NOT_ALLOWED` — el administrador intenta modificar su propia cuenta.
++- 409 `ADMIN_ACCOUNT_PROTECTED` — la cuenta objetivo es de otro administrador.
++
++> Nota: por ahora el cambio de `status` solo se guarda en `profiles`. El login y `authMiddleware` todavía no rechazan cuentas `disabled` (queda para una etapa posterior).
++
++---
++
++### DELETE `/admin/users/:id`
++
++Eliminación lógica: marca `status = 'deleted'` y conserva la fila para no romper turnos, pagos ni reseñas.
++
++- **Auth:** Bearer, rol `administrator`
++
++**200 OK**
++```json
++{ "id": "uuid", "status": "deleted" }
++```
++
++**Errores:** los mismos 400, 404 y 409 que `PATCH /admin/users/:id/status`.
++
++---
++
++## Transacciones
++
++> Requiere la columna `payments.transaction_number` (autonumérica). Migración:
++> `ALTER TABLE public.payments ADD COLUMN transaction_number BIGINT GENERATED ALWAYS AS IDENTITY;`
++
++### GET `/admin/transactions`
++
++Historial global de pagos, solo lectura, del más reciente al más antiguo.
++
++- **Auth:** Bearer, rol `administrator`
++- **Query:**
++  - `search` (opcional, máx. 50): número de transacción (`126`, `000126`, `TRX-126`, `TRX-000126`, sin distinguir mayúsculas) o un UUID completo de pago. Cualquier otro texto devuelve lista vacía.
++  - `page` (opcional, por defecto `1`)
++  - `limit` (opcional, 1 a 100, por defecto `10`)
++
++**200 OK**
++```json
++{
++  "items": [
++    {
++      "id": "uuid",
++      "transactionNumber": "TRX-000126",
++      "user": { "id": "uuid", "name": "Hernán Castro", "role": "client" },
++      "professional": { "id": "uuid", "name": "Ricardo Gómez", "role": "professional" },
++      "amount": 15000,
++      "depositAmount": 3000,
++      "method": "mercadopago",
++      "status": "paid",
++      "createdAt": "2026-09-28T14:30:00.000Z"
++    }
++  ],
++  "meta": { "totalCount": 1, "page": 1, "limit": 10, "hasMore": false }
++}
++```
++
++- `user` es el cliente que pagó; `professional` es quien recibe el trabajo. Cualquiera de los dos puede ser `null` si no se pudo determinar.
++- `amount` = `payments.total_amount`; `depositAmount` = `payments.deposit_amount`.
++- `method`: `cash` | `mercadopago` | `transfer` | `credit_card`.
++- `status`: `pending` | `partial` | `paid` | `refunded`.
++- Sin resultados, o una página posterior a la última: `items: []` (200).
++- Por ahora no hay endpoints para reembolsar ni cancelar (los botones están desactivados en el frontend).
++
++**400** — `limit`/`page` fuera de rango o `search` demasiado largo.
++
++---
++
++## Moderación
++
++> Requiere las columnas `moderation_status` (TEXT, `active` | `disabled` | `deleted`, por defecto `active`) y `order_number` (autonumérica) en `requests`, `offers`, `reviews` y `appointments`.
++> **Por ahora el estado solo se guarda:** todavía no oculta contenido en el marketplace, la agenda ni los perfiles.
++
++`:entity` es una de: `requests` | `offers` | `reviews` | `appointments`.
++
++### GET `/admin/moderation/:entity`
++
++Lista paginada de elementos de esa entidad, del más reciente al más antiguo. Incluye los tres estados.
++
++- **Auth:** Bearer, rol `administrator`
++- **Query:**
++  - `search` (opcional, máx. 50): número de orden (`125`, `00125`, `ORD-125`, `ORD-00125`, sin distinguir mayúsculas) o un UUID completo. Cualquier otro texto devuelve lista vacía.
++  - `page` (opcional, por defecto `1`)
++  - `limit` (opcional, 1 a 100, por defecto `10`)
++
++**200 OK**
++```json
++{
++  "items": [
++    {
++      "id": "uuid",
++      "orderNumber": "ORD-00125",
++      "moderationStatus": "active",
++      "title": "Reparación de instalación eléctrica",
++      "description": "El cliente solicita revisión de la instalación.",
++      "user": { "id": "uuid", "name": "Juan Pérez", "role": "client" },
++      "createdAt": "2026-09-28T14:30:00.000Z"
++    }
++  ],
++  "meta": { "totalCount": 14, "page": 1, "limit": 10, "hasMore": true }
++}
++```
++
++Qué significan `title`, `description` y `user` en cada entidad:
++
++| Entidad | title | description | user |
++|---|---|---|---|
++| `requests` | título de la solicitud | descripción | cliente que la publicó |
++| `offers` | `Oferta de $X para "<título de la solicitud>"` | mensaje de la oferta | profesional |
++| `reviews` | `Calificación N/5` | comentario | quien calificó |
++| `appointments` | título de la solicitud asociada | notas, o `Turno programado para el dd/mm/aaaa hh:mm.` | cliente de la solicitud |
++
++`user` puede ser `null` si no se pudo determinar. Sin resultados, o una página posterior a la última: `items: []` (200).
++
++**400** — entidad inválida, `limit`/`page` fuera de rango o `search` demasiado largo.
++
++---
++
++### PATCH `/admin/moderation/:entity/:id`
++
++Cambia el estado de moderación de un elemento.
++
++- **Auth:** Bearer, rol `administrator`
++- **Body:** `{ "moderationStatus": "active" | "disabled" | "deleted" }`
++
++**200 OK**
++```json
++{ "id": "uuid", "moderationStatus": "disabled" }
++```
++
++- Idempotente: si el estado ya es el pedido, responde 200 sin cambios.
++- `deleted` es definitivo (borrado lógico): la fila se conserva.
++
++**Errores**
++- 400 — entidad, `:id` (UUID) o `moderationStatus` inválidos.
++- 404 — el elemento no existe.
++- 409 `ITEM_DELETED` — se intenta activar o desactivar un elemento ya eliminado.
++
++---
++
++## Bandeja de consultas
++
++> Requiere la tabla `support_tickets` (id, `ticket_number` autonumérico, `user_id`, `subject`, `message`, `status` open|answered, `reply_subject`, `reply_message`, `replied_by`, `replied_at`, `created_at`). Las consultas las crean clientes y profesionales desde "Ayuda" (ver `POST /support/tickets` más abajo).
++
++### GET `/admin/inquiries`
++
++Lista paginada de consultas, de la más reciente a la más antigua. No incluye el email del usuario.
++
++- **Auth:** Bearer, rol `administrator`
++- **Query:**
++  - `search` (opcional, máx. 50): número de consulta (`2`, `000002`, `CON-2`, `CON-000002`), UUID completo, o texto del asunto (sin distinguir mayúsculas).
++  - `status` (opcional): `open` | `answered`
++  - `page` (opcional, por defecto `1`) y `limit` (opcional, 1 a 100, por defecto `10`)
++
++**200 OK**
++```json
++{
++  "items": [
++    {
++      "id": "uuid",
++      "ticketNumber": "CON-000002",
++      "subject": "No puedo subir mi foto",
++      "status": "open",
++      "createdAt": "2026-09-28T14:30:00.000Z",
++      "user": { "id": "uuid", "name": "Lucía Gómez", "role": "client" }
++    }
++  ],
++  "meta": { "totalCount": 1, "page": 1, "limit": 10, "hasMore": false }
++}
++```
++
++Sin resultados, o una página posterior a la última: `items: []` (200). **400** — `status`, `page` o `limit` inválidos.
++
++---
++
++### GET `/admin/inquiries/:id`
++
++Detalle de una consulta, con el email del usuario (sale de Supabase Auth) y la respuesta si existe.
++
++- **Auth:** Bearer, rol `administrator`
++
++**200 OK**
++```json
++{
++  "id": "uuid",
++  "ticketNumber": "CON-000002",
++  "subject": "No puedo subir mi foto",
++  "message": "Cuando intento subir la foto me da error...",
++  "status": "answered",
++  "createdAt": "2026-09-28T14:30:00.000Z",
++  "user": { "id": "uuid", "name": "Lucía Gómez", "role": "client", "email": "lucia@ejemplo.com" },
++  "reply": {
++    "subject": "Re: No puedo subir mi foto",
++    "message": "Hola Lucía...",
++    "repliedAt": "2026-09-29T10:00:00.000Z",
++    "repliedBy": "Admin Argendar"
++  }
++}
++```
++
++`reply` es `null` mientras la consulta esté abierta. **400** — `:id` no es UUID. **404** — la consulta no existe.
++
++---
++
++### POST `/admin/inquiries/:id/reply`
++
++Responde una consulta: pasa a `answered` y se crea una notificación para el usuario (`type: support_reply`, `related_entity_type: support_ticket`, con `href` a su pantalla de Ayuda).
++
++- **Auth:** Bearer, rol `administrator`
++- **Body:** `{ "subject": "Re: ...", "message": "texto de la respuesta" }` — `subject` de 1 a 150 caracteres y `message` de 1 a 2000 (se recortan los espacios).
++
++**201 Created** — devuelve el mismo objeto de detalle, con `status: "answered"` y `reply` completo.
++
++**Errores**
++- 400 — `subject`/`message` vacíos o demasiado largos, o `:id` inválido.
++- 404 — la consulta no existe.
++- 409 `INQUIRY_ALREADY_ANSWERED` — la consulta ya fue respondida (también si otro administrador la respondió al mismo tiempo).
++
++---
++
++## Soporte (cliente y profesional)
++
++### POST `/support/tickets`
++
++Envía una consulta desde la sección Ayuda. Aparece en la bandeja del administrador.
++
++- **Auth:** Bearer, rol `client` o `professional` (otros roles: 403)
++- **Body:** `{ "subject": "Resumen de la consulta", "message": "Más detalles..." }` — `subject` de 1 a 150 caracteres y `message` de 1 a 2000 (se recortan los espacios).
++
++**201 Created**
++```json
++{ "id": "uuid", "ticketNumber": "CON-000002", "status": "open", "createdAt": "2026-09-28T14:30:00.000Z" }
++```
++
++**400** — campos vacíos o demasiado largos. **401** — sin token. **403** — el rol no puede enviar consultas.
++
++---
++
++## Resumen rápido
++
++| Método | Ruta | Auth | Descripción |
++|---|---|---|---|
++| GET | `/admin/dashboard/metrics` | administrator | KPIs con tendencia (`period`) |
++| GET | `/admin/dashboard/activity-chart` | administrator | Operaciones diarias (`days`) |
++| GET | `/admin/dashboard/recent-activity` | administrator | Actividad reciente (`limit`) |
++| GET | `/admin/users` | administrator | Usuarios por rol, con búsqueda y paginación |
++| PATCH | `/admin/users/:id/status` | administrator | Bloquear / desbloquear |
++| DELETE | `/admin/users/:id` | administrator | Eliminación lógica |
++| GET | `/admin/transactions` | administrator | Historial de pagos con búsqueda y paginación |
++| GET | `/admin/moderation/:entity` | administrator | Elementos a moderar (requests, offers, reviews, appointments) |
++| PATCH | `/admin/moderation/:entity/:id` | administrator | Cambiar estado de moderación |
++| GET | `/admin/inquiries` | administrator | Consultas con búsqueda, filtro por estado y paginación |
++| GET | `/admin/inquiries/:id` | administrator | Detalle de una consulta (con email y respuesta) |
++| POST | `/admin/inquiries/:id/reply` | administrator | Responder una consulta y avisar al usuario |
++| POST | `/support/tickets` | client, professional | Enviar una consulta desde Ayuda |
+diff --git a/backend/SESSION_LOG.md b/backend/SESSION_LOG.md
+index 999a76e..648a170 100644
+--- a/backend/SESSION_LOG.md
++++ b/backend/SESSION_LOG.md
+@@ -1,3 +1,40 @@
++## [04/10/2026] (HU admin 05 — Bandeja de consultas)
++**Hecho:** `GET /api/v1/admin/inquiries`, `GET /api/v1/admin/inquiries/:id`, `POST /api/v1/admin/inquiries/:id/reply` y `POST /api/v1/support/tickets` (cliente/profesional). Archivos: `services/adminInquiriesService.js`, `controllers/adminInquiriesController.js`, `middlewares/schemas/adminInquiriesSchemas.js`, `services/supportService.js`, `controllers/supportController.js`, `routes/supportRoutes.js`, `middlewares/schemas/supportSchemas.js`; rutas admin en `routes/adminRoutes.js` y montaje de `/api/v1/support` en `app.js`. Frontend: bandeja de `/admin/reports` conectada (service, hook, mappers, paginación, modal con detalle/respuesta) y formularios de Ayuda de cliente (`ContactFormCard.jsx`) y profesional (`ProfessionalHelpPage.jsx`) enviando de verdad (`features/help/services/supportService.js`).
++**Migración ejecutada por el usuario en Supabase:** tabla `support_tickets` (con índices y RLS activado sin políticas; solo el backend con service_role la lee/escribe).
++**Pendiente:** el usuario ve la respuesta solo como notificación (`type: support_reply`, ícono de campana por defecto en ambos centros de notificaciones); no hay pantalla donde releer el historial de sus consultas. El contador `ticket_number` consumió el 1 en una prueba (la primera consulta real será CON-000002; reiniciable con `ALTER TABLE public.support_tickets ALTER COLUMN ticket_number RESTART WITH 1;`).
++**Decisiones:** Código `CON-000001` (no `REQ-`). La búsqueda acepta número, UUID completo o texto del asunto. El email solo viaja en el detalle (sale de Auth). Responder es único: 409 `INQUIRY_ALREADY_ANSWERED`, protegido contra respuestas simultáneas. Prueba end-to-end con datos creados y borrados por el script.
++
++## [04/10/2026] (HU admin 04 — Moderación)
++**Hecho:** `GET /api/v1/admin/moderation/:entity` y `PATCH /api/v1/admin/moderation/:entity/:id` (entity: requests | offers | reviews | appointments; 10 por página; búsqueda por número de orden o UUID). Archivos: `services/adminModerationService.js`, `controllers/adminModerationController.js`, `middlewares/schemas/adminModerationSchemas.js`, rutas en `routes/adminRoutes.js`; `utils/adminLookups.js` ampliado (`fetchProfileSummaries`, `fetchRowsByIds`, `pick`). Frontend de `/admin/moderation` conectado (service, hook, mappers, constantes, paginación en cada pestaña).
++**Migración ejecutada por el usuario en Supabase:** `moderation_status TEXT NOT NULL DEFAULT 'active' CHECK (...)` y `order_number BIGINT GENERATED ALWAYS AS IDENTITY` en `requests`, `offers`, `reviews` y `appointments` (todos los registros existentes quedaron `active`).
++**Pendiente:** EFECTO REAL (decisión del usuario: hacerlo después, en un paso aparte y acotado): que desactivar/eliminar oculte la solicitud del marketplace, la oferta de las ofertas del cliente (y no se pueda aceptar) y la calificación de los perfiles y del promedio. Los turnos quedan SOLO como estado. Hay ~60 puntos de lectura en 12 servicios + 3 funciones SQL (`get_marketplace_requests`, `create_offer_and_notify`, `accept_offer_and_schedule`); la propuesta es filtrar en Node, uno por uno. Verificar que el trigger de `rating_avg`/`reviews_count` considere `moderation_status`.
++**Decisiones:** Estado `disabled` (no `hidden`) para coincidir con "Desactivar". `deleted` es definitivo (409 `ITEM_DELETED`). El admin ve los tres estados en el listado.
++
++## [04/10/2026] (HU admin 03 — Transacciones)
++**Hecho:** `GET /api/v1/admin/transactions` (search, page, limit; 10 por defecto), solo lectura. Archivos: `services/adminTransactionsService.js`, `controllers/adminTransactionsController.js`, `middlewares/schemas/adminTransactionsSchemas.js`, ruta en `routes/adminRoutes.js`. Nuevo `utils/adminLookups.js` (fullName, fetchProfileNames, resolvePaymentParties) compartido con el dashboard, que se refactorizó para usarlo. Frontend de `/admin/transactions` conectado (service, hook, mappers, paginación).
++**Migración ejecutada por el usuario en Supabase:** `ALTER TABLE public.payments ADD COLUMN transaction_number BIGINT GENERATED ALWAYS AS IDENTITY;` (los 5 pagos existentes quedaron numerados 1–5).
++**Pendiente:** Reembolsar/cancelar (botón desactivado; sin endpoints a propósito). Probar con un token de admin desde `api.http`.
++**Decisiones:** `user` = cliente que pagó, `professional` aparte. La búsqueda acepta número (`126`, `TRX-000126`) o UUID completo; cualquier otro texto devuelve vacío. Estados: paid→COMPLETADO, pending→PENDIENTE, partial→PARCIAL, refunded→REEMBOLSADO.
++
++## [04/10/2026] (HU admin 02 — Usuarios)
++**Hecho:** `GET /api/v1/admin/users` (role, search, page, limit; 10 por defecto), `PATCH /api/v1/admin/users/:id/status` y `DELETE /api/v1/admin/users/:id` (borrado lógico). Archivos: `services/adminUsersService.js`, `controllers/adminUsersController.js`, `middlewares/schemas/adminUsersSchemas.js`, rutas en `routes/adminRoutes.js`. Frontend de `/admin/users` conectado (service, hook, mappers, `components/ui/Pagination.jsx`).
++**Pendiente:** El bloqueo solo guarda `profiles.status`; `authMiddleware` y `loginUser` no rechazan cuentas `disabled`/`deleted` (decisión del usuario: dejarlo para más adelante). Probar PATCH/DELETE exitosos desde la UI (no se probaron contra datos reales).
++**Decisiones:** Los administradores no se pueden modificar (409 `ADMIN_ACCOUNT_PROTECTED` / `SELF_MODIFICATION_NOT_ALLOWED`). Búsqueda por palabras en nombre/apellido o UUID completo. Página fuera de rango devuelve lista vacía (no error).
++
++## [04/10/2026] (ampliación)
++**Hecho:** `loginUser` ahora devuelve `role` desde `profiles.role` (fallback a `user_metadata.role`). Antes usaba solo los metadatos de Auth y un admin cambiado desde el panel seguía redirigiendo como su rol anterior. `recent-activity` incluye `actor {name, role}` y, en pagos, `status`. Frontend del dashboard conectado a los 3 endpoints (`dashboardService`, `useDashboardData`, `utils/dashboardMappers.js`, ejes dinámicos del gráfico).
++**Pendiente:** Probar con un token de admin los 400 de validación. Corregir `code` de AppError en 401/403 (hoy `INTERNAL_SERVER_ERROR`).
++**Decisiones:** "Ver todo" pide 50 eventos en vez de 10 (no hay pantalla de destino en Figma). Los estados de la tabla se derivan del tipo de evento.
++
++## [04/10/2026]
++**Hecho:** HU admin 01 (Dashboard). Endpoints `GET /api/v1/admin/dashboard/metrics`, `/activity-chart` y `/recent-activity`.
++- `src/routes/adminRoutes.js` (auth + `requireRole(ROLES.ADMIN)` para todo `/admin/*`), `src/controllers/adminDashboardController.js`, `src/services/adminDashboardService.js`, `src/middlewares/schemas/adminDashboardSchemas.js`.
++- `src/app.js`: import y montaje en `/api/v1/admin`.
++- `backend/API_DOCS.md` y `backend/api.http` creados (solo endpoints de admin por ahora).
++
++**Pendiente:** Prueba real contra Supabase (el entorno corre en Docker; solo se verificó la sintaxis). Frontend del dashboard sigue con datos mock.
++**Decisiones:** `recent-activity` se arma con un UNION de `created_at` de `profiles`, `requests`, `offers` y `payments`; NO se creó la tabla `platform_activity_logs` (se podrá migrar más adelante). `activeRequests` no respeta `period` porque es un estado actual. Los nombres se resuelven con una consulta aparte a `profiles` para no depender de nombres de FK.
++
+ ## [23/09/2026]
+ **Hecho:** Implementación de los 5 endpoints de detalle del profesional (HU: Vistas de Detalles).
+ - `GET /api/v1/professional/offers/:id`
+diff --git a/backend/api.http b/backend/api.http
+new file mode 100644
+index 0000000..6ced6af
+--- /dev/null
++++ b/backend/api.http
+@@ -0,0 +1,252 @@
++### Requests de prueba — Administrador (extensión "REST Client" de VS Code)
++###
++### Variables: completar loginEmail y loginPassword SOLO en tu copia local y pegar el access_token en adminToken.
++### Para probar el 403 usá el token de un cliente o profesional; para el resto, el de un administrador.
++### NUNCA commitear credenciales ni tokens reales.
++
++@baseUrl = http://localhost:3000/api/v1
++@loginEmail =
++@loginPassword =
++@adminToken = PEGAR_TOKEN_AQUI
++
++### ── LOGIN (para obtener el token) ─────────────────────────
++### Respuesta: copiar session.access_token en adminToken
++
++POST {{baseUrl}}/auth/login
++Content-Type: application/json
++
++{
++  "email": "{{loginEmail}}",
++  "password": "{{loginPassword}}"
++}
++
++### ── DASHBOARD ─────────────────────────────────────────────
++
++### Métricas (por defecto all_time)
++GET {{baseUrl}}/admin/dashboard/metrics
++Authorization: Bearer {{adminToken}}
++
++### Métricas de los últimos 7 días
++GET {{baseUrl}}/admin/dashboard/metrics?period=7days
++Authorization: Bearer {{adminToken}}
++
++### Métricas de los últimos 30 días
++GET {{baseUrl}}/admin/dashboard/metrics?period=30days
++Authorization: Bearer {{adminToken}}
++
++### Error 400: period inválido
++GET {{baseUrl}}/admin/dashboard/metrics?period=ayer
++Authorization: Bearer {{adminToken}}
++
++### Gráfico de actividad (30 días por defecto)
++GET {{baseUrl}}/admin/dashboard/activity-chart
++Authorization: Bearer {{adminToken}}
++
++### Gráfico de actividad (7 días)
++GET {{baseUrl}}/admin/dashboard/activity-chart?days=7
++Authorization: Bearer {{adminToken}}
++
++### Error 400: days fuera de rango (máximo 90)
++GET {{baseUrl}}/admin/dashboard/activity-chart?days=500
++Authorization: Bearer {{adminToken}}
++
++### Actividad reciente (10 por defecto)
++GET {{baseUrl}}/admin/dashboard/recent-activity
++Authorization: Bearer {{adminToken}}
++
++### Actividad reciente (25)
++GET {{baseUrl}}/admin/dashboard/recent-activity?limit=25
++Authorization: Bearer {{adminToken}}
++
++### ── USUARIOS ──────────────────────────────────────────────
++### Para PATCH y DELETE reemplazar USER_ID por el id de un cliente o profesional (los administradores no se pueden modificar).
++
++### Profesionales (página 1, 10 por página)
++GET {{baseUrl}}/admin/users?role=professional
++Authorization: Bearer {{adminToken}}
++
++### Clientes, página 2
++GET {{baseUrl}}/admin/users?role=client&page=2&limit=10
++Authorization: Bearer {{adminToken}}
++
++### Administradores
++GET {{baseUrl}}/admin/users?role=administrator
++Authorization: Bearer {{adminToken}}
++
++### Búsqueda por nombre y/o apellido
++GET {{baseUrl}}/admin/users?role=client&search=elena
++Authorization: Bearer {{adminToken}}
++
++### Búsqueda por ID exacto (UUID completo)
++GET {{baseUrl}}/admin/users?role=client&search=USER_ID
++Authorization: Bearer {{adminToken}}
++
++### Error 400: falta role
++GET {{baseUrl}}/admin/users
++Authorization: Bearer {{adminToken}}
++
++### Bloquear usuario
++PATCH {{baseUrl}}/admin/users/USER_ID/status
++Authorization: Bearer {{adminToken}}
++Content-Type: application/json
++
++{ "status": "disabled" }
++
++### Desbloquear usuario
++PATCH {{baseUrl}}/admin/users/USER_ID/status
++Authorization: Bearer {{adminToken}}
++Content-Type: application/json
++
++{ "status": "active" }
++
++### Error 400: status inválido
++PATCH {{baseUrl}}/admin/users/USER_ID/status
++Authorization: Bearer {{adminToken}}
++Content-Type: application/json
++
++{ "status": "deleted" }
++
++### Eliminar usuario (borrado lógico)
++DELETE {{baseUrl}}/admin/users/USER_ID
++Authorization: Bearer {{adminToken}}
++
++### Error 409: intentar modificar a un administrador (usar el id de un admin)
++DELETE {{baseUrl}}/admin/users/ID_DE_UN_ADMIN
++Authorization: Bearer {{adminToken}}
++
++### ── TRANSACCIONES ─────────────────────────────────────────
++
++### Listado (10 por página)
++GET {{baseUrl}}/admin/transactions
++Authorization: Bearer {{adminToken}}
++
++### Búsqueda por número de transacción (también acepta TRX-000003 o 000003)
++GET {{baseUrl}}/admin/transactions?search=3
++Authorization: Bearer {{adminToken}}
++
++### Búsqueda con prefijo TRX
++GET {{baseUrl}}/admin/transactions?search=TRX-000003
++Authorization: Bearer {{adminToken}}
++
++### Paginación
++GET {{baseUrl}}/admin/transactions?page=2&limit=2
++Authorization: Bearer {{adminToken}}
++
++### Error 400: limit fuera de rango (máximo 100)
++GET {{baseUrl}}/admin/transactions?limit=500
++Authorization: Bearer {{adminToken}}
++
++### ── MODERACIÓN ────────────────────────────────────────────
++### entity: requests | offers | reviews | appointments
++### Para PATCH reemplazar ITEM_ID por el id de un elemento (sale del listado).
++
++### Solicitudes (10 por página)
++GET {{baseUrl}}/admin/moderation/requests
++Authorization: Bearer {{adminToken}}
++
++### Ofertas
++GET {{baseUrl}}/admin/moderation/offers
++Authorization: Bearer {{adminToken}}
++
++### Calificaciones
++GET {{baseUrl}}/admin/moderation/reviews
++Authorization: Bearer {{adminToken}}
++
++### Turnos
++GET {{baseUrl}}/admin/moderation/appointments
++Authorization: Bearer {{adminToken}}
++
++### Búsqueda por número de orden (también acepta ORD-00003 o 00003)
++GET {{baseUrl}}/admin/moderation/requests?search=3
++Authorization: Bearer {{adminToken}}
++
++### Paginación
++GET {{baseUrl}}/admin/moderation/requests?page=2&limit=5
++Authorization: Bearer {{adminToken}}
++
++### Error 400: entidad inválida
++GET {{baseUrl}}/admin/moderation/users
++Authorization: Bearer {{adminToken}}
++
++### Desactivar un elemento
++PATCH {{baseUrl}}/admin/moderation/reviews/ITEM_ID
++Authorization: Bearer {{adminToken}}
++Content-Type: application/json
++
++{ "moderationStatus": "disabled" }
++
++### Reactivar un elemento
++PATCH {{baseUrl}}/admin/moderation/reviews/ITEM_ID
++Authorization: Bearer {{adminToken}}
++Content-Type: application/json
++
++{ "moderationStatus": "active" }
++
++### Error 400: estado inválido
++PATCH {{baseUrl}}/admin/moderation/reviews/ITEM_ID
++Authorization: Bearer {{adminToken}}
++Content-Type: application/json
++
++{ "moderationStatus": "hidden" }
++
++### ── BANDEJA DE CONSULTAS ──────────────────────────────────
++### Para GET/POST por id reemplazar INQUIRY_ID por el id de una consulta (sale del listado).
++
++### Listado (10 por página)
++GET {{baseUrl}}/admin/inquiries
++Authorization: Bearer {{adminToken}}
++
++### Solo pendientes
++GET {{baseUrl}}/admin/inquiries?status=open
++Authorization: Bearer {{adminToken}}
++
++### Búsqueda por número (también acepta CON-000002) o por texto del asunto
++GET {{baseUrl}}/admin/inquiries?search=foto
++Authorization: Bearer {{adminToken}}
++
++### Detalle (incluye email del usuario)
++GET {{baseUrl}}/admin/inquiries/INQUIRY_ID
++Authorization: Bearer {{adminToken}}
++
++### Responder una consulta (crea una notificación para el usuario)
++POST {{baseUrl}}/admin/inquiries/INQUIRY_ID/reply
++Authorization: Bearer {{adminToken}}
++Content-Type: application/json
++
++{
++  "subject": "Re: tu consulta",
++  "message": "Hola, gracias por escribirnos. Te contamos cómo resolverlo..."
++}
++
++### Error 400: respuesta sin mensaje
++POST {{baseUrl}}/admin/inquiries/INQUIRY_ID/reply
++Authorization: Bearer {{adminToken}}
++Content-Type: application/json
++
++{ "subject": "Re: tu consulta", "message": "   " }
++
++### ── SOPORTE (token de un CLIENTE o PROFESIONAL) ───────────
++
++### Enviar una consulta desde Ayuda
++POST {{baseUrl}}/support/tickets
++Authorization: Bearer {{adminToken}}
++Content-Type: application/json
++
++{
++  "subject": "No puedo subir mi foto",
++  "message": "Cuando intento subir la foto de perfil me da un error."
++}
++
++### Error 403: con token de administrador no se pueden enviar consultas
++POST {{baseUrl}}/support/tickets
++Authorization: Bearer {{adminToken}}
++Content-Type: application/json
++
++{ "subject": "Prueba", "message": "Prueba" }
++
++### Error 401: sin token
++GET {{baseUrl}}/admin/dashboard/metrics
++
++### Error 403: usar el token de un cliente o profesional en adminToken
++GET {{baseUrl}}/admin/dashboard/metrics
++Authorization: Bearer {{adminToken}}
+diff --git a/backend/src/app.js b/backend/src/app.js
+index 0e79392..4407831 100644
+--- a/backend/src/app.js
++++ b/backend/src/app.js
+@@ -13,6 +13,8 @@ import professionalNotificationRoutes from './routes/professionalNotificationRou
+ import professionalDetailsRoutes from './routes/professionalDetailsRoutes.js';
+ import clientReviewRoutes from './routes/clientReviewRoutes.js';
+ import chatbotRoutes from './routes/chatbotRoutes.js';
++import adminRoutes from './routes/adminRoutes.js';
++import supportRoutes from './routes/supportRoutes.js';
+ import { errorHandler } from './middlewares/errorHandler.js';
+ 
+ const app = express();
+@@ -34,6 +36,8 @@ app.use('/api/v1/chatbot', chatbotRoutes);
+ app.use('/api/v1/job-requests', jobRequestsRoutes);
+ app.use('/api/v1/offers', offersRoutes);
+ app.use('/api/v1/appointments', appointmentsRoutes);
++app.use('/api/v1/admin', adminRoutes);
++app.use('/api/v1/support', supportRoutes);
+ 
+ // --- Rutas de Diagnóstico (Pruebas iniciales) ---
+ // NOTA: Más adelante, las rutas de la aplicación se separarán en la carpeta src/routes/
+diff --git a/backend/src/controllers/adminDashboardController.js b/backend/src/controllers/adminDashboardController.js
+new file mode 100644
+index 0000000..42640f7
+--- /dev/null
++++ b/backend/src/controllers/adminDashboardController.js
+@@ -0,0 +1,30 @@
++import * as adminDashboardService from '../services/adminDashboardService.js';
++
++export const getMetrics = async (req, res, next) => {
++  try {
++    const data = await adminDashboardService.getMetrics(req.query.period);
++    res.status(200).json(data);
++  } catch (error) {
++    next(error);
++  }
++};
++
++export const getActivityChart = async (req, res, next) => {
++  try {
++    const days = req.query.days ? Number(req.query.days) : undefined;
++    const data = await adminDashboardService.getActivityChart(days);
++    res.status(200).json(data);
++  } catch (error) {
++    next(error);
++  }
++};
++
++export const getRecentActivity = async (req, res, next) => {
++  try {
++    const limit = req.query.limit ? Number(req.query.limit) : undefined;
++    const data = await adminDashboardService.getRecentActivity(limit);
++    res.status(200).json(data);
++  } catch (error) {
++    next(error);
++  }
++};
+diff --git a/backend/src/controllers/adminInquiriesController.js b/backend/src/controllers/adminInquiriesController.js
+new file mode 100644
+index 0000000..40d81f9
+--- /dev/null
++++ b/backend/src/controllers/adminInquiriesController.js
+@@ -0,0 +1,34 @@
++import * as adminInquiriesService from '../services/adminInquiriesService.js';
++
++export const listInquiries = async (req, res, next) => {
++  try {
++    const { search, status, page, limit } = req.query;
++    const data = await adminInquiriesService.listInquiries({
++      search,
++      status,
++      page: page ? Number(page) : undefined,
++      limit: limit ? Number(limit) : undefined
++    });
++    res.status(200).json(data);
++  } catch (error) {
++    next(error);
++  }
++};
++
++export const getInquiry = async (req, res, next) => {
++  try {
++    const data = await adminInquiriesService.getInquiry(req.params.id);
++    res.status(200).json(data);
++  } catch (error) {
++    next(error);
++  }
++};
++
++export const replyInquiry = async (req, res, next) => {
++  try {
++    const data = await adminInquiriesService.replyInquiry(req.params.id, req.body, req.user.id);
++    res.status(201).json(data);
++  } catch (error) {
++    next(error);
++  }
++};
+diff --git a/backend/src/controllers/adminModerationController.js b/backend/src/controllers/adminModerationController.js
+new file mode 100644
+index 0000000..d3c0235
+--- /dev/null
++++ b/backend/src/controllers/adminModerationController.js
+@@ -0,0 +1,25 @@
++import * as adminModerationService from '../services/adminModerationService.js';
++
++export const listModeration = async (req, res, next) => {
++  try {
++    const { search, page, limit } = req.query;
++    const data = await adminModerationService.listModeration(req.params.entity, {
++      search,
++      page: page ? Number(page) : undefined,
++      limit: limit ? Number(limit) : undefined
++    });
++    res.status(200).json(data);
++  } catch (error) {
++    next(error);
++  }
++};
++
++export const updateModerationStatus = async (req, res, next) => {
++  try {
++    const { entity, id } = req.params;
++    const data = await adminModerationService.updateModerationStatus(entity, id, req.body.moderationStatus);
++    res.status(200).json(data);
++  } catch (error) {
++    next(error);
++  }
++};
+diff --git a/backend/src/controllers/adminTransactionsController.js b/backend/src/controllers/adminTransactionsController.js
+new file mode 100644
+index 0000000..3c88609
+--- /dev/null
++++ b/backend/src/controllers/adminTransactionsController.js
+@@ -0,0 +1,15 @@
++import * as adminTransactionsService from '../services/adminTransactionsService.js';
++
++export const listTransactions = async (req, res, next) => {
++  try {
++    const { search, page, limit } = req.query;
++    const data = await adminTransactionsService.listTransactions({
++      search,
++      page: page ? Number(page) : undefined,
++      limit: limit ? Number(limit) : undefined
++    });
++    res.status(200).json(data);
++  } catch (error) {
++    next(error);
++  }
++};
+diff --git a/backend/src/controllers/adminUsersController.js b/backend/src/controllers/adminUsersController.js
+new file mode 100644
+index 0000000..3f56acf
+--- /dev/null
++++ b/backend/src/controllers/adminUsersController.js
+@@ -0,0 +1,34 @@
++import * as adminUsersService from '../services/adminUsersService.js';
++
++export const listUsers = async (req, res, next) => {
++  try {
++    const { role, search, page, limit } = req.query;
++    const data = await adminUsersService.listUsers({
++      role,
++      search,
++      page: page ? Number(page) : undefined,
++      limit: limit ? Number(limit) : undefined
++    });
++    res.status(200).json(data);
++  } catch (error) {
++    next(error);
++  }
++};
++
++export const updateUserStatus = async (req, res, next) => {
++  try {
++    const data = await adminUsersService.updateUserStatus(req.params.id, req.body.status, req.user.id);
++    res.status(200).json(data);
++  } catch (error) {
++    next(error);
++  }
++};
++
++export const deleteUser = async (req, res, next) => {
++  try {
++    const data = await adminUsersService.deleteUser(req.params.id, req.user.id);
++    res.status(200).json(data);
++  } catch (error) {
++    next(error);
++  }
++};
+diff --git a/backend/src/controllers/supportController.js b/backend/src/controllers/supportController.js
+new file mode 100644
+index 0000000..4118710
+--- /dev/null
++++ b/backend/src/controllers/supportController.js
+@@ -0,0 +1,10 @@
++import * as supportService from '../services/supportService.js';
++
++export const createTicket = async (req, res, next) => {
++  try {
++    const data = await supportService.createTicket(req.user.id, req.body);
++    res.status(201).json(data);
++  } catch (error) {
++    next(error);
++  }
++};
+diff --git a/backend/src/middlewares/schemas/adminDashboardSchemas.js b/backend/src/middlewares/schemas/adminDashboardSchemas.js
+new file mode 100644
+index 0000000..1cc16eb
+--- /dev/null
++++ b/backend/src/middlewares/schemas/adminDashboardSchemas.js
+@@ -0,0 +1,27 @@
++import { z } from 'zod';
++
++const positiveInt = (name, max) =>
++  z.string()
++    .regex(/^\d+$/, `${name} debe ser un número entero`)
++    .refine((v) => Number(v) >= 1 && Number(v) <= max, `${name} debe estar entre 1 y ${max}`)
++    .optional();
++
++export const getDashboardMetricsSchema = z.object({
++  query: z.object({
++    period: z.enum(['7days', '30days', 'all_time'], {
++      errorMap: () => ({ message: 'period debe ser 7days, 30days o all_time' })
++    }).optional()
++  })
++});
++
++export const getActivityChartSchema = z.object({
++  query: z.object({
++    days: positiveInt('days', 90)
++  })
++});
++
++export const getRecentActivitySchema = z.object({
++  query: z.object({
++    limit: positiveInt('limit', 50)
++  })
++});
+diff --git a/backend/src/middlewares/schemas/adminInquiriesSchemas.js b/backend/src/middlewares/schemas/adminInquiriesSchemas.js
+new file mode 100644
+index 0000000..4a20de6
+--- /dev/null
++++ b/backend/src/middlewares/schemas/adminInquiriesSchemas.js
+@@ -0,0 +1,30 @@
++import { z } from 'zod';
++
++const integerString = (name, { min, max }) =>
++  z.string()
++    .regex(/^\d+$/, `${name} debe ser un número entero`)
++    .refine((v) => Number(v) >= min && Number(v) <= max, `${name} debe estar entre ${min} y ${max}`)
++    .optional();
++
++const inquiryId = z.string().uuid('El ID de la consulta debe ser un UUID válido');
++
++export const getInquiriesSchema = z.object({
++  query: z.object({
++    search: z.string().max(50, 'La búsqueda no puede superar los 50 caracteres').optional(),
++    status: z.enum(['open', 'answered'], { message: 'status debe ser open o answered' }).optional(),
++    page: integerString('page', { min: 1, max: 100000 }),
++    limit: integerString('limit', { min: 1, max: 100 })
++  })
++});
++
++export const getInquirySchema = z.object({
++  params: z.object({ id: inquiryId })
++});
++
++export const replyInquirySchema = z.object({
++  params: z.object({ id: inquiryId }),
++  body: z.object({
++    subject: z.string().trim().min(1, 'El asunto de la respuesta es obligatorio').max(150, 'El asunto no puede superar los 150 caracteres'),
++    message: z.string().trim().min(1, 'El mensaje de la respuesta es obligatorio').max(2000, 'El mensaje no puede superar los 2000 caracteres')
++  })
++});
+diff --git a/backend/src/middlewares/schemas/adminModerationSchemas.js b/backend/src/middlewares/schemas/adminModerationSchemas.js
+new file mode 100644
+index 0000000..d8ec349
+--- /dev/null
++++ b/backend/src/middlewares/schemas/adminModerationSchemas.js
+@@ -0,0 +1,32 @@
++import { z } from 'zod';
++
++const integerString = (name, { min, max }) =>
++  z.string()
++    .regex(/^\d+$/, `${name} debe ser un número entero`)
++    .refine((v) => Number(v) >= min && Number(v) <= max, `${name} debe estar entre ${min} y ${max}`)
++    .optional();
++
++const entity = z.enum(['requests', 'offers', 'reviews', 'appointments'], {
++  message: 'La entidad debe ser requests, offers, reviews o appointments'
++});
++
++export const getModerationSchema = z.object({
++  params: z.object({ entity }),
++  query: z.object({
++    search: z.string().max(50, 'La búsqueda no puede superar los 50 caracteres').optional(),
++    page: integerString('page', { min: 1, max: 100000 }),
++    limit: integerString('limit', { min: 1, max: 100 })
++  })
++});
++
++export const updateModerationSchema = z.object({
++  params: z.object({
++    entity,
++    id: z.string().uuid('El ID debe ser un UUID válido')
++  }),
++  body: z.object({
++    moderationStatus: z.enum(['active', 'disabled', 'deleted'], {
++      message: 'moderationStatus debe ser active, disabled o deleted'
++    })
++  })
++});
+diff --git a/backend/src/middlewares/schemas/adminTransactionsSchemas.js b/backend/src/middlewares/schemas/adminTransactionsSchemas.js
+new file mode 100644
+index 0000000..93c132c
+--- /dev/null
++++ b/backend/src/middlewares/schemas/adminTransactionsSchemas.js
+@@ -0,0 +1,15 @@
++import { z } from 'zod';
++
++const integerString = (name, { min, max }) =>
++  z.string()
++    .regex(/^\d+$/, `${name} debe ser un número entero`)
++    .refine((v) => Number(v) >= min && Number(v) <= max, `${name} debe estar entre ${min} y ${max}`)
++    .optional();
++
++export const getTransactionsSchema = z.object({
++  query: z.object({
++    search: z.string().max(50, 'La búsqueda no puede superar los 50 caracteres').optional(),
++    page: integerString('page', { min: 1, max: 100000 }),
++    limit: integerString('limit', { min: 1, max: 100 })
++  })
++});
+diff --git a/backend/src/middlewares/schemas/adminUsersSchemas.js b/backend/src/middlewares/schemas/adminUsersSchemas.js
+new file mode 100644
+index 0000000..a2af967
+--- /dev/null
++++ b/backend/src/middlewares/schemas/adminUsersSchemas.js
+@@ -0,0 +1,34 @@
++import { z } from 'zod';
++import { ROLES } from '../../utils/constants.js';
++
++const integerString = (name, { min, max }) =>
++  z.string()
++    .regex(/^\d+$/, `${name} debe ser un número entero`)
++    .refine((v) => Number(v) >= min && Number(v) <= max, `${name} debe estar entre ${min} y ${max}`)
++    .optional();
++
++const userId = z.string().uuid('El ID del usuario debe ser un UUID válido');
++
++export const getUsersSchema = z.object({
++  query: z.object({
++    role: z.enum(Object.values(ROLES), {
++      message: 'role es obligatorio y debe ser client, professional o administrator'
++    }),
++    search: z.string().max(100, 'La búsqueda no puede superar los 100 caracteres').optional(),
++    page: integerString('page', { min: 1, max: 100000 }),
++    limit: integerString('limit', { min: 1, max: 100 })
++  })
++});
++
++export const updateUserStatusSchema = z.object({
++  params: z.object({ id: userId }),
++  body: z.object({
++    status: z.enum(['active', 'disabled'], {
++      message: 'status debe ser active o disabled'
++    })
++  })
++});
++
++export const deleteUserSchema = z.object({
++  params: z.object({ id: userId })
++});
+diff --git a/backend/src/middlewares/schemas/supportSchemas.js b/backend/src/middlewares/schemas/supportSchemas.js
+new file mode 100644
+index 0000000..c3f28b5
+--- /dev/null
++++ b/backend/src/middlewares/schemas/supportSchemas.js
+@@ -0,0 +1,8 @@
++import { z } from 'zod';
++
++export const createTicketSchema = z.object({
++  body: z.object({
++    subject: z.string().trim().min(1, 'El asunto es obligatorio').max(150, 'El asunto no puede superar los 150 caracteres'),
++    message: z.string().trim().min(1, 'El mensaje es obligatorio').max(2000, 'El mensaje no puede superar los 2000 caracteres')
++  })
++});
+diff --git a/backend/src/routes/adminRoutes.js b/backend/src/routes/adminRoutes.js
+new file mode 100644
+index 0000000..cb0dba9
+--- /dev/null
++++ b/backend/src/routes/adminRoutes.js
+@@ -0,0 +1,56 @@
++import { Router } from 'express';
++import { getMetrics, getActivityChart, getRecentActivity } from '../controllers/adminDashboardController.js';
++import { listUsers, updateUserStatus, deleteUser } from '../controllers/adminUsersController.js';
++import { listTransactions } from '../controllers/adminTransactionsController.js';
++import { listModeration, updateModerationStatus } from '../controllers/adminModerationController.js';
++import { listInquiries, getInquiry, replyInquiry } from '../controllers/adminInquiriesController.js';
++import { authMiddleware } from '../middlewares/authMiddleware.js';
++import { requireRole } from '../middlewares/roleMiddleware.js';
++import { validateRequest } from '../middlewares/validateRequest.js';
++import {
++  getDashboardMetricsSchema,
++  getActivityChartSchema,
++  getRecentActivitySchema
++} from '../middlewares/schemas/adminDashboardSchemas.js';
++import {
++  getUsersSchema,
++  updateUserStatusSchema,
++  deleteUserSchema
++} from '../middlewares/schemas/adminUsersSchemas.js';
++import { getTransactionsSchema } from '../middlewares/schemas/adminTransactionsSchemas.js';
++import { getModerationSchema, updateModerationSchema } from '../middlewares/schemas/adminModerationSchemas.js';
++import {
++  getInquiriesSchema,
++  getInquirySchema,
++  replyInquirySchema
++} from '../middlewares/schemas/adminInquiriesSchemas.js';
++import { ROLES } from '../utils/constants.js';
++
++const router = Router();
++
++router.use(authMiddleware);
++router.use(requireRole(ROLES.ADMIN));
++
++// Dashboard
++router.get('/dashboard/metrics', validateRequest(getDashboardMetricsSchema), getMetrics);
++router.get('/dashboard/activity-chart', validateRequest(getActivityChartSchema), getActivityChart);
++router.get('/dashboard/recent-activity', validateRequest(getRecentActivitySchema), getRecentActivity);
++
++// Usuarios
++router.get('/users', validateRequest(getUsersSchema), listUsers);
++router.patch('/users/:id/status', validateRequest(updateUserStatusSchema), updateUserStatus);
++router.delete('/users/:id', validateRequest(deleteUserSchema), deleteUser);
++
++// Transacciones (solo lectura)
++router.get('/transactions', validateRequest(getTransactionsSchema), listTransactions);
++
++// Moderación (entity: requests | offers | reviews | appointments)
++router.get('/moderation/:entity', validateRequest(getModerationSchema), listModeration);
++router.patch('/moderation/:entity/:id', validateRequest(updateModerationSchema), updateModerationStatus);
++
++// Bandeja de consultas
++router.get('/inquiries', validateRequest(getInquiriesSchema), listInquiries);
++router.get('/inquiries/:id', validateRequest(getInquirySchema), getInquiry);
++router.post('/inquiries/:id/reply', validateRequest(replyInquirySchema), replyInquiry);
++
++export default router;
+diff --git a/backend/src/routes/supportRoutes.js b/backend/src/routes/supportRoutes.js
+new file mode 100644
+index 0000000..1eec20b
+--- /dev/null
++++ b/backend/src/routes/supportRoutes.js
+@@ -0,0 +1,24 @@
++import { Router } from 'express';
++import { createTicket } from '../controllers/supportController.js';
++import { authMiddleware } from '../middlewares/authMiddleware.js';
++import { validateRequest } from '../middlewares/validateRequest.js';
++import { createTicketSchema } from '../middlewares/schemas/supportSchemas.js';
++import { AppError } from '../utils/errors.js';
++import { ROLES } from '../utils/constants.js';
++
++const router = Router();
++
++// Cualquier cliente o profesional autenticado puede enviar una consulta desde "Ayuda".
++const requireClientOrProfessional = (req, res, next) => {
++  if (![ROLES.CLIENT, ROLES.PROFESSIONAL].includes(req.user?.role)) {
++    return next(new AppError('Acceso no autorizado', 403));
++  }
++  next();
++};
++
++router.use(authMiddleware);
++router.use(requireClientOrProfessional);
++
++router.post('/tickets', validateRequest(createTicketSchema), createTicket);
++
++export default router;
+diff --git a/backend/src/services/adminDashboardService.js b/backend/src/services/adminDashboardService.js
+new file mode 100644
+index 0000000..6d20d13
+--- /dev/null
++++ b/backend/src/services/adminDashboardService.js
+@@ -0,0 +1,177 @@
++import { supabase } from '../config/supabase.js';
++import { AppError } from '../utils/errors.js';
++import { fullName, fetchProfileNames, resolvePaymentParties } from '../utils/adminLookups.js';
++
++const TIMEZONE = 'America/Argentina/Buenos_Aires';
++const DAY_MS = 24 * 60 * 60 * 1000;
++const PERIOD_DAYS = { '7days': 7, '30days': 30 };
++const TREND_BUCKETS = 4;
++const ALL_TIME_TREND_DAYS = 28;
++const ACTIVE_REQUEST_STATUSES = ['open', 'offered'];
++const PAGE_SIZE = 1000;
++const MAX_PAGES = 10;
++
++const ROLE_LABELS = { client: 'cliente', professional: 'profesional', administrator: 'administrador' };
++const PAYMENT_STATUS_LABELS = { pending: 'pendiente', partial: 'parcial', paid: 'pagado', refunded: 'reembolsado' };
++
++// Definición de cada KPI: tabla, filtro de estado y si respeta el filtro `period`.
++const METRICS = {
++  totalUsers: { table: 'profiles', filter: { excludeStatus: 'deleted' }, usesPeriod: true },
++  activeRequests: { table: 'requests', filter: { statuses: ACTIVE_REQUEST_STATUSES }, usesPeriod: false },
++  totalOffers: { table: 'offers', filter: {}, usesPeriod: true },
++  totalTransactions: { table: 'payments', filter: { statuses: ['paid'] }, usesPeriod: true }
++};
++
++const dayKeyFormatter = new Intl.DateTimeFormat('en-CA', {
++  timeZone: TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit'
++});
++const dayKey = (date) => dayKeyFormatter.format(date);
++
++const fail = (label, error) => {
++  console.error(`AdminDashboardService ${label}:`, error);
++  throw new AppError('Error al obtener los datos del dashboard', 500);
++};
++
++const countRows = async (table, { statuses, excludeStatus, from, to } = {}) => {
++  let query = supabase.from(table).select('id', { count: 'exact', head: true });
++  if (statuses) query = query.in('status', statuses);
++  if (excludeStatus) query = query.neq('status', excludeStatus);
++  if (from) query = query.gte('created_at', from.toISOString());
++  if (to) query = query.lt('created_at', to.toISOString());
++
++  const { count, error } = await query;
++  if (error) fail(`count ${table}`, error);
++  return count ?? 0;
++};
++
++// Trae todas las fechas de creación desde `since` paginando (Supabase limita a 1000 filas por request).
++const fetchCreatedAt = async (table, since) => {
++  const dates = [];
++  for (let page = 0; page < MAX_PAGES; page += 1) {
++    const { data, error } = await supabase
++      .from(table)
++      .select('created_at')
++      .gte('created_at', since.toISOString())
++      .order('created_at', { ascending: true })
++      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
++    if (error) fail(`created_at ${table}`, error);
++    dates.push(...data.map((row) => row.created_at));
++    if (data.length < PAGE_SIZE) break;
++  }
++  return dates;
++};
++
++export const getMetrics = async (period = 'all_time') => {
++  const now = new Date();
++  const periodDays = PERIOD_DAYS[period] ?? null;
++  const periodStart = periodDays ? new Date(now.getTime() - periodDays * DAY_MS) : null;
++
++  // Las barritas de tendencia dividen el periodo (o los últimos 28 días en all_time) en 4 tramos.
++  const trendDays = periodDays ?? ALL_TIME_TREND_DAYS;
++  const trendStart = now.getTime() - trendDays * DAY_MS;
++  const bucketMs = (trendDays * DAY_MS) / TREND_BUCKETS;
++  const buckets = Array.from({ length: TREND_BUCKETS }, (_, i) => ({
++    from: new Date(trendStart + i * bucketMs),
++    to: new Date(i === TREND_BUCKETS - 1 ? now.getTime() + 1 : trendStart + (i + 1) * bucketMs)
++  }));
++
++  const entries = await Promise.all(
++    Object.entries(METRICS).map(async ([key, { table, filter, usesPeriod }]) => {
++      const [value, trend] = await Promise.all([
++        countRows(table, { ...filter, from: usesPeriod ? periodStart : null }),
++        Promise.all(buckets.map((bucket) => countRows(table, { ...filter, ...bucket })))
++      ]);
++      return [key, { value, trend }];
++    })
++  );
++
++  return { period, ...Object.fromEntries(entries) };
++};
++
++export const getActivityChart = async (days = 30) => {
++  const now = new Date();
++  const since = new Date(now.getTime() - days * DAY_MS);
++
++  const [requests, offers, payments] = await Promise.all([
++    fetchCreatedAt('requests', since),
++    fetchCreatedAt('offers', since),
++    fetchCreatedAt('payments', since)
++  ]);
++
++  // Se devuelven todos los días del rango, con 0 si no hubo actividad.
++  const totals = new Map();
++  for (let i = days - 1; i >= 0; i -= 1) {
++    totals.set(dayKey(new Date(now.getTime() - i * DAY_MS)), 0);
++  }
++  [...requests, ...offers, ...payments].forEach((createdAt) => {
++    const key = dayKey(new Date(createdAt));
++    if (totals.has(key)) totals.set(key, totals.get(key) + 1);
++  });
++
++  return {
++    days,
++    points: [...totals].map(([date, total]) => ({ date, total }))
++  };
++};
++
++export const getRecentActivity = async (limit = 10) => {
++  const recent = (table, columns) =>
++    supabase.from(table).select(columns).order('created_at', { ascending: false }).limit(limit);
++
++  const [users, requests, offers, payments] = await Promise.all([
++    recent('profiles', 'id, first_name, last_name, role, created_at').neq('status', 'deleted'),
++    recent('requests', 'id, title, client_id, created_at'),
++    recent('offers', 'id, professional_id, created_at'),
++    recent('payments', 'id, appointment_id, total_amount, status, created_at')
++  ]);
++
++  [['profiles', users], ['requests', requests], ['offers', offers], ['payments', payments]]
++    .forEach(([label, result]) => { if (result.error) fail(`recent ${label}`, result.error); });
++
++  const parties = await resolvePaymentParties(payments.data);
++  const payerByPayment = Object.fromEntries(
++    Object.entries(parties).map(([paymentId, party]) => [paymentId, party.clientId])
++  );
++  const names = await fetchProfileNames([
++    ...requests.data.map((row) => row.client_id),
++    ...offers.data.map((row) => row.professional_id),
++    ...Object.values(payerByPayment)
++  ]);
++  const actorOf = (id, role) => (id && names[id] ? { name: names[id], role } : null);
++
++  const events = [
++    ...users.data.map((row) => ({
++      id: row.id,
++      action: 'NUEVO_USUARIO',
++      description: `Se registró ${fullName(row)} como ${ROLE_LABELS[row.role] ?? row.role}.`,
++      actor: { name: fullName(row), role: row.role },
++      createdAt: row.created_at
++    })),
++    ...requests.data.map((row) => ({
++      id: row.id,
++      action: 'SOLICITUD_PUBLICADA',
++      description: `${names[row.client_id] ?? 'Un cliente'} publicó la solicitud "${row.title}".`,
++      actor: actorOf(row.client_id, 'client'),
++      createdAt: row.created_at
++    })),
++    ...offers.data.map((row) => ({
++      id: row.id,
++      action: 'OFERTA_ENVIADA',
++      description: `${names[row.professional_id] ?? 'Un profesional'} envió una oferta.`,
++      actor: actorOf(row.professional_id, 'professional'),
++      createdAt: row.created_at
++    })),
++    ...payments.data.map((row) => ({
++      id: row.id,
++      action: 'PAGO_REGISTRADO',
++      description: `Se registró un pago de $${Number(row.total_amount).toLocaleString('es-AR')} (${PAYMENT_STATUS_LABELS[row.status] ?? row.status}).`,
++      actor: actorOf(payerByPayment[row.id], 'client'),
++      status: row.status,
++      createdAt: row.created_at
++    }))
++  ];
++
++  return events
++    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
++    .slice(0, limit);
++};
+diff --git a/backend/src/services/adminInquiriesService.js b/backend/src/services/adminInquiriesService.js
+new file mode 100644
+index 0000000..cc91164
+--- /dev/null
++++ b/backend/src/services/adminInquiriesService.js
+@@ -0,0 +1,157 @@
++import { supabase } from '../config/supabase.js';
++import { AppError, ConflictError, NotFoundError } from '../utils/errors.js';
++import { ROLES } from '../utils/constants.js';
++import { fetchProfileSummaries } from '../utils/adminLookups.js';
++import { createNotification } from './notificationCreatorService.js';
++
++const DEFAULT_LIMIT = 10;
++const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
++// Acepta "101", "000101", "CON-101" o "CON-000101".
++const TICKET_NUMBER_REGEX = /^(?:con-?)?0*(\d{1,15})$/i;
++const OUT_OF_RANGE_CODE = 'PGRST103';
++
++const LIST_COLUMNS = 'id, ticket_number, user_id, subject, status, created_at';
++const DETAIL_COLUMNS = `${LIST_COLUMNS}, message, reply_subject, reply_message, replied_by, replied_at`;
++
++const HELP_ROUTE_BY_ROLE = {
++  [ROLES.CLIENT]: '/client/help',
++  [ROLES.PROFESSIONAL]: '/professional/help'
++};
++
++const formatTicketCode = (number) => `CON-${String(number).padStart(6, '0')}`;
++
++const emptyPage = (page, limit) => ({ items: [], meta: { totalCount: 0, page, limit, hasMore: false } });
++
++// Quita los caracteres con significado especial en los filtros de PostgREST.
++const sanitizeSearch = (text) => text.replace(/[%,()*\\]/g, '');
++
++const toListItem = (row, users) => ({
++  id: row.id,
++  ticketNumber: formatTicketCode(row.ticket_number),
++  subject: row.subject,
++  status: row.status,
++  createdAt: row.created_at,
++  user: users[row.user_id] ?? null
++});
++
++export const listInquiries = async ({ search, status, page = 1, limit = DEFAULT_LIMIT }) => {
++  let query = supabase.from('support_tickets').select(LIST_COLUMNS, { count: 'exact' });
++
++  if (status) query = query.eq('status', status);
++
++  const term = search?.trim();
++  if (term) {
++    const numberMatch = term.match(TICKET_NUMBER_REGEX);
++    const safeTerm = sanitizeSearch(term);
++    if (UUID_REGEX.test(term)) {
++      query = query.eq('id', term);
++    } else if (numberMatch) {
++      // Un número puede ser el de la consulta o formar parte de un asunto ("pago 2").
++      query = query.or(`ticket_number.eq.${Number(numberMatch[1])},subject.ilike.%${safeTerm}%`);
++    } else if (safeTerm) {
++      query = query.ilike('subject', `%${safeTerm}%`);
++    } else {
++      return emptyPage(page, limit);
++    }
++  }
++
++  const from = (page - 1) * limit;
++  const { data, count, error } = await query
++    .order('created_at', { ascending: false })
++    .range(from, from + limit - 1);
++
++  // Una página más allá de la última no es un error: simplemente no hay filas.
++  if (error?.code === OUT_OF_RANGE_CODE) return emptyPage(page, limit);
++  if (error) {
++    console.error('AdminInquiriesService list:', error);
++    throw new AppError('Error al obtener las consultas', 500);
++  }
++
++  const users = await fetchProfileSummaries(data.map((row) => row.user_id));
++  return {
++    items: data.map((row) => toListItem(row, users)),
++    meta: { totalCount: count ?? 0, page, limit, hasMore: from + data.length < (count ?? 0) }
++  };
++};
++
++// Arma el detalle completo. El email vive en Supabase Auth, por eso solo se pide acá y no en el listado.
++const buildDetail = async (row) => {
++  const users = await fetchProfileSummaries([row.user_id, row.replied_by]);
++
++  let email = null;
++  const { data: authData, error: authError } = await supabase.auth.admin.getUserById(row.user_id);
++  if (authError) console.error('AdminInquiriesService email:', authError);
++  else email = authData?.user?.email ?? null;
++
++  return {
++    ...toListItem(row, users),
++    message: row.message,
++    user: users[row.user_id] ? { ...users[row.user_id], email } : null,
++    reply: row.reply_message
++      ? {
++          subject: row.reply_subject,
++          message: row.reply_message,
++          repliedAt: row.replied_at,
++          repliedBy: users[row.replied_by]?.name ?? null
++        }
++      : null
++  };
++};
++
++const loadTicket = async (id) => {
++  const { data, error } = await supabase
++    .from('support_tickets')
++    .select(DETAIL_COLUMNS)
++    .eq('id', id)
++    .maybeSingle();
++  if (error) {
++    console.error('AdminInquiriesService load:', error);
++    throw new AppError('Error al obtener la consulta', 500);
++  }
++  if (!data) throw new NotFoundError('Consulta no encontrada');
++  return data;
++};
++
++export const getInquiry = async (id) => buildDetail(await loadTicket(id));
++
++export const replyInquiry = async (id, { subject, message }, adminId) => {
++  const ticket = await loadTicket(id);
++  if (ticket.status === 'answered') {
++    throw new ConflictError('Esta consulta ya fue respondida.', 'INQUIRY_ALREADY_ANSWERED');
++  }
++
++  // El filtro por status = 'open' evita que dos administradores respondan a la vez la misma consulta.
++  const { data: updated, error } = await supabase
++    .from('support_tickets')
++    .update({
++      status: 'answered',
++      reply_subject: subject,
++      reply_message: message,
++      replied_by: adminId,
++      replied_at: new Date().toISOString()
++    })
++    .eq('id', id)
++    .eq('status', 'open')
++    .select(DETAIL_COLUMNS)
++    .maybeSingle();
++  if (error) {
++    console.error('AdminInquiriesService reply:', error);
++    throw new AppError('Error al guardar la respuesta', 500);
++  }
++  if (!updated) throw new ConflictError('Esta consulta ya fue respondida.', 'INQUIRY_ALREADY_ANSWERED');
++
++  // Aviso al usuario dentro de la app. Si falla no interrumpe: la respuesta ya quedó guardada.
++  const users = await fetchProfileSummaries([ticket.user_id]);
++  await createNotification({
++    userId: ticket.user_id,
++    type: 'support_reply',
++    title: 'Respondimos tu consulta',
++    description: subject,
++    href: HELP_ROUTE_BY_ROLE[users[ticket.user_id]?.role] ?? '/client/help',
++    relatedEntityId: ticket.id,
++    relatedEntityType: 'support_ticket',
++    metadata: { ticketNumber: formatTicketCode(ticket.ticket_number) }
++  });
++
++  return buildDetail(updated);
++};
+diff --git a/backend/src/services/adminModerationService.js b/backend/src/services/adminModerationService.js
+new file mode 100644
+index 0000000..d5fe8e5
+--- /dev/null
++++ b/backend/src/services/adminModerationService.js
+@@ -0,0 +1,151 @@
++import { supabase } from '../config/supabase.js';
++import { AppError, ConflictError, NotFoundError } from '../utils/errors.js';
++import { fetchProfileSummaries, fetchRowsByIds, pick } from '../utils/adminLookups.js';
++
++const DEFAULT_LIMIT = 10;
++const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
++// Acepta "125", "00125", "ORD-125" o "ORD-00125".
++const ORDER_NUMBER_REGEX = /^(?:ord-?)?0*(\d{1,15})$/i;
++const OUT_OF_RANGE_CODE = 'PGRST103';
++const TIMEZONE = 'America/Argentina/Buenos_Aires';
++
++const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
++  timeZone: TIMEZONE, day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false
++});
++
++const formatOrderCode = (number) => `ORD-${String(number).padStart(5, '0')}`;
++const formatMoney = (amount) => `$${Number(amount).toLocaleString('es-AR')}`;
++
++// Cada entidad define qué columnas leer y cómo llevarlas al formato común { title, description, actorId }.
++const ENTITIES = {
++  requests: {
++    table: 'requests',
++    columns: 'id, order_number, client_id, title, description, moderation_status, created_at',
++    describe: async (rows) => rows.map((row) => ({
++      title: row.title,
++      description: row.description,
++      actorId: row.client_id
++    }))
++  },
++  offers: {
++    table: 'offers',
++    columns: 'id, order_number, request_id, professional_id, amount, message, moderation_status, created_at',
++    describe: async (rows) => {
++      const requests = await fetchRowsByIds('requests', 'id, title', pick(rows, 'request_id'));
++      const titleByRequest = Object.fromEntries(requests.map((row) => [row.id, row.title]));
++      return rows.map((row) => ({
++        title: `Oferta de ${formatMoney(row.amount)} para "${titleByRequest[row.request_id] ?? 'una solicitud'}"`,
++        description: row.message,
++        actorId: row.professional_id
++      }));
++    }
++  },
++  reviews: {
++    table: 'reviews',
++    columns: 'id, order_number, reviewer_id, rating, comment, moderation_status, created_at',
++    describe: async (rows) => rows.map((row) => ({
++      title: `Calificación ${row.rating}/5`,
++      description: row.comment,
++      actorId: row.reviewer_id
++    }))
++  },
++  appointments: {
++    table: 'appointments',
++    columns: 'id, order_number, offer_id, scheduled_at, notes, moderation_status, created_at',
++    describe: async (rows) => {
++      const offers = await fetchRowsByIds('offers', 'id, request_id', pick(rows, 'offer_id'));
++      const requests = await fetchRowsByIds('requests', 'id, title, client_id', pick(offers, 'request_id'));
++      const requestByOffer = Object.fromEntries(offers.map((row) => [row.id, row.request_id]));
++      const requestById = Object.fromEntries(requests.map((row) => [row.id, row]));
++      return rows.map((row) => {
++        const request = requestById[requestByOffer[row.offer_id]];
++        return {
++          title: request?.title ?? 'Turno',
++          description: row.notes || `Turno programado para el ${dateTimeFormatter.format(new Date(row.scheduled_at))}.`,
++          actorId: request?.client_id ?? null
++        };
++      });
++    }
++  }
++};
++
++const emptyPage = (page, limit) => ({ items: [], meta: { totalCount: 0, page, limit, hasMore: false } });
++
++export const listModeration = async (entity, { search, page = 1, limit = DEFAULT_LIMIT }) => {
++  const { table, columns, describe } = ENTITIES[entity];
++
++  let query = supabase.from(table).select(columns, { count: 'exact' });
++
++  const term = search?.trim();
++  if (term) {
++    const orderMatch = term.match(ORDER_NUMBER_REGEX);
++    if (UUID_REGEX.test(term)) {
++      query = query.eq('id', term);
++    } else if (orderMatch) {
++      query = query.eq('order_number', Number(orderMatch[1]));
++    } else {
++      // Texto que no es ni un número de orden ni un UUID: no puede coincidir con nada.
++      return emptyPage(page, limit);
++    }
++  }
++
++  // El administrador ve los tres estados (activo, desactivado y eliminado).
++  const from = (page - 1) * limit;
++  const { data, count, error } = await query
++    .order('created_at', { ascending: false })
++    .range(from, from + limit - 1);
++
++  // Una página más allá de la última no es un error: simplemente no hay filas.
++  if (error?.code === OUT_OF_RANGE_CODE) return emptyPage(page, limit);
++  if (error) {
++    console.error(`AdminModerationService list ${entity}:`, error);
++    throw new AppError('Error al obtener los elementos a moderar', 500);
++  }
++
++  const described = await describe(data);
++  const actors = await fetchProfileSummaries(described.map((item) => item.actorId));
++
++  return {
++    items: data.map((row, index) => ({
++      id: row.id,
++      orderNumber: formatOrderCode(row.order_number),
++      moderationStatus: row.moderation_status,
++      title: described[index].title,
++      description: described[index].description,
++      user: actors[described[index].actorId] ?? null,
++      createdAt: row.created_at
++    })),
++    meta: { totalCount: count ?? 0, page, limit, hasMore: from + data.length < (count ?? 0) }
++  };
++};
++
++export const updateModerationStatus = async (entity, id, moderationStatus) => {
++  const { table } = ENTITIES[entity];
++
++  const { data: current, error: readError } = await supabase
++    .from(table)
++    .select('id, moderation_status')
++    .eq('id', id)
++    .maybeSingle();
++  if (readError) {
++    console.error(`AdminModerationService read ${entity}:`, readError);
++    throw new AppError('Error al actualizar el elemento', 500);
++  }
++  if (!current) throw new NotFoundError('Elemento no encontrado');
++
++  // Eliminar es definitivo: un elemento eliminado no vuelve a activarse ni desactivarse.
++  if (current.moderation_status === 'deleted' && moderationStatus !== 'deleted') {
++    throw new ConflictError('Un elemento eliminado no se puede restaurar.', 'ITEM_DELETED');
++  }
++  if (current.moderation_status === moderationStatus) return { id, moderationStatus };
++
++  const { error: updateError } = await supabase
++    .from(table)
++    .update({ moderation_status: moderationStatus })
++    .eq('id', id);
++  if (updateError) {
++    console.error(`AdminModerationService update ${entity}:`, updateError);
++    throw new AppError('Error al actualizar el elemento', 500);
++  }
++  return { id, moderationStatus };
++};
+diff --git a/backend/src/services/adminTransactionsService.js b/backend/src/services/adminTransactionsService.js
+new file mode 100644
+index 0000000..c8a4274
+--- /dev/null
++++ b/backend/src/services/adminTransactionsService.js
+@@ -0,0 +1,75 @@
++import { supabase } from '../config/supabase.js';
++import { AppError } from '../utils/errors.js';
++import { ROLES } from '../utils/constants.js';
++import { fetchProfileNames, resolvePaymentParties } from '../utils/adminLookups.js';
++
++const DEFAULT_LIMIT = 10;
++const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
++// Acepta "126", "000126", "TRX-126" o "TRX-000126".
++const TRANSACTION_NUMBER_REGEX = /^(?:trx-?)?0*(\d{1,15})$/i;
++const OUT_OF_RANGE_CODE = 'PGRST103';
++
++const formatTransactionNumber = (number) => `TRX-${String(number).padStart(6, '0')}`;
++
++const toPerson = (id, names, role) => (id && names[id] ? { id, name: names[id], role } : null);
++
++export const listTransactions = async ({ search, page = 1, limit = DEFAULT_LIMIT }) => {
++  let query = supabase
++    .from('payments')
++    .select(
++      'id, transaction_number, appointment_id, total_amount, deposit_amount, method, status, external_operation_id, created_at',
++      { count: 'exact' }
++    );
++
++  const term = search?.trim();
++  if (term) {
++    const numberMatch = term.match(TRANSACTION_NUMBER_REGEX);
++    if (UUID_REGEX.test(term)) {
++      query = query.eq('id', term);
++    } else if (numberMatch) {
++      query = query.eq('transaction_number', Number(numberMatch[1]));
++    } else {
++      // Texto que no es ni un número de transacción ni un UUID: no puede coincidir con nada.
++      return { items: [], meta: { totalCount: 0, page, limit, hasMore: false } };
++    }
++  }
++
++  const from = (page - 1) * limit;
++  const { data, count, error } = await query
++    .order('created_at', { ascending: false })
++    .range(from, from + limit - 1);
++
++  // Una página más allá de la última no es un error: simplemente no hay filas.
++  if (error?.code === OUT_OF_RANGE_CODE) {
++    return { items: [], meta: { totalCount: 0, page, limit, hasMore: false } };
++  }
++  if (error) {
++    console.error('AdminTransactionsService list:', error);
++    throw new AppError('Error al obtener las transacciones', 500);
++  }
++
++  const parties = await resolvePaymentParties(data);
++  const names = await fetchProfileNames(
++    Object.values(parties).flatMap((party) => [party.clientId, party.professionalId])
++  );
++
++  const items = data.map((payment) => {
++    const { clientId, professionalId } = parties[payment.id];
++    return {
++      id: payment.id,
++      transactionNumber: formatTransactionNumber(payment.transaction_number),
++      user: toPerson(clientId, names, ROLES.CLIENT),
++      professional: toPerson(professionalId, names, ROLES.PROFESSIONAL),
++      amount: Number(payment.total_amount),
++      depositAmount: Number(payment.deposit_amount),
++      method: payment.method,
++      status: payment.status,
++      createdAt: payment.created_at
++    };
++  });
++
++  return {
++    items,
++    meta: { totalCount: count ?? 0, page, limit, hasMore: from + data.length < (count ?? 0) }
++  };
++};
+diff --git a/backend/src/services/adminUsersService.js b/backend/src/services/adminUsersService.js
+new file mode 100644
+index 0000000..081ca5b
+--- /dev/null
++++ b/backend/src/services/adminUsersService.js
+@@ -0,0 +1,102 @@
++import { supabase } from '../config/supabase.js';
++import { AppError, ConflictError, NotFoundError } from '../utils/errors.js';
++import { ROLES } from '../utils/constants.js';
++
++const DEFAULT_LIMIT = 10;
++const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
++const OUT_OF_RANGE_CODE = 'PGRST103';
++
++const fullName = (row) => [row.first_name, row.last_name].filter(Boolean).join(' ') || 'Sin nombre';
++
++const toUser = (row) => ({
++  id: row.id,
++  name: fullName(row),
++  role: row.role,
++  status: row.status,
++  createdAt: row.created_at
++});
++
++const fail = (label, error) => {
++  console.error(`AdminUsersService ${label}:`, error);
++  throw new AppError('Error al procesar la solicitud de usuarios', 500);
++};
++
++export const listUsers = async ({ role, search, page = 1, limit = DEFAULT_LIMIT }) => {
++  let query = supabase
++    .from('profiles')
++    .select('id, first_name, last_name, role, status, created_at', { count: 'exact' })
++    .eq('role', role)
++    .neq('status', 'deleted');
++
++  const term = search?.trim();
++  if (term) {
++    if (UUID_REGEX.test(term)) {
++      query = query.eq('id', term);
++    } else {
++      // Cada palabra debe coincidir con el nombre o el apellido ("Elena Martinez" → Elena Y Martinez).
++      term.split(/\s+/).forEach((word) => {
++        const safeWord = word.replace(/[%,()*\\]/g, '');
++        if (safeWord) query = query.or(`first_name.ilike.%${safeWord}%,last_name.ilike.%${safeWord}%`);
++      });
++    }
++  }
++
++  const from = (page - 1) * limit;
++  const { data, count, error } = await query
++    .order('created_at', { ascending: false })
++    .range(from, from + limit - 1);
++
++  // Una página más allá de la última no es un error: simplemente no hay filas.
++  if (error?.code === OUT_OF_RANGE_CODE) {
++    return { items: [], meta: { totalCount: 0, page, limit, hasMore: false } };
++  }
++  if (error) fail('list', error);
++
++  return {
++    items: data.map(toUser),
++    meta: { totalCount: count ?? 0, page, limit, hasMore: from + data.length < (count ?? 0) }
++  };
++};
++
++// Carga el usuario a modificar y verifica que se pueda tocar. Un usuario eliminado se trata como inexistente.
++const loadModifiableUser = async (id, requesterId) => {
++  if (id === requesterId) {
++    throw new ConflictError('No podés modificar tu propia cuenta.', 'SELF_MODIFICATION_NOT_ALLOWED');
++  }
++
++  const { data: target, error } = await supabase
++    .from('profiles')
++    .select('id, role, status')
++    .eq('id', id)
++    .maybeSingle();
++  if (error) fail('load', error);
++  if (!target || target.status === 'deleted') throw new NotFoundError('Usuario no encontrado');
++
++  if (target.role === ROLES.ADMIN) {
++    throw new ConflictError('No se pueden modificar cuentas de administrador.', 'ADMIN_ACCOUNT_PROTECTED');
++  }
++  return target;
++};
++
++const setStatus = async (id, status) => {
++  const { data, error } = await supabase
++    .from('profiles')
++    .update({ status })
++    .eq('id', id)
++    .select('id, status')
++    .single();
++  if (error) fail('update status', error);
++  return data;
++};
++
++export const updateUserStatus = async (id, status, requesterId) => {
++  const target = await loadModifiableUser(id, requesterId);
++  if (target.status === status) return { id: target.id, status: target.status };
++  return setStatus(id, status);
++};
++
++// Borrado lógico: la fila se conserva para no romper turnos, pagos ni reseñas.
++export const deleteUser = async (id, requesterId) => {
++  await loadModifiableUser(id, requesterId);
++  return setStatus(id, 'deleted');
++};
+diff --git a/backend/src/services/authService.js b/backend/src/services/authService.js
+index 5337561..c46c641 100644
+--- a/backend/src/services/authService.js
++++ b/backend/src/services/authService.js
+@@ -65,10 +65,11 @@ export const loginUser = async ({ email, password }) => {
+     throw new AppError(error.message, error.status || 500, ERROR_CODES.INTERNAL_SERVER_ERROR);
+   }
+ 
+-  // Fetch the user's profile to get their name, avatar and location
++  // Fetch the user's profile to get their role, name, avatar and location.
++  // profiles.role es la fuente de verdad (la misma que usa authMiddleware).
+   const { data: profile } = await supabase
+     .from('profiles')
+-    .select('first_name, last_name, avatar_url, location, latitude, longitude')
++    .select('role, first_name, last_name, avatar_url, location, latitude, longitude')
+     .eq('id', data.user.id)
+     .single();
+ 
+@@ -76,7 +77,7 @@ export const loginUser = async ({ email, password }) => {
+     user: {
+       id: data.user.id,
+       email: data.user.email,
+-      role: data.user.user_metadata?.role,
++      role: profile?.role ?? data.user.user_metadata?.role,
+       name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : null,
+       first_name: profile?.first_name,
+       last_name: profile?.last_name,
+diff --git a/backend/src/services/supportService.js b/backend/src/services/supportService.js
+new file mode 100644
+index 0000000..4969aa9
+--- /dev/null
++++ b/backend/src/services/supportService.js
+@@ -0,0 +1,24 @@
++import { supabase } from '../config/supabase.js';
++import { AppError } from '../utils/errors.js';
++
++const formatTicketCode = (number) => `CON-${String(number).padStart(6, '0')}`;
++
++export const createTicket = async (userId, { subject, message }) => {
++  const { data, error } = await supabase
++    .from('support_tickets')
++    .insert({ user_id: userId, subject: subject.trim(), message: message.trim() })
++    .select('id, ticket_number, status, created_at')
++    .single();
++
++  if (error) {
++    console.error('SupportService createTicket:', error);
++    throw new AppError('No se pudo enviar la consulta', 500);
++  }
++
++  return {
++    id: data.id,
++    ticketNumber: formatTicketCode(data.ticket_number),
++    status: data.status,
++    createdAt: data.created_at
++  };
++};
+diff --git a/backend/src/utils/adminLookups.js b/backend/src/utils/adminLookups.js
+new file mode 100644
+index 0000000..663f1ca
+--- /dev/null
++++ b/backend/src/utils/adminLookups.js
+@@ -0,0 +1,77 @@
++import { supabase } from '../config/supabase.js';
++import { AppError } from './errors.js';
++
++export const pick = (rows, key) => [...new Set((rows ?? []).map((row) => row[key]).filter(Boolean))];
++
++export const fullName = (profile, fallback = 'Un usuario') =>
++  [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || fallback;
++
++// Devuelve { [profileId]: "Nombre Apellido" } para los ids indicados.
++export const fetchProfileNames = async (ids) => {
++  const uniqueIds = [...new Set(ids.filter(Boolean))];
++  if (uniqueIds.length === 0) return {};
++
++  const { data, error } = await supabase
++    .from('profiles')
++    .select('id, first_name, last_name')
++    .in('id', uniqueIds);
++  if (error) {
++    console.error('adminLookups names:', error);
++    throw new AppError('Error al obtener los nombres de usuario', 500);
++  }
++  return Object.fromEntries(data.map((profile) => [profile.id, fullName(profile)]));
++};
++
++// Devuelve { [profileId]: { id, name, role } } para los ids indicados.
++export const fetchProfileSummaries = async (ids) => {
++  const uniqueIds = [...new Set(ids.filter(Boolean))];
++  if (uniqueIds.length === 0) return {};
++
++  const { data, error } = await supabase
++    .from('profiles')
++    .select('id, first_name, last_name, role')
++    .in('id', uniqueIds);
++  if (error) {
++    console.error('adminLookups summaries:', error);
++    throw new AppError('Error al obtener los datos de usuario', 500);
++  }
++  return Object.fromEntries(
++    data.map((profile) => [profile.id, { id: profile.id, name: fullName(profile), role: profile.role }])
++  );
++};
++
++// Es un dato de enriquecimiento: si una consulta falla, devuelve [] y el registro queda sin esos datos.
++export const fetchRowsByIds = async (table, columns, ids) => {
++  if (ids.length === 0) return [];
++  const { data, error } = await supabase.from(table).select(columns).in('id', ids);
++  if (error) {
++    console.error(`adminLookups ${table}:`, error);
++    return [];
++  }
++  return data;
++};
++
++// Averigua quiénes participan en cada pago (payments → appointments → offers → requests).
++// Devuelve { [paymentId]: { clientId, professionalId } }.
++export const resolvePaymentParties = async (payments) => {
++  const appointments = await fetchRowsByIds('appointments', 'id, offer_id', pick(payments, 'appointment_id'));
++  const offers = await fetchRowsByIds('offers', 'id, request_id, professional_id', pick(appointments, 'offer_id'));
++  const requests = await fetchRowsByIds('requests', 'id, client_id', pick(offers, 'request_id'));
++
++  const clientByRequest = Object.fromEntries(requests.map((row) => [row.id, row.client_id]));
++  const offerById = Object.fromEntries(offers.map((row) => [row.id, row]));
++  const offerByAppointment = Object.fromEntries(appointments.map((row) => [row.id, row.offer_id]));
++
++  return Object.fromEntries(
++    payments.map((payment) => {
++      const offer = offerById[offerByAppointment[payment.appointment_id]];
++      return [
++        payment.id,
++        {
++          clientId: clientByRequest[offer?.request_id] ?? null,
++          professionalId: offer?.professional_id ?? null
++        }
++      ];
++    })
++  );
++};
+diff --git a/frontend/src/components/ui/Pagination.jsx b/frontend/src/components/ui/Pagination.jsx
+new file mode 100644
+index 0000000..9ed9a87
+--- /dev/null
++++ b/frontend/src/components/ui/Pagination.jsx
+@@ -0,0 +1,70 @@
++import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
++
++const MAX_VISIBLE_PAGES = 5;
++
++/** Páginas a mostrar: ventana de hasta 5 números alrededor de la actual. */
++function getVisiblePages(page, totalPages) {
++  const half = Math.floor(MAX_VISIBLE_PAGES / 2);
++  const start = Math.max(1, Math.min(page - half, totalPages - MAX_VISIBLE_PAGES + 1));
++  const end = Math.min(totalPages, start + MAX_VISIBLE_PAGES - 1);
++  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
++}
++
++const baseButton =
++  "flex h-8 min-w-8 items-center justify-center rounded-[6px] border px-2 text-sm font-semibold transition-colors";
++
++/**
++ * Pagination — Paginador simple con botones Anterior / Siguiente y números de página.
++ * No renderiza nada si hay una sola página.
++ *
++ * @param {number} props.page - Página actual (empieza en 1).
++ * @param {number} props.totalPages - Cantidad total de páginas.
++ * @param {function} props.onPageChange - Recibe el número de la página elegida.
++ */
++export default function Pagination({ page = 1, totalPages = 1, onPageChange }) {
++  if (totalPages <= 1) return null;
++
++  return (
++    <nav aria-label="Paginación" className="flex items-center justify-end gap-1.5">
++      <button
++        type="button"
++        onClick={() => onPageChange(page - 1)}
++        disabled={page <= 1}
++        aria-label="Página anterior"
++        className={`${baseButton} border-[#3a3a3a] text-[#A8A8AA] hover:bg-[#323232] hover:text-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent`}
++      >
++        <ChevronLeftIcon className="h-4 w-4" />
++      </button>
++
++      {getVisiblePages(page, totalPages).map((number) => {
++        const isCurrent = number === page;
++        return (
++          <button
++            key={number}
++            type="button"
++            onClick={() => onPageChange(number)}
++            aria-label={`Página ${number}`}
++            aria-current={isCurrent ? "page" : undefined}
++            className={`${baseButton} cursor-pointer ${
++              isCurrent
++                ? "border-[#F78736] bg-[#F78736] text-white"
++                : "border-[#3a3a3a] text-[#A8A8AA] hover:bg-[#323232] hover:text-white"
++            }`}
++          >
++            {number}
++          </button>
++        );
++      })}
++
++      <button
++        type="button"
++        onClick={() => onPageChange(page + 1)}
++        disabled={page >= totalPages}
++        aria-label="Página siguiente"
++        className={`${baseButton} border-[#3a3a3a] text-[#A8A8AA] hover:bg-[#323232] hover:text-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent`}
++      >
++        <ChevronRightIcon className="h-4 w-4" />
++      </button>
++    </nav>
++  );
++}
+diff --git a/frontend/src/features/dashboard/components/MarketplaceActivityCard.jsx b/frontend/src/features/dashboard/components/MarketplaceActivityCard.jsx
+index d2e8fe6..d7be791 100644
+--- a/frontend/src/features/dashboard/components/MarketplaceActivityCard.jsx
++++ b/frontend/src/features/dashboard/components/MarketplaceActivityCard.jsx
+@@ -9,7 +9,31 @@
+  * @param {Array<{x: number|string, y: number}>} [props.data] - Puntos de datos para el gráfico
+  * @param {boolean} [props.isLoading=false] - Estado de carga
+  */
++const TICK_COUNT = 4;
++const NICE_STEPS = [1, 2, 5];
++
++/** Eje Y adaptado al máximo real: 4 tramos con un paso "redondo" (1, 2, 5, 10, 20, 50…). */
++function getYAxis(data) {
++  const maxValue = Math.max(...data.map((point) => point.y), 0);
++  let magnitude = 1;
++  for (;;) {
++    const step = NICE_STEPS.map((base) => base * magnitude).find(
++      (candidate) => candidate * TICK_COUNT >= maxValue,
++    );
++    if (step) {
++      const maxY = step * TICK_COUNT;
++      return {
++        maxY,
++        ticks: Array.from({ length: TICK_COUNT + 1 }, (_, i) => maxY - i * step),
++      };
++    }
++    magnitude *= 10;
++  }
++}
++
+ export default function MarketplaceActivityCard({ data = [], isLoading = false }) {
++  const { maxY, ticks } = getYAxis(data);
++
+   return (
+     <div className="flex flex-col gap-1 rounded-[6px] border border-[#323232] bg-[#292929] p-5 sm:p-6">
+       {/* Encabezado */}
+@@ -26,9 +50,9 @@ export default function MarketplaceActivityCard({ data = [], isLoading = false }
+       <div className="mt-2 w-full">
+         <LineChart
+           data={data}
+-          yAxisTicks={[800, 600, 400, 200, 0]}
++          yAxisTicks={ticks}
+           xAxisTicks={[0, 5, 10, 15, 20, 25, 30]}
+-          maxY={850}
++          maxY={maxY}
+           minY={0}
+         />
+       </div>
+diff --git a/frontend/src/features/dashboard/hooks/useDashboardData.js b/frontend/src/features/dashboard/hooks/useDashboardData.js
+index fbe26c9..6a58857 100644
+--- a/frontend/src/features/dashboard/hooks/useDashboardData.js
++++ b/frontend/src/features/dashboard/hooks/useDashboardData.js
+@@ -1,21 +1,25 @@
+-﻿import { useState, useEffect, useCallback } from "react";
++import { useState, useEffect, useCallback } from "react";
++import { dashboardService } from "../services/dashboardService";
+ import {
+-  mockDashboardMetrics,
+-  mockMarketplaceActivity,
+-  mockRecentActivity,
+-} from "../data/mockDashboardData";
++  mapMetrics,
++  mapChartPoints,
++  mapActivity,
++  getDashboardErrorMessage,
++} from "../utils/dashboardMappers";
++
++const CHART_DAYS = 30;
+ 
+ /**
+- * useDashboardData — Hook personalizado para gestionar el estado de métricas, gráfico y actividad reciente.
++ * useDashboardData — Carga métricas, gráfico y actividad reciente desde el backend.
+  * Maneja estados de carga (isLoading), error (error), datos y reintento (refetch).
+  *
+  * @param {object} [options]
+- * @param {boolean} [options.initialEmpty=true] - Si es true, inicia con actividades vacías para coincidir con la captura.
++ * @param {number} [options.activityLimit=10] - Cantidad de eventos de actividad reciente a pedir.
+  */
+ export function useDashboardData(options = {}) {
+-  const { initialEmpty = true } = options;
+-  const [metrics, setMetrics] = useState(mockDashboardMetrics);
+-  const [marketplaceData, setMarketplaceData] = useState(mockMarketplaceActivity);
++  const { activityLimit = 10 } = options;
++  const [metrics, setMetrics] = useState(() => mapMetrics());
++  const [marketplaceData, setMarketplaceData] = useState([]);
+   const [activities, setActivities] = useState([]);
+   const [isLoading, setIsLoading] = useState(true);
+   const [error, setError] = useState(null);
+@@ -24,17 +28,20 @@ export function useDashboardData(options = {}) {
+     setIsLoading(true);
+     setError(null);
+     try {
+-      // Simulación de carga asíncrona
+-      await new Promise((resolve) => setTimeout(resolve, 150));
+-      setMetrics(mockDashboardMetrics);
+-      setMarketplaceData(mockMarketplaceActivity);
+-      setActivities(initialEmpty ? [] : mockRecentActivity);
++      const [metricsData, chartData, activityData] = await Promise.all([
++        dashboardService.getMetrics(),
++        dashboardService.getActivityChart(CHART_DAYS),
++        dashboardService.getRecentActivity(activityLimit),
++      ]);
++      setMetrics(mapMetrics(metricsData));
++      setMarketplaceData(mapChartPoints(chartData));
++      setActivities(activityData.map(mapActivity));
+     } catch (err) {
+-      setError(err?.message || "No se pudieron cargar los datos del dashboard.");
++      setError(getDashboardErrorMessage(err));
+     } finally {
+       setIsLoading(false);
+     }
+-  }, [initialEmpty]);
++  }, [activityLimit]);
+ 
+   useEffect(() => {
+     fetchData();
+diff --git a/frontend/src/features/dashboard/pages/AdminDashboardPage.jsx b/frontend/src/features/dashboard/pages/AdminDashboardPage.jsx
+index 26e7e29..7381b18 100644
+--- a/frontend/src/features/dashboard/pages/AdminDashboardPage.jsx
++++ b/frontend/src/features/dashboard/pages/AdminDashboardPage.jsx
+@@ -12,7 +12,6 @@ import StatCard from "../../../components/ui/StatCard";
+ import MarketplaceActivityCard from "../components/MarketplaceActivityCard";
+ import RecentActivityCard from "../components/RecentActivityCard";
+ import { useDashboardData } from "../hooks/useDashboardData";
+-import { mockRecentActivity } from "../data/mockDashboardData";
+ import { ROUTES } from "../../../constants/routes";
+ 
+ /**
+@@ -28,10 +27,10 @@ import { ROUTES } from "../../../constants/routes";
+  * - CA06: Manejo de errores con reintento y estados de carga.
+  */
+ export default function AdminDashboardPage() {
+-  const [showSampleData, setShowSampleData] = useState(false);
++  const [showAllActivity, setShowAllActivity] = useState(false);
+   const navigate = useNavigate();
+   const { metrics, marketplaceData, activities, isLoading, error, refetch } = useDashboardData({
+-    initialEmpty: true,
++    activityLimit: showAllActivity ? 50 : 10,
+   });
+ 
+   // Breadcrumbs según CA01 y captura de referencia ("Actividad / Dashboard")
+@@ -40,9 +39,6 @@ export default function AdminDashboardPage() {
+     { label: "Dashboard" },
+   ];
+ 
+-  // Si showSampleData está activado (mediante "Ver todo"), mostramos los eventos mock
+-  const displayedActivities = showSampleData ? mockRecentActivity : activities;
+-
+   return (
+     <div className="flex flex-col gap-6">
+       {/* ── Breadcrumbs (CA01) ─────────────────────────────────── */}
+@@ -118,10 +114,10 @@ export default function AdminDashboardPage() {
+ 
+       {/* ── Sección de Actividad Reciente (CA04) ────────────────── */}
+       <RecentActivityCard
+-        activities={displayedActivities}
++        activities={activities}
+         isLoading={isLoading}
+-        onViewAll={() => setShowSampleData(!showSampleData)}
++        onViewAll={() => setShowAllActivity((prev) => !prev)}
+       />
+     </div>
+   );
+-}
++}
+diff --git a/frontend/src/features/dashboard/services/dashboardService.js b/frontend/src/features/dashboard/services/dashboardService.js
+index 950c5a9..04d8cd3 100644
+--- a/frontend/src/features/dashboard/services/dashboardService.js
++++ b/frontend/src/features/dashboard/services/dashboardService.js
+@@ -1,26 +1,34 @@
+-import { mockDashboardMetrics, mockRecentActivity } from "../data/mockDashboardData";
+-
+-/**
+- * Servicio para obtener datos del Dashboard de Administrador.
+- * Preparado para futura conexión con API backend / endpoints REST.
+- */
+-export const dashboardService = {
+-  /**
+-   * Obtiene las métricas globales del dashboard.
+-   */
+-  async getMetrics() {
+-    // Simula retardo de red
+-    await new Promise((resolve) => setTimeout(resolve, 300));
+-    return { ...mockDashboardMetrics };
+-  },
+-
+-  /**
+-   * Obtiene la lista de actividades recientes.
+-   */
+-  async getRecentActivity() {
+-    // Simula retardo de red
+-    await new Promise((resolve) => setTimeout(resolve, 300));
+-    // Por defecto retornamos un array vacío o los mocks según estado inicial
+-    return [...mockRecentActivity];
+-  },
+-};
++import { api } from "../../../libs/axios";
++
++/**
++ * Servicio para obtener datos del Dashboard de Administrador.
++ * Endpoints: /api/v1/admin/dashboard/* (requiere rol administrator).
++ */
++export const dashboardService = {
++  /**
++   * Métricas globales con tendencia.
++   * @param {"7days"|"30days"|"all_time"} [period="all_time"]
++   */
++  async getMetrics(period = "all_time") {
++    const { data } = await api.get("/admin/dashboard/metrics", { params: { period } });
++    return data;
++  },
++
++  /**
++   * Volumen diario de operaciones del marketplace.
++   * @param {number} [days=30]
++   */
++  async getActivityChart(days = 30) {
++    const { data } = await api.get("/admin/dashboard/activity-chart", { params: { days } });
++    return data;
++  },
++
++  /**
++   * Últimos eventos de la plataforma.
++   * @param {number} [limit=10]
++   */
++  async getRecentActivity(limit = 10) {
++    const { data } = await api.get("/admin/dashboard/recent-activity", { params: { limit } });
++    return data;
++  },
++};
+diff --git a/frontend/src/features/dashboard/utils/dashboardMappers.js b/frontend/src/features/dashboard/utils/dashboardMappers.js
+new file mode 100644
+index 0000000..7be64f5
+--- /dev/null
++++ b/frontend/src/features/dashboard/utils/dashboardMappers.js
+@@ -0,0 +1,116 @@
++/**
++ * Adaptadores entre las respuestas de /api/v1/admin/dashboard/* y lo que esperan
++ * los componentes del dashboard (StatCard, LineChart, ActivityTable).
++ */
++
++const BAR_MIN_HEIGHT = 3;
++const BAR_MAX_HEIGHT = 16;
++const BAR_COLOR_EMPTY = "#3a3a3a";
++const BAR_COLOR_BASE = "#4a4a4a";
++const BAR_COLOR_CURRENT = "#F78736";
++
++const EVENT_LABELS = {
++  NUEVO_USUARIO: "Registro de usuario",
++  SOLICITUD_PUBLICADA: "Nueva solicitud de servicio",
++  OFERTA_ENVIADA: "Nueva oferta",
++  PAGO_REGISTRADO: "Pago registrado",
++};
++
++const ROLE_LABELS = {
++  client: "Cliente",
++  professional: "Profesional",
++  administrator: "Administrador",
++};
++
++const PAYMENT_STATES = {
++  paid: { estado: "Pagado", estadoVariant: "success" },
++  partial: { estado: "Parcial", estadoVariant: "warning" },
++  pending: { estado: "Pendiente", estadoVariant: "warning" },
++  refunded: { estado: "Reembolsado", estadoVariant: "error" },
++};
++
++const EVENT_STATES = {
++  NUEVO_USUARIO: { estado: "Confirmado", estadoVariant: "success" },
++  SOLICITUD_PUBLICADA: { estado: "Publicado/activo", estadoVariant: "orange" },
++  OFERTA_ENVIADA: { estado: "Pendiente", estadoVariant: "warning" },
++};
++
++/** Convierte [n, n, n, n] en barras {height, color}. La última (más reciente) resalta en naranja. */
++export function trendToBars(trend = []) {
++  const max = Math.max(...trend, 1);
++  return trend.map((value, index) => {
++    const isCurrent = index === trend.length - 1;
++    const height = BAR_MIN_HEIGHT + Math.round((value / max) * (BAR_MAX_HEIGHT - BAR_MIN_HEIGHT));
++    let color = value > 0 ? BAR_COLOR_BASE : BAR_COLOR_EMPTY;
++    if (isCurrent && value > 0) color = BAR_COLOR_CURRENT;
++    return { height, color };
++  });
++}
++
++const EMPTY_METRIC = { value: 0, trend: [0, 0, 0, 0] };
++
++/** Respuesta de /metrics → props de las 4 tarjetas KPI. */
++export function mapMetrics(data = {}) {
++  const {
++    totalUsers = EMPTY_METRIC,
++    activeRequests = EMPTY_METRIC,
++    totalOffers = EMPTY_METRIC,
++    totalTransactions = EMPTY_METRIC,
++  } = data;
++
++  return {
++    usuarios: totalUsers.value,
++    usuariosTrend: trendToBars(totalUsers.trend),
++    solicitudesActivas: activeRequests.value,
++    solicitudesTrend: trendToBars(activeRequests.trend),
++    ofertasRealizadas: totalOffers.value,
++    ofertasTrend: trendToBars(totalOffers.trend),
++    transacciones: totalTransactions.value,
++    transaccionesTrend: trendToBars(totalTransactions.trend),
++  };
++}
++
++/** Respuesta de /activity-chart → puntos {x: nº de día, y: operaciones}. */
++export function mapChartPoints(data) {
++  return (data?.points ?? []).map((point, index) => ({ x: index + 1, y: point.total }));
++}
++
++/** "Hace 5 min", "Hace 2 horas", "Hace 3 días" o la fecha si pasó más de un mes. */
++export function timeAgo(isoDate, now = Date.now()) {
++  const minutes = Math.floor((now - new Date(isoDate).getTime()) / 60000);
++  if (minutes < 1) return "Hace un momento";
++  if (minutes < 60) return `Hace ${minutes} min`;
++  const hours = Math.floor(minutes / 60);
++  if (hours < 24) return `Hace ${hours} ${hours === 1 ? "hora" : "horas"}`;
++  const days = Math.floor(hours / 24);
++  if (days < 30) return `Hace ${days} ${days === 1 ? "día" : "días"}`;
++  return new Date(isoDate).toLocaleDateString("es-AR");
++}
++
++/** Evento de /recent-activity → fila de ActivityTable. */
++export function mapActivity(event) {
++  const state =
++    event.action === "PAGO_REGISTRADO"
++      ? PAYMENT_STATES[event.status] ?? PAYMENT_STATES.pending
++      : EVENT_STATES[event.action] ?? EVENT_STATES.OFERTA_ENVIADA;
++
++  return {
++    id: `${event.action}-${event.id}`,
++    usuario: event.actor?.name ?? "Sistema",
++    evento: EVENT_LABELS[event.action] ?? event.description,
++    rol: ROLE_LABELS[event.actor?.role] ?? "—",
++    tiempo: timeAgo(event.createdAt),
++    ...state,
++  };
++}
++
++/** Mensaje legible para el usuario según el error devuelto por la API. */
++export function getDashboardErrorMessage(error) {
++  const status = error?.response?.status;
++  if (status === 403) return "No tenés permisos de administrador para ver este panel.";
++  if (status === 401) return "Tu sesión expiró. Volvé a iniciar sesión.";
++  return (
++    error?.response?.data?.error?.message ||
++    "No se pudieron cargar los datos del dashboard."
++  );
++}
+diff --git a/frontend/src/features/help/components/ContactFormCard.jsx b/frontend/src/features/help/components/ContactFormCard.jsx
+index 0ab0110..290aa02 100644
+--- a/frontend/src/features/help/components/ContactFormCard.jsx
++++ b/frontend/src/features/help/components/ContactFormCard.jsx
+@@ -1,19 +1,33 @@
+ ﻿import React, { useState } from "react";
++import { createTicket, getSupportErrorMessage } from "../services/supportService";
+ 
+ export default function ContactFormCard() {
+   const [subject, setSubject] = useState("");
+   const [message, setMessage] = useState("");
+   const [submitted, setSubmitted] = useState(false);
++  const [isSending, setIsSending] = useState(false);
++  const [error, setError] = useState(null);
+ 
+-  const handleSubmit = (e) => {
++  const handleSubmit = async (e) => {
+     e.preventDefault();
+-    if (!subject.trim() || !message.trim()) return;
+-    setSubmitted(true);
+-    setTimeout(() => {
+-      setSubmitted(false);
+-      setSubject("");
+-      setMessage("");
+-    }, 3000);
++    if (!subject.trim() || !message.trim() || isSending) return;
++
++    setIsSending(true);
++    setError(null);
++    try {
++      await createTicket({ subject, message });
++      setSubmitted(true);
++      setTimeout(() => {
++        setSubmitted(false);
++        setSubject("");
++        setMessage("");
++      }, 3000);
++    } catch (err) {
++      // Se conserva lo que escribió el usuario para que pueda reintentar.
++      setError(getSupportErrorMessage(err));
++    } finally {
++      setIsSending(false);
++    }
+   };
+ 
+   const handleCancel = () => {
+@@ -70,6 +84,16 @@ export default function ContactFormCard() {
+           </div>
+         )}
+ 
++        {/* Error al enviar */}
++        {error && (
++          <div
++            role="alert"
++            className="rounded-[6px] bg-[#202020] border border-red-500/50 p-2.5 text-xs text-red-400"
++          >
++            {error}
++          </div>
++        )}
++
+         {/* Botones de acción */}
+         <div className="flex items-center justify-end gap-2.5 pt-1">
+           <button
+@@ -81,9 +105,10 @@ export default function ContactFormCard() {
+           </button>
+           <button
+             type="submit"
+-            className="rounded-[6px] bg-[#F78736] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#e5782c] cursor-pointer"
++            disabled={isSending}
++            className="rounded-[6px] bg-[#F78736] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#e5782c] cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+           >
+-            Enviar consulta
++            {isSending ? "Enviando..." : "Enviar consulta"}
+           </button>
+         </div>
+       </form>
+diff --git a/frontend/src/features/help/pages/ProfessionalHelpPage.jsx b/frontend/src/features/help/pages/ProfessionalHelpPage.jsx
+index c54199e..edbb14d 100644
+--- a/frontend/src/features/help/pages/ProfessionalHelpPage.jsx
++++ b/frontend/src/features/help/pages/ProfessionalHelpPage.jsx
+@@ -1,5 +1,6 @@
+ import { useState, useRef } from "react";
+ import { useNavigate } from "react-router-dom";
++import { createTicket, getSupportErrorMessage } from "../services/supportService";
+ import {
+   MagnifyingGlassIcon,
+   ChevronRightIcon,
+@@ -98,19 +99,36 @@ function ContactForm() {
+   const [asunto, setAsunto] = useState("");
+   const [mensaje, setMensaje] = useState("");
+   const [modal, setModal] = useState(null); // null | "success" | "error"
++  const [errorMessage, setErrorMessage] = useState("");
++  const [isSending, setIsSending] = useState(false);
+ 
+   const handleCancel = () => {
+     setAsunto("");
+     setMensaje("");
+   };
+ 
+-  const handleSubmit = (e) => {
++  const handleSubmit = async (e) => {
+     e.preventDefault();
+-    // Simula envío: éxito si hay asunto y mensaje, error si están vacíos
+-    if (asunto.trim() && mensaje.trim()) {
++    if (isSending) return;
++
++    if (!asunto.trim() || !mensaje.trim()) {
++      setErrorMessage("Completá los campos Asunto y Mensaje antes de enviar.");
++      setModal("error");
++      return;
++    }
++
++    setIsSending(true);
++    try {
++      await createTicket({ subject: asunto, message: mensaje });
++      setAsunto("");
++      setMensaje("");
+       setModal("success");
+-    } else {
++    } catch (err) {
++      // Se conserva lo que escribió el profesional para que pueda reintentar.
++      setErrorMessage(getSupportErrorMessage(err));
+       setModal("error");
++    } finally {
++      setIsSending(false);
+     }
+   };
+ 
+@@ -160,9 +178,10 @@ function ContactForm() {
+             </button>
+             <button
+               type="submit"
+-              className="rounded-[6px] bg-[#F78736] px-4 py-2.5 text-xs font-medium text-white hover:bg-[#e06d00] transition-colors"
++              disabled={isSending}
++              className="rounded-[6px] bg-[#F78736] px-4 py-2.5 text-xs font-medium text-white hover:bg-[#e06d00] transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+             >
+-              Enviar consulta
++              {isSending ? "Enviando..." : "Enviar consulta"}
+             </button>
+           </div>
+         </form>
+@@ -190,9 +209,7 @@ function ContactForm() {
+               <>
+                 <ExclamationCircleIcon className="h-12 w-12 text-red-500" />
+                 <p className="text-base font-semibold text-white">No pudimos enviar tu consulta</p>
+-                <p className="text-sm text-[#A8A8AA]">
+-                  Completá los campos Asunto y Mensaje antes de enviar.
+-                </p>
++                <p className="text-sm text-[#A8A8AA]">{errorMessage}</p>
+               </>
+             )}
+             <button
+diff --git a/frontend/src/features/help/services/supportService.js b/frontend/src/features/help/services/supportService.js
+new file mode 100644
+index 0000000..a15c8cf
+--- /dev/null
++++ b/frontend/src/features/help/services/supportService.js
+@@ -0,0 +1,30 @@
++import { api } from "../../../libs/axios";
++
++/**
++ * supportService.js — Envío de consultas desde la sección de Ayuda (cliente y profesional).
++ * Endpoint: POST /api/v1/support/tickets
++ */
++
++/**
++ * Envía una consulta al equipo de soporte.
++ * @param {{subject: string, message: string}} ticket
++ * @returns {Promise<{id: string, ticketNumber: string, status: string, createdAt: string}>}
++ */
++export async function createTicket({ subject, message }) {
++  const { data } = await api.post("/support/tickets", {
++    subject: subject.trim(),
++    message: message.trim(),
++  });
++  return data;
++}
++
++/** Mensaje legible según el error devuelto por la API. */
++export function getSupportErrorMessage(error) {
++  const status = error?.response?.status;
++  if (status === 401) return "Tu sesión expiró. Volvé a iniciar sesión.";
++  if (status === 403) return "Tu cuenta no puede enviar consultas desde esta sección.";
++  return (
++    error?.response?.data?.error?.message ||
++    "No pudimos enviar tu consulta. Intentá nuevamente en unos minutos."
++  );
++}
+diff --git a/frontend/src/features/moderation/components/ModerationCard.jsx b/frontend/src/features/moderation/components/ModerationCard.jsx
+index ae699a6..dd643bd 100644
+--- a/frontend/src/features/moderation/components/ModerationCard.jsx
++++ b/frontend/src/features/moderation/components/ModerationCard.jsx
+@@ -1,5 +1,5 @@
+ import Badge from "../../../components/ui/Badge";
+-import { MODERATION_STATES } from "../data/mockModerationData";
++import { MODERATION_STATES } from "../constants/moderation.constants";
+ import {
+   NoSymbolIcon,
+   TrashIcon,
+@@ -60,7 +60,7 @@ export default function ModerationCard({ item, onActivate, onDisable, onDelete }
+         {/* Fila ID + Badge */}
+         <div className="flex items-center gap-2 flex-wrap">
+           <span className="text-xs font-bold text-[#F78736] tracking-wider">
+-            #{item.id}
++            #{item.codigo ?? item.id}
+           </span>
+           <Badge variant={STATE_BADGE_VARIANT[item.estado] || "default"}>
+             {item.estado}
+diff --git a/frontend/src/features/moderation/components/ModerationPanel.jsx b/frontend/src/features/moderation/components/ModerationPanel.jsx
+index 1cd9cda..55cb400 100644
+--- a/frontend/src/features/moderation/components/ModerationPanel.jsx
++++ b/frontend/src/features/moderation/components/ModerationPanel.jsx
+@@ -1,5 +1,6 @@
+ import { MagnifyingGlassIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+ import ModerationCard from "./ModerationCard";
++import Pagination from "../../../components/ui/Pagination";
+ import { useModerationPanel } from "../hooks/useModerationPanel";
+ 
+ /**
+@@ -50,10 +51,14 @@ const PANEL_LABEL = {
+  */
+ export default function ModerationPanel({ panelKey }) {
+   const {
+-    filteredItems,
+     items,
++    totalCount,
++    page,
++    totalPages,
++    setPage,
+     isLoading,
+     error,
++    actionError,
+     searchQuery,
+     setSearchQuery,
+     activateItem,
+@@ -85,7 +90,7 @@ export default function ModerationPanel({ panelKey }) {
+ 
+       {/* Contador */}
+       <span className="shrink-0 text-xs text-[#A8A8AA]">
+-        Mostrando {filteredItems.length} de {items.length} {label}
++        Mostrando {isLoading ? "…" : items.length} de {isLoading ? "…" : totalCount} {label}
+       </span>
+     </div>
+   );
+@@ -126,9 +131,19 @@ export default function ModerationPanel({ panelKey }) {
+     <div className="space-y-4">
+       {searchBar}
+ 
++      {/* Error de una acción (activar / desactivar / eliminar) */}
++      {actionError && (
++        <div
++          role="alert"
++          className="flex items-center justify-between gap-3 rounded-[6px] border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-400"
++        >
++          <span>{actionError}</span>
++        </div>
++      )}
++
+       {/* Área de tarjetas o empty state */}
+       <div className="min-h-[380px] rounded-[12px] bg-[#202020]">
+-        {filteredItems.length === 0 ? (
++        {items.length === 0 ? (
+           /* ── Empty State (CA06) ──────────────────────────────── */
+           <div className="flex h-full min-h-[340px] flex-col items-center justify-center gap-3 text-center">
+             {/* Ícono contextualizado */}
+@@ -144,7 +159,7 @@ export default function ModerationPanel({ panelKey }) {
+ 
+             <p className="max-w-xs text-xs text-[#A8A8AA] leading-relaxed">
+               {searchQuery.trim()
+-                ? `No se encontraron ${label} con el ID "${searchQuery}".`
++                ? `No se encontraron ${label} con el número "${searchQuery}".`
+                 : emptyConfig.description}
+             </p>
+ 
+@@ -162,7 +177,7 @@ export default function ModerationPanel({ panelKey }) {
+         ) : (
+           /* ── Lista de tarjetas (CA04) ────────────────────────── */
+           <div className="flex flex-col gap-3">
+-            {filteredItems.map((item) => (
++            {items.map((item) => (
+               <ModerationCard
+                 key={item.id}
+                 item={item}
+@@ -174,6 +189,8 @@ export default function ModerationPanel({ panelKey }) {
+           </div>
+         )}
+       </div>
++
++      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+     </div>
+   );
+ }
+diff --git a/frontend/src/features/moderation/constants/moderation.constants.js b/frontend/src/features/moderation/constants/moderation.constants.js
+new file mode 100644
+index 0000000..3860d75
+--- /dev/null
++++ b/frontend/src/features/moderation/constants/moderation.constants.js
+@@ -0,0 +1,25 @@
++/**
++ * moderation.constants.js — Constantes de la feature de Moderación.
++ */
++
++/** Estados de moderación tal como se muestran en las tarjetas. */
++export const MODERATION_STATES = {
++  ACTIVE: "Activo",
++  DISABLED: "Desactivado",
++  DELETED: "Eliminado",
++};
++
++/** Pestaña de la pantalla → entidad que entiende el backend. */
++export const PANEL_ENTITIES = {
++  solicitudes: "requests",
++  ofertas: "offers",
++  calificaciones: "reviews",
++  turnos: "appointments",
++};
++
++/** Estado del backend → estado mostrado, y viceversa. */
++export const STATUS_TO_STATE = {
++  active: MODERATION_STATES.ACTIVE,
++  disabled: MODERATION_STATES.DISABLED,
++  deleted: MODERATION_STATES.DELETED,
++};
+diff --git a/frontend/src/features/moderation/hooks/useModerationPanel.js b/frontend/src/features/moderation/hooks/useModerationPanel.js
+index 0c74e0b..9778da1 100644
+--- a/frontend/src/features/moderation/hooks/useModerationPanel.js
++++ b/frontend/src/features/moderation/hooks/useModerationPanel.js
+@@ -1,96 +1,108 @@
+-import { useState, useEffect, useCallback } from "react";
+-import { moderationService } from "../services/moderationService";
+-import { MODERATION_STATES } from "../data/mockModerationData";
+-
+-/**
+- * useModerationPanel — Hook reutilizable por cada panel de moderación.
+- *
+- * Encapsula: carga, error, búsqueda por ID y acciones de estado
+- * (activar, desactivar, eliminar) de forma local (sin backend todavía).
+- *
+- * @param {"solicitudes"|"ofertas"|"calificaciones"|"turnos"} panel
+- */
+-export function useModerationPanel(panel) {
+-  const [items, setItems] = useState([]);
+-  const [isLoading, setIsLoading] = useState(true);
+-  const [error, setError] = useState(null);
+-  const [searchQuery, setSearchQuery] = useState("");
+-
+-  const fetchItems = useCallback(async () => {
+-    setIsLoading(true);
+-    setError(null);
+-    try {
+-      let data = [];
+-      switch (panel) {
+-        case "solicitudes":
+-          data = await moderationService.getSolicitudes();
+-          break;
+-        case "ofertas":
+-          data = await moderationService.getOfertas();
+-          break;
+-        case "calificaciones":
+-          data = await moderationService.getCalificaciones();
+-          break;
+-        case "turnos":
+-          data = await moderationService.getTurnos();
+-          break;
+-        default:
+-          data = [];
+-      }
+-      setItems(data);
+-    } catch (err) {
+-      setError(err?.message || "No se pudieron cargar los datos.");
+-    } finally {
+-      setIsLoading(false);
+-    }
+-  }, [panel]);
+-
+-  useEffect(() => {
+-    fetchItems();
+-  }, [fetchItems]);
+-
+-  // Filtrado dinámico por ID (número de orden)
+-  const filteredItems = searchQuery.trim()
+-    ? items.filter((item) =>
+-        item.id.toLowerCase().includes(searchQuery.toLowerCase())
+-      )
+-    : items;
+-
+-  // ── Acciones de estado (CA05) ──────────────────────────────
+-  const activateItem = (id) => {
+-    setItems((prev) =>
+-      prev.map((item) =>
+-        item.id === id ? { ...item, estado: MODERATION_STATES.ACTIVE } : item
+-      )
+-    );
+-  };
+-
+-  const disableItem = (id) => {
+-    setItems((prev) =>
+-      prev.map((item) =>
+-        item.id === id ? { ...item, estado: MODERATION_STATES.DISABLED } : item
+-      )
+-    );
+-  };
+-
+-  const deleteItem = (id) => {
+-    setItems((prev) =>
+-      prev.map((item) =>
+-        item.id === id ? { ...item, estado: MODERATION_STATES.DELETED } : item
+-      )
+-    );
+-  };
+-
+-  return {
+-    items,
+-    filteredItems,
+-    isLoading,
+-    error,
+-    searchQuery,
+-    setSearchQuery,
+-    activateItem,
+-    disableItem,
+-    deleteItem,
+-    refetch: fetchItems,
+-  };
+-}
++import { useState, useEffect, useCallback } from "react";
++import { moderationService } from "../services/moderationService";
++import { MODERATION_STATES } from "../constants/moderation.constants";
++import { mapModerationItem, getModerationErrorMessage } from "../utils/moderationMappers";
++
++export const PAGE_SIZE = 10;
++const SEARCH_DEBOUNCE_MS = 400;
++
++/**
++ * useModerationPanel — Hook reutilizable por cada panel de moderación.
++ *
++ * Carga paginada desde el backend, búsqueda por número de orden con espera (debounce)
++ * y acciones de estado (activar, desactivar, eliminar) que se aplican tras la confirmación del servidor.
++ *
++ * @param {"solicitudes"|"ofertas"|"calificaciones"|"turnos"} panel
++ */
++export function useModerationPanel(panel) {
++  const [searchQuery, setSearchQueryState] = useState("");
++  const [appliedSearch, setAppliedSearch] = useState("");
++  const [page, setPage] = useState(1);
++  const [reloadToken, setReloadToken] = useState(0);
++  const [actionError, setActionError] = useState(null);
++  const [result, setResult] = useState({ key: null, items: [], totalCount: 0, error: null });
++
++  // La búsqueda se aplica recién cuando el usuario deja de escribir.
++  useEffect(() => {
++    const timer = setTimeout(() => setAppliedSearch(searchQuery), SEARCH_DEBOUNCE_MS);
++    return () => clearTimeout(timer);
++  }, [searchQuery]);
++
++  // Identifica la consulta actual: mientras result.key no coincida, el panel está cargando.
++  const requestKey = `${panel}|${appliedSearch}|${page}|${reloadToken}`;
++
++  useEffect(() => {
++    let ignore = false;
++    moderationService
++      .list(panel, { search: appliedSearch, page, limit: PAGE_SIZE })
++      .then((data) => {
++        if (ignore) return;
++        setResult({
++          key: requestKey,
++          items: data.items.map(mapModerationItem),
++          totalCount: data.meta.totalCount,
++          error: null,
++        });
++      })
++      .catch((err) => {
++        if (ignore) return;
++        setResult({
++          key: requestKey,
++          items: [],
++          totalCount: 0,
++          error: getModerationErrorMessage(err, "No se pudieron cargar los datos."),
++        });
++      });
++    return () => {
++      ignore = true;
++    };
++  }, [panel, appliedSearch, page, requestKey]);
++
++  const setSearchQuery = useCallback((query) => {
++    setSearchQueryState(query);
++    setPage(1);
++  }, []);
++
++  const refetch = useCallback(() => {
++    setActionError(null);
++    setReloadToken((token) => token + 1);
++  }, []);
++
++  // Cambia el estado de una tarjeta solo después de que el backend confirma.
++  const changeStatus = useCallback(
++    async (id, moderationStatus, estado) => {
++      setActionError(null);
++      try {
++        await moderationService.updateStatus(panel, id, moderationStatus);
++        setResult((prev) => ({
++          ...prev,
++          items: prev.items.map((item) => (item.id === id ? { ...item, estado } : item)),
++        }));
++      } catch (err) {
++        setActionError(getModerationErrorMessage(err, "No se pudo actualizar el elemento."));
++      }
++    },
++    [panel],
++  );
++
++  const activateItem = useCallback((id) => changeStatus(id, "active", MODERATION_STATES.ACTIVE), [changeStatus]);
++  const disableItem = useCallback((id) => changeStatus(id, "disabled", MODERATION_STATES.DISABLED), [changeStatus]);
++  const deleteItem = useCallback((id) => changeStatus(id, "deleted", MODERATION_STATES.DELETED), [changeStatus]);
++
++  return {
++    items: result.items,
++    totalCount: result.totalCount,
++    page,
++    totalPages: Math.max(1, Math.ceil(result.totalCount / PAGE_SIZE)),
++    setPage,
++    isLoading: result.key !== requestKey,
++    error: result.error,
++    actionError,
++    searchQuery,
++    setSearchQuery,
++    activateItem,
++    disableItem,
++    deleteItem,
++    refetch,
++  };
++}
+diff --git a/frontend/src/features/moderation/services/moderationService.js b/frontend/src/features/moderation/services/moderationService.js
+index 00fecfa..bb75860 100644
+--- a/frontend/src/features/moderation/services/moderationService.js
++++ b/frontend/src/features/moderation/services/moderationService.js
+@@ -1,34 +1,34 @@
+-import {
+-  mockSolicitudes,
+-  mockOfertas,
+-  mockCalificaciones,
+-  mockTurnos,
+-} from "../data/mockModerationData";
+-
+-/**
+- * moderationService — Servicio de moderación preparado para futura conexión al backend.
+- *
+- * Por ahora retorna datos mock. En producción cada función reemplaza el mock
+- * por una llamada HTTP real (axios u fetch).
+- */
+-export const moderationService = {
+-  async getSolicitudes() {
+-    await new Promise((r) => setTimeout(r, 250));
+-    return [...mockSolicitudes];
+-  },
+-
+-  async getOfertas() {
+-    await new Promise((r) => setTimeout(r, 250));
+-    return [...mockOfertas];
+-  },
+-
+-  async getCalificaciones() {
+-    await new Promise((r) => setTimeout(r, 250));
+-    return [...mockCalificaciones];
+-  },
+-
+-  async getTurnos() {
+-    await new Promise((r) => setTimeout(r, 250));
+-    return [...mockTurnos];
+-  },
+-};
++import { api } from "../../../libs/axios";
++import { PANEL_ENTITIES } from "../constants/moderation.constants";
++
++/**
++ * moderationService — Servicio de moderación (rol administrador).
++ * Endpoints: /api/v1/admin/moderation/{requests|offers|reviews|appointments}
++ */
++export const moderationService = {
++  /**
++   * Lista paginada de un panel.
++   * @param {"solicitudes"|"ofertas"|"calificaciones"|"turnos"} panel
++   * @param {object} [params]
++   * @param {string} [params.search] - Número de orden (125, ORD-00125) o UUID completo.
++   * @param {number} [params.page=1]
++   * @param {number} [params.limit=10]
++   */
++  async list(panel, { search, page = 1, limit = 10 } = {}) {
++    const { data } = await api.get(`/admin/moderation/${PANEL_ENTITIES[panel]}`, {
++      params: { search: search?.trim() || undefined, page, limit },
++    });
++    return data;
++  },
++
++  /**
++   * Cambia el estado de moderación de un ítem.
++   * @param {"active"|"disabled"|"deleted"} moderationStatus
++   */
++  async updateStatus(panel, id, moderationStatus) {
++    const { data } = await api.patch(`/admin/moderation/${PANEL_ENTITIES[panel]}/${id}`, {
++      moderationStatus,
++    });
++    return data;
++  },
++};
+diff --git a/frontend/src/features/moderation/utils/moderationMappers.js b/frontend/src/features/moderation/utils/moderationMappers.js
+new file mode 100644
+index 0000000..fa167b0
+--- /dev/null
++++ b/frontend/src/features/moderation/utils/moderationMappers.js
+@@ -0,0 +1,28 @@
++import { STATUS_TO_STATE, MODERATION_STATES } from "../constants/moderation.constants";
++
++const ROLE_LABELS = {
++  client: "Cliente",
++  professional: "Profesional",
++  administrator: "Administrador",
++};
++
++/** Ítem de la API → tarjeta de moderación. */
++export function mapModerationItem(item) {
++  return {
++    id: item.id,
++    codigo: item.orderNumber,
++    titulo: item.title,
++    descripcion: item.description,
++    usuario: item.user?.name ?? "—",
++    tipoUsuario: ROLE_LABELS[item.user?.role] ?? "Usuario",
++    estado: STATUS_TO_STATE[item.moderationStatus] ?? MODERATION_STATES.ACTIVE,
++  };
++}
++
++/** Mensaje legible según el error devuelto por la API. */
++export function getModerationErrorMessage(error, fallback) {
++  const status = error?.response?.status;
++  if (status === 403) return "No tenés permisos de administrador para realizar esta acción.";
++  if (status === 401) return "Tu sesión expiró. Volvé a iniciar sesión.";
++  return error?.response?.data?.error?.message || fallback;
++}
+diff --git a/frontend/src/features/reports/components/InquiryDetailModal.jsx b/frontend/src/features/reports/components/InquiryDetailModal.jsx
+index 0b5c9fa..0d7de56 100644
+--- a/frontend/src/features/reports/components/InquiryDetailModal.jsx
++++ b/frontend/src/features/reports/components/InquiryDetailModal.jsx
+@@ -20,35 +20,47 @@ export default function InquiryDetailModal({
+   const [replySubject, setReplySubject] = useState("");
+   const [replyMessage, setReplyMessage] = useState("");
+   const [isSuccess, setIsSuccess] = useState(false);
++  const [isSending, setIsSending] = useState(false);
++  const [sendError, setSendError] = useState(null);
+ 
+-  // Inicializar campos cuando se abre una consulta
++  // Inicializar campos solo cuando se abre OTRA consulta (no al actualizarse la misma tras responder,
++  // para que el aviso de éxito no se borre).
+   useEffect(() => {
+     if (inquiry) {
+-      setReplySubject(`Re: ${inquiry.asunto}`);
++      setReplySubject(inquiry.asuntoRespuesta || `Re: ${inquiry.asunto}`);
+       setReplyMessage(inquiry.respuesta || "");
+       setIsSuccess(false);
++      setSendError(null);
+     }
+-  }, [inquiry]);
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, [inquiry?.id]);
+ 
+   if (!inquiry) return null;
+ 
+   const isAnswered = inquiry.estado === INQUIRY_STATES.ANSWERED;
+   const isSubmitDisabled = !replyMessage.trim();
+ 
+-  const handleSubmit = (e) => {
++  const handleSubmit = async (e) => {
+     e.preventDefault();
+-    if (isSubmitDisabled) return;
+-
+-    onSendReply(inquiry.id, {
+-      asunto: replySubject.trim(),
+-      mensaje: replyMessage.trim(),
+-    });
+-
+-    setIsSuccess(true);
+-    setTimeout(() => {
+-      setIsSuccess(false);
+-      onClose();
+-    }, 1800);
++    if (isSubmitDisabled || isSending) return;
++
++    setIsSending(true);
++    setSendError(null);
++    try {
++      await onSendReply(inquiry.id, {
++        asunto: replySubject.trim(),
++        mensaje: replyMessage.trim(),
++      });
++      setIsSuccess(true);
++      setTimeout(() => {
++        setIsSuccess(false);
++        onClose();
++      }, 1800);
++    } catch (err) {
++      setSendError(err.message);
++    } finally {
++      setIsSending(false);
++    }
+   };
+ 
+   return (
+@@ -112,6 +124,16 @@ export default function InquiryDetailModal({
+           </div>
+         )}
+ 
++        {/* ── Error al enviar la respuesta ── */}
++        {sendError && (
++          <div
++            role="alert"
++            className="rounded-[6px] border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-400"
++          >
++            {sendError}
++          </div>
++        )}
++
+         {/* ── Formulario de Respuesta (CA04) ── */}
+         <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+           <div className="border-t border-[#323232] pt-4">
+@@ -169,10 +191,10 @@ export default function InquiryDetailModal({
+             {!isAnswered && (
+               <button
+                 type="submit"
+-                disabled={isSubmitDisabled}
++                disabled={isSubmitDisabled || isSending}
+                 className="rounded-[6px] bg-[#F78736] px-5 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#e0752b] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+               >
+-                Enviar respuesta
++                {isSending ? "Enviando..." : "Enviar respuesta"}
+               </button>
+             )}
+           </div>
+diff --git a/frontend/src/features/reports/hooks/useReportsData.js b/frontend/src/features/reports/hooks/useReportsData.js
+index fa956e7..40763d5 100644
+--- a/frontend/src/features/reports/hooks/useReportsData.js
++++ b/frontend/src/features/reports/hooks/useReportsData.js
+@@ -1,89 +1,113 @@
+-import { useState, useMemo, useCallback } from "react";
+-import { mockInquiries } from "../data/mockReportsData";
++import { useState, useEffect, useCallback } from "react";
++import { fetchInquiries, fetchInquiry, replyInquiry } from "../services/reportsService";
+ import { INQUIRY_STATES } from "../constants/reports.constants";
++import { mapInquiry, getReportsErrorMessage } from "../utils/reportsMappers";
++
++export const PAGE_SIZE = 10;
++const SEARCH_DEBOUNCE_MS = 400;
+ 
+ /**
+- * useReportsData — Hook para manejar el listado, filtrado, detalle y respuesta a consultas de usuarios.
++ * useReportsData — Carga paginada de consultas desde el backend, búsqueda con espera (debounce),
++ * detalle de una consulta y envío de la respuesta.
+  */
+ export function useReportsData() {
+-  const [inquiries, setInquiries] = useState(mockInquiries);
+-  const [searchTerm, setSearchTerm] = useState("");
++  const [searchTerm, setSearchTermState] = useState("");
++  const [appliedSearch, setAppliedSearch] = useState("");
++  const [page, setPage] = useState(1);
++  const [reloadToken, setReloadToken] = useState(0);
+   const [selectedInquiry, setSelectedInquiry] = useState(null);
+-  const [isLoading, setIsLoading] = useState(false);
+-  const [error, setError] = useState(null);
++  const [actionError, setActionError] = useState(null);
++  const [result, setResult] = useState({ key: null, inquiries: [], totalCount: 0, error: null });
+ 
+-  // Filtrado dinámico por nombre de usuario, asunto o ID (CA02)
+-  const filteredInquiries = useMemo(() => {
+-    const term = searchTerm.trim().toLowerCase();
+-    if (!term) return inquiries;
+-    return inquiries.filter(
+-      (inq) =>
+-        (inq.usuario && inq.usuario.toLowerCase().includes(term)) ||
+-        (inq.asunto && inq.asunto.toLowerCase().includes(term)) ||
+-        (inq.id && inq.id.toLowerCase().includes(term)) ||
+-        (inq.rol && inq.rol.toLowerCase().includes(term))
+-    );
+-  }, [inquiries, searchTerm]);
++  // La búsqueda se aplica recién cuando el usuario deja de escribir.
++  useEffect(() => {
++    const timer = setTimeout(() => setAppliedSearch(searchTerm), SEARCH_DEBOUNCE_MS);
++    return () => clearTimeout(timer);
++  }, [searchTerm]);
+ 
+-  // Enviar respuesta a una consulta (CA04)
+-  const handleSendReply = useCallback((inquiryId, replyData) => {
+-    const now = new Date();
+-    const formattedDate = `${String(now.getDate()).padStart(2, "0")}/${String(
+-      now.getMonth() + 1
+-    ).padStart(2, "0")}/${now.getFullYear()} ${String(
+-      now.getHours()
+-    ).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")} PM`;
++  // Identifica la consulta actual: mientras result.key no coincida, la pantalla está cargando.
++  const requestKey = `${appliedSearch}|${page}|${reloadToken}`;
+ 
+-    setInquiries((prev) =>
+-      prev.map((inq) => {
+-        if (inq.id === inquiryId) {
+-          return {
+-            ...inq,
+-            estado: INQUIRY_STATES.ANSWERED,
+-            respuesta: replyData.mensaje,
+-            asuntoRespuesta: replyData.asunto,
+-            fechaRespuesta: formattedDate,
+-          };
+-        }
+-        return inq;
++  useEffect(() => {
++    let ignore = false;
++    fetchInquiries({ search: appliedSearch, page, limit: PAGE_SIZE })
++      .then((data) => {
++        if (ignore) return;
++        setResult({
++          key: requestKey,
++          inquiries: data.items.map(mapInquiry),
++          totalCount: data.meta.totalCount,
++          error: null,
++        });
+       })
+-    );
++      .catch((err) => {
++        if (ignore) return;
++        setResult({
++          key: requestKey,
++          inquiries: [],
++          totalCount: 0,
++          error: getReportsErrorMessage(err, "No se pudieron cargar las consultas."),
++        });
++      });
++    return () => {
++      ignore = true;
++    };
++  }, [appliedSearch, page, requestKey]);
+ 
+-    // Actualizar también la consulta seleccionada si está abierta
+-    setSelectedInquiry((prev) => {
+-      if (prev && prev.id === inquiryId) {
+-        return {
+-          ...prev,
+-          estado: INQUIRY_STATES.ANSWERED,
+-          respuesta: replyData.mensaje,
+-          asuntoRespuesta: replyData.asunto,
+-          fechaRespuesta: formattedDate,
+-        };
+-      }
+-      return prev;
+-    });
++  const setSearchTerm = useCallback((term) => {
++    setSearchTermState(term);
++    setPage(1);
+   }, []);
+ 
+-  // Recarga / Reintento
+   const refetch = useCallback(() => {
+-    setIsLoading(true);
+-    setError(null);
+-    setTimeout(() => {
+-      setInquiries([...mockInquiries]);
+-      setIsLoading(false);
+-    }, 300);
++    setActionError(null);
++    setReloadToken((token) => token + 1);
++  }, []);
++
++  // Al abrir una consulta se pide el detalle: trae el mensaje completo y el email del usuario.
++  const openInquiry = useCallback(async (inquiry) => {
++    setActionError(null);
++    try {
++      setSelectedInquiry(mapInquiry(await fetchInquiry(inquiry.id)));
++    } catch (err) {
++      setActionError(getReportsErrorMessage(err, "No se pudo abrir la consulta."));
++    }
++  }, []);
++
++  const closeInquiry = useCallback(() => setSelectedInquiry(null), []);
++
++  // Envía la respuesta. Si falla, lanza el error para que el modal lo muestre sin cerrarse.
++  const handleSendReply = useCallback(async (inquiryId, replyData) => {
++    try {
++      const detail = mapInquiry(
++        await replyInquiry(inquiryId, { subject: replyData.asunto, message: replyData.mensaje }),
++      );
++      setSelectedInquiry(detail);
++      setResult((prev) => ({
++        ...prev,
++        inquiries: prev.inquiries.map((inq) =>
++          inq.id === inquiryId ? { ...inq, estado: INQUIRY_STATES.ANSWERED } : inq,
++        ),
++      }));
++    } catch (err) {
++      throw new Error(getReportsErrorMessage(err, "No se pudo enviar la respuesta."), { cause: err });
++    }
+   }, []);
+ 
+   return {
+-    inquiries,
+-    filteredInquiries,
++    inquiries: result.inquiries,
++    totalCount: result.totalCount,
++    page,
++    totalPages: Math.max(1, Math.ceil(result.totalCount / PAGE_SIZE)),
++    setPage,
+     searchTerm,
+     setSearchTerm,
+     selectedInquiry,
+-    setSelectedInquiry,
++    openInquiry,
++    closeInquiry,
+     handleSendReply,
+-    isLoading,
+-    error,
++    isLoading: result.key !== requestKey,
++    error: result.error || actionError,
+     refetch,
+   };
+ }
+diff --git a/frontend/src/features/reports/pages/AdminReportsPage.jsx b/frontend/src/features/reports/pages/AdminReportsPage.jsx
+index 5b64efa..fe8baf6 100644
+--- a/frontend/src/features/reports/pages/AdminReportsPage.jsx
++++ b/frontend/src/features/reports/pages/AdminReportsPage.jsx
+@@ -2,6 +2,7 @@ import React from "react";
+ import { InboxIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+ import Breadcrumbs from "../../../components/ui/Breadcrumbs";
+ import SearchInput from "../../../components/ui/SearchInput";
++import Pagination from "../../../components/ui/Pagination";
+ import InquiriesTable from "../components/InquiriesTable";
+ import InquiryDetailModal from "../components/InquiryDetailModal";
+ import InquiriesEmptyState from "../components/InquiriesEmptyState";
+@@ -22,11 +23,15 @@ import { ROUTES } from "../../../constants/routes";
+ export default function AdminReportsPage() {
+   const {
+     inquiries,
+-    filteredInquiries,
++    totalCount,
++    page,
++    totalPages,
++    setPage,
+     searchTerm,
+     setSearchTerm,
+     selectedInquiry,
+-    setSelectedInquiry,
++    openInquiry,
++    closeInquiry,
+     handleSendReply,
+     isLoading,
+     error,
+@@ -94,7 +99,7 @@ export default function AdminReportsPage() {
+           />
+         </div>
+         <p className="shrink-0 text-sm text-[#A8A8AA]">
+-          Mostrando {filteredInquiries.length} de {inquiries.length} solicitudes
++          Mostrando {isLoading ? "…" : inquiries.length} de {isLoading ? "…" : totalCount} solicitudes
+         </p>
+       </div>
+ 
+@@ -103,11 +108,11 @@ export default function AdminReportsPage() {
+         <div className="flex h-64 items-center justify-center">
+           <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#F78736] border-t-transparent" />
+         </div>
+-      ) : filteredInquiries.length > 0 ? (
+-        <InquiriesTable
+-          inquiries={filteredInquiries}
+-          onSelectInquiry={(inquiry) => setSelectedInquiry(inquiry)}
+-        />
++      ) : inquiries.length > 0 ? (
++        <>
++          <InquiriesTable inquiries={inquiries} onSelectInquiry={openInquiry} />
++          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
++        </>
+       ) : (
+         <InquiriesEmptyState
+           title={hasSearch ? "No se encontraron resultados" : "No hay consultas registradas"}
+@@ -122,7 +127,7 @@ export default function AdminReportsPage() {
+       {/* ── Modal de Detalle y Respuesta (CA03, CA04) ── */}
+       <InquiryDetailModal
+         isOpen={!!selectedInquiry}
+-        onClose={() => setSelectedInquiry(null)}
++        onClose={closeInquiry}
+         inquiry={selectedInquiry}
+         onSendReply={handleSendReply}
+       />
+diff --git a/frontend/src/features/reports/services/reportsService.js b/frontend/src/features/reports/services/reportsService.js
+index 8141b7b..430a025 100644
+--- a/frontend/src/features/reports/services/reportsService.js
++++ b/frontend/src/features/reports/services/reportsService.js
+@@ -1,28 +1,39 @@
++import { api } from "../../../libs/axios";
++
+ /**
+- * reportsService.js — Capa de servicios para la gestión de consultas de soporte.
+- * En esta etapa utiliza mocks locales; preparado para futura conexión HTTP.
++ * reportsService.js — Capa de servicios de la Bandeja de consultas (rol administrador).
++ * Endpoints: /api/v1/admin/inquiries
+  */
+ 
+-import { mockInquiries } from "../data/mockReportsData";
+-
+ /**
+- * Obtiene el listado de consultas.
++ * Lista paginada de consultas.
++ * @param {object} [params]
++ * @param {string} [params.search] - Número de consulta (101, CON-000101), UUID completo o texto del asunto.
++ * @param {"open"|"answered"} [params.status]
++ * @param {number} [params.page=1]
++ * @param {number} [params.limit=10]
+  */
+-export async function fetchInquiries() {
+-  return new Promise((resolve) => {
+-    setTimeout(() => {
+-      resolve([...mockInquiries]);
+-    }, 150);
++export async function fetchInquiries({ search, status, page = 1, limit = 10 } = {}) {
++  const { data } = await api.get("/admin/inquiries", {
++    params: { search: search?.trim() || undefined, status, page, limit },
+   });
++  return data;
+ }
+ 
+ /**
+- * Envía una respuesta a una consulta.
++ * Detalle de una consulta (incluye el email del usuario y la respuesta, si existe).
+  */
+-export async function replyInquiry(inquiryId, replyData) {
+-  return new Promise((resolve) => {
+-    setTimeout(() => {
+-      resolve({ success: true, inquiryId, replyData });
+-    }, 150);
+-  });
++export async function fetchInquiry(inquiryId) {
++  const { data } = await api.get(`/admin/inquiries/${inquiryId}`);
++  return data;
++}
++
++/**
++ * Responde una consulta. Pasa a "answered" y se avisa al usuario dentro de la app.
++ * @param {string} inquiryId
++ * @param {{subject: string, message: string}} reply
++ */
++export async function replyInquiry(inquiryId, { subject, message }) {
++  const { data } = await api.post(`/admin/inquiries/${inquiryId}/reply`, { subject, message });
++  return data;
+ }
+diff --git a/frontend/src/features/reports/utils/reportsMappers.js b/frontend/src/features/reports/utils/reportsMappers.js
+new file mode 100644
+index 0000000..dea4260
+--- /dev/null
++++ b/frontend/src/features/reports/utils/reportsMappers.js
+@@ -0,0 +1,60 @@
++import { INQUIRY_STATES } from "../constants/reports.constants";
++
++const TIMEZONE = "America/Argentina/Buenos_Aires";
++
++const dateFormatter = new Intl.DateTimeFormat("es-AR", {
++  timeZone: TIMEZONE,
++  day: "2-digit",
++  month: "2-digit",
++  year: "numeric",
++});
++
++const timeFormatter = new Intl.DateTimeFormat("es-AR", {
++  timeZone: TIMEZONE,
++  hour: "2-digit",
++  minute: "2-digit",
++  hour12: false,
++});
++
++const STATUS_LABELS = {
++  open: INQUIRY_STATES.PENDING,
++  answered: INQUIRY_STATES.ANSWERED,
++};
++
++const ROLE_LABELS = {
++  client: "Cliente",
++  professional: "Profesional",
++  administrator: "Administrador",
++};
++
++/** Consulta de la API (listado o detalle) → objeto que usan la tabla y el modal. */
++export function mapInquiry(inquiry) {
++  const createdAt = new Date(inquiry.createdAt);
++  const repliedAt = inquiry.reply?.repliedAt ? new Date(inquiry.reply.repliedAt) : null;
++
++  return {
++    id: inquiry.id,
++    codigo: inquiry.ticketNumber,
++    fecha: dateFormatter.format(createdAt),
++    hora: timeFormatter.format(createdAt),
++    usuario: inquiry.user?.name ?? "—",
++    rol: ROLE_LABELS[inquiry.user?.role] ?? "—",
++    email: inquiry.user?.email ?? null,
++    asunto: inquiry.subject,
++    mensaje: inquiry.message ?? null,
++    estado: STATUS_LABELS[inquiry.status] ?? INQUIRY_STATES.PENDING,
++    respuesta: inquiry.reply?.message ?? null,
++    asuntoRespuesta: inquiry.reply?.subject ?? null,
++    fechaRespuesta: repliedAt
++      ? `${dateFormatter.format(repliedAt)} ${timeFormatter.format(repliedAt)}`
++      : null,
++  };
++}
++
++/** Mensaje legible según el error devuelto por la API. */
++export function getReportsErrorMessage(error, fallback) {
++  const status = error?.response?.status;
++  if (status === 403) return "No tenés permisos de administrador para realizar esta acción.";
++  if (status === 401) return "Tu sesión expiró. Volvé a iniciar sesión.";
++  return error?.response?.data?.error?.message || fallback;
++}
+diff --git a/frontend/src/features/transactions/hooks/useTransactionsData.js b/frontend/src/features/transactions/hooks/useTransactionsData.js
+new file mode 100644
+index 0000000..2809454
+--- /dev/null
++++ b/frontend/src/features/transactions/hooks/useTransactionsData.js
+@@ -0,0 +1,68 @@
++import { useState, useEffect, useCallback } from "react";
++import { fetchTransactions } from "../services/transactionsService";
++import { mapTransaction, getTransactionsErrorMessage } from "../utils/transactionsMappers";
++
++export const PAGE_SIZE = 10;
++const SEARCH_DEBOUNCE_MS = 400;
++
++/**
++ * useTransactionsData — Carga paginada de transacciones desde el backend,
++ * con búsqueda con espera (debounce) y reintento.
++ */
++export function useTransactionsData() {
++  const [searchTerm, setSearchTermState] = useState("");
++  const [appliedSearch, setAppliedSearch] = useState("");
++  const [page, setPage] = useState(1);
++  const [reloadToken, setReloadToken] = useState(0);
++  const [result, setResult] = useState({ key: null, transactions: [], totalCount: 0, error: null });
++
++  // La búsqueda se aplica recién cuando el usuario deja de escribir.
++  useEffect(() => {
++    const timer = setTimeout(() => setAppliedSearch(searchTerm), SEARCH_DEBOUNCE_MS);
++    return () => clearTimeout(timer);
++  }, [searchTerm]);
++
++  // Identifica la consulta actual: mientras result.key no coincida, la pantalla está cargando.
++  const requestKey = `${appliedSearch}|${page}|${reloadToken}`;
++
++  useEffect(() => {
++    let ignore = false;
++    fetchTransactions({ search: appliedSearch, page, limit: PAGE_SIZE })
++      .then((data) => {
++        if (ignore) return;
++        setResult({
++          key: requestKey,
++          transactions: data.items.map(mapTransaction),
++          totalCount: data.meta.totalCount,
++          error: null,
++        });
++      })
++      .catch((err) => {
++        if (ignore) return;
++        setResult({ key: requestKey, transactions: [], totalCount: 0, error: getTransactionsErrorMessage(err) });
++      });
++    return () => {
++      ignore = true;
++    };
++  }, [appliedSearch, page, requestKey]);
++
++  const setSearchTerm = useCallback((term) => {
++    setSearchTermState(term);
++    setPage(1);
++  }, []);
++
++  const refetch = useCallback(() => setReloadToken((token) => token + 1), []);
++
++  return {
++    searchTerm,
++    setSearchTerm,
++    transactions: result.transactions,
++    totalCount: result.totalCount,
++    page,
++    totalPages: Math.max(1, Math.ceil(result.totalCount / PAGE_SIZE)),
++    setPage,
++    isLoading: result.key !== requestKey,
++    error: result.error,
++    refetch,
++  };
++}
+diff --git a/frontend/src/features/transactions/pages/AdminTransactionsPage.jsx b/frontend/src/features/transactions/pages/AdminTransactionsPage.jsx
+index 7e3a3dd..d95c165 100644
+--- a/frontend/src/features/transactions/pages/AdminTransactionsPage.jsx
++++ b/frontend/src/features/transactions/pages/AdminTransactionsPage.jsx
+@@ -1,4 +1,3 @@
+-﻿import { useState } from "react";
+ import {
+   MagnifyingGlassIcon,
+   CreditCardIcon,
+@@ -9,34 +8,11 @@ import DataTable from "../../../components/ui/DataTable";
+ import Badge from "../../../components/ui/Badge";
+ import EmptyState from "../../../components/ui/EmptyState";
+ import Breadcrumbs from "../../../components/ui/Breadcrumbs";
++import Pagination from "../../../components/ui/Pagination";
+ 
+-import { mockTransactions } from "../data/mockTransactions";
++import { useTransactionsData } from "../hooks/useTransactionsData";
+ import { ROUTES } from "../../../constants/routes";
+ 
+-// ─── Helpers ─────────────────────────────────────────────────────────────────
+-
+-function getStatusVariant(estado) {
+-  switch (estado.toUpperCase()) {
+-    case "COMPLETADO":
+-      return "success";
+-    case "PENDIENTE":
+-      return "warning";
+-    case "CANCELADO":
+-      return "error";
+-    case "REEMBOLSADO":
+-    default:
+-      return "default";
+-  }
+-}
+-
+-function formatFecha(fechaISO) {
+-  const d = new Date(fechaISO);
+-  const dia = String(d.getDate()).padStart(2, "0");
+-  const mes = String(d.getMonth() + 1).padStart(2, "0");
+-  const anio = d.getFullYear();
+-  return `${dia}/${mes}/${anio}`;
+-}
+-
+ // ─── Buscador inline (no usa prop "icon" del Input, construido ad-hoc) ───────
+ 
+ function SearchInput({ value, onChange }) {
+@@ -57,7 +33,7 @@ function SearchInput({ value, onChange }) {
+ // ─── Columnas de la tabla ─────────────────────────────────────────────────────
+ 
+ const TABLE_COLUMNS = [
+-  { key: "id", label: "N.º Transacción", className: "font-mono text-xs text-white" },
++  { key: "numero", label: "N.º Transacción", className: "font-mono text-xs text-white" },
+   { key: "usuario", label: "Usuario", className: "text-white" },
+   { key: "rol", label: "Rol", className: "text-[#A8A8AA]" },
+   {
+@@ -67,18 +43,11 @@ const TABLE_COLUMNS = [
+     render: (item) => `$${item.monto.toLocaleString("es-AR")}`,
+   },
+   { key: "metodo", label: "Método", className: "text-[#A8A8AA]" },
+-  {
+-    key: "fecha",
+-    label: "Fecha",
+-    className: "text-[#A8A8AA]",
+-    render: (item) => formatFecha(item.fecha),
+-  },
++  { key: "fecha", label: "Fecha", className: "text-[#A8A8AA]" },
+   {
+     key: "estado",
+     label: "Estado",
+-    render: (item) => (
+-      <Badge variant={getStatusVariant(item.estado)}>{item.estado}</Badge>
+-    ),
++    render: (item) => <Badge variant={item.estadoVariant}>{item.estado}</Badge>,
+   },
+   {
+     key: "acciones",
+@@ -105,22 +74,27 @@ const TABLE_COLUMNS = [
+ // ─── Página principal ─────────────────────────────────────────────────────────
+ 
+ export default function AdminTransactionsPage() {
+-  const [searchTerm, setSearchTerm] = useState("");
+-
+-  // CA02 — Filtrado dinámico por número de transacción
+-  const filteredTransactions = mockTransactions.filter((trx) =>
+-    trx.id.toLowerCase().includes(searchTerm.toLowerCase())
+-  );
++  const {
++    searchTerm,
++    setSearchTerm,
++    transactions,
++    totalCount,
++    page,
++    totalPages,
++    setPage,
++    isLoading,
++    error,
++    refetch,
++  } = useTransactionsData();
+ 
+   // Determinar el empty state correcto (CA02 / CA05)
+-  const emptyTitle =
+-    searchTerm.length > 0
+-      ? "No se encontraron resultados"
+-      : "No hay transacciones registradas";
+-  const emptyDescription =
+-    searchTerm.length > 0
+-      ? `No hay transacciones que coincidan con "${searchTerm}".`
+-      : "Cuando se realicen transacciones, aparecerán en este listado.";
++  const hasSearch = searchTerm.trim().length > 0;
++  const emptyTitle = hasSearch
++    ? "No se encontraron resultados"
++    : "No hay transacciones registradas";
++  const emptyDescription = hasSearch
++    ? `No hay transacciones que coincidan con "${searchTerm}".`
++    : "Cuando se realicen transacciones, aparecerán en este listado.";
+ 
+   return (
+     <div className="flex flex-col gap-6">
+@@ -148,6 +122,24 @@ export default function AdminTransactionsPage() {
+         </button>
+       </div>
+ 
++      {/* Manejo de error con reintento */}
++      {error && (
++        <div
++          role="alert"
++          className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-[6px] border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400"
++        >
++          <span>{error}</span>
++          <button
++            type="button"
++            onClick={refetch}
++            className="flex items-center gap-2 rounded-[6px] bg-red-500/20 px-3 py-1.5 text-xs font-semibold text-red-300 transition-colors hover:bg-red-500/30 cursor-pointer"
++          >
++            <ArrowPathIcon className="h-4 w-4" />
++            Reintentar
++          </button>
++        </div>
++      )}
++
+       {/* Buscador + Contador — CA02 */}
+       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+         <SearchInput
+@@ -155,7 +147,7 @@ export default function AdminTransactionsPage() {
+           onChange={(e) => setSearchTerm(e.target.value)}
+         />
+         <p className="shrink-0 text-sm text-[#A8A8AA]">
+-          Mostrando {filteredTransactions.length} de {mockTransactions.length} transacciones
++          Mostrando {isLoading ? "…" : transactions.length} de {isLoading ? "…" : totalCount} transacciones
+         </p>
+       </div>
+ 
+@@ -163,7 +155,8 @@ export default function AdminTransactionsPage() {
+       <div className="overflow-hidden rounded-[6px] border border-[#323232] bg-[#292929]">
+         <DataTable
+           columns={TABLE_COLUMNS}
+-          data={filteredTransactions}
++          data={transactions}
++          isLoading={isLoading}
+           emptyState={
+             <EmptyState
+               icon={CreditCardIcon}
+@@ -173,6 +166,8 @@ export default function AdminTransactionsPage() {
+           }
+         />
+       </div>
++
++      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+     </div>
+   );
+-}
++}
+diff --git a/frontend/src/features/transactions/services/transactionsService.js b/frontend/src/features/transactions/services/transactionsService.js
+new file mode 100644
+index 0000000..e6fbe9d
+--- /dev/null
++++ b/frontend/src/features/transactions/services/transactionsService.js
+@@ -0,0 +1,21 @@
++import { api } from "../../../libs/axios";
++
++/**
++ * transactionsService.js — Capa de servicios de transacciones (rol administrador).
++ * Endpoint: /api/v1/admin/transactions (solo lectura).
++ */
++
++/**
++ * Lista paginada de transacciones.
++ * @param {object} [params]
++ * @param {string} [params.search] - Número de transacción (126, TRX-000126) o UUID completo.
++ * @param {number} [params.page=1]
++ * @param {number} [params.limit=10]
++ * @returns {Promise<{items: Array, meta: {totalCount: number, page: number, limit: number, hasMore: boolean}}>}
++ */
++export async function fetchTransactions({ search, page = 1, limit = 10 } = {}) {
++  const { data } = await api.get("/admin/transactions", {
++    params: { search: search?.trim() || undefined, page, limit },
++  });
++  return data;
++}
+diff --git a/frontend/src/features/transactions/utils/transactionsMappers.js b/frontend/src/features/transactions/utils/transactionsMappers.js
+new file mode 100644
+index 0000000..af40604
+--- /dev/null
++++ b/frontend/src/features/transactions/utils/transactionsMappers.js
+@@ -0,0 +1,53 @@
++const TIMEZONE = "America/Argentina/Buenos_Aires";
++
++const dateFormatter = new Intl.DateTimeFormat("es-AR", {
++  timeZone: TIMEZONE,
++  day: "2-digit",
++  month: "2-digit",
++  year: "numeric",
++});
++
++const METHOD_LABELS = {
++  cash: "Efectivo",
++  mercadopago: "MercadoPago",
++  transfer: "Transferencia",
++  credit_card: "Tarjeta de crédito",
++};
++
++const STATUS_LABELS = {
++  paid: { estado: "COMPLETADO", estadoVariant: "success" },
++  pending: { estado: "PENDIENTE", estadoVariant: "warning" },
++  partial: { estado: "PARCIAL", estadoVariant: "warning" },
++  refunded: { estado: "REEMBOLSADO", estadoVariant: "default" },
++};
++
++const ROLE_LABELS = {
++  client: "Cliente",
++  professional: "Profesional",
++};
++
++/** Transacción de la API → fila de la tabla. */
++export function mapTransaction(transaction) {
++  const state = STATUS_LABELS[transaction.status] ?? STATUS_LABELS.pending;
++  return {
++    id: transaction.id,
++    numero: transaction.transactionNumber,
++    usuario: transaction.user?.name ?? "—",
++    rol: ROLE_LABELS[transaction.user?.role] ?? "—",
++    monto: transaction.amount,
++    metodo: METHOD_LABELS[transaction.method] ?? transaction.method,
++    fecha: dateFormatter.format(new Date(transaction.createdAt)),
++    ...state,
++  };
++}
++
++/** Mensaje legible según el error devuelto por la API. */
++export function getTransactionsErrorMessage(error) {
++  const status = error?.response?.status;
++  if (status === 403) return "No tenés permisos de administrador para ver las transacciones.";
++  if (status === 401) return "Tu sesión expiró. Volvé a iniciar sesión.";
++  return (
++    error?.response?.data?.error?.message ||
++    "No se pudieron cargar las transacciones."
++  );
++}
+diff --git a/frontend/src/features/users/components/UserRow.jsx b/frontend/src/features/users/components/UserRow.jsx
+index 4ca3dcb..dff57f6 100644
+--- a/frontend/src/features/users/components/UserRow.jsx
++++ b/frontend/src/features/users/components/UserRow.jsx
+@@ -42,8 +42,11 @@ export default function UserRow({
+       }`}
+     >
+       {/* ── ID / N.º de Orden ── */}
+-      <td className="px-4 py-3.5 font-mono text-xs font-semibold text-white tracking-wider">
+-        {user.id}
++      <td
++        className="px-4 py-3.5 font-mono text-xs font-semibold text-white tracking-wider"
++        title={user.id}
++      >
++        {user.displayId ?? user.id}
+       </td>
+ 
+       {/* ── Usuario (Nombre + Badge de Estado) ── */}
+diff --git a/frontend/src/features/users/components/UsersPanel.jsx b/frontend/src/features/users/components/UsersPanel.jsx
+index 172b61f..42f3bd9 100644
+--- a/frontend/src/features/users/components/UsersPanel.jsx
++++ b/frontend/src/features/users/components/UsersPanel.jsx
+@@ -1,5 +1,6 @@
+ import React from "react";
+ import SearchInput from "../../../components/ui/SearchInput";
++import Pagination from "../../../components/ui/Pagination";
+ import UsersTable from "./UsersTable";
+ import UsersEmptyState from "./UsersEmptyState";
+ import { TAB_CONFIG } from "../constants/users.constants";
+@@ -8,7 +9,12 @@ import { TAB_CONFIG } from "../constants/users.constants";
+  * UsersPanel — Contenedor de un panel de usuarios (Profesionales / Clientes / Administradores).
+  *
+  * @param {string} panelKey - Clave del panel ("profesionales" | "clientes" | "administradores").
+- * @param {Array} users - Lista de usuarios filtrados para este panel.
++ * @param {Array} users - Usuarios de la página actual.
++ * @param {number} totalCount - Total de usuarios que coinciden con la búsqueda (todas las páginas).
++ * @param {number} page - Página actual.
++ * @param {number} totalPages - Cantidad total de páginas.
++ * @param {function} onPageChange - Callback al elegir otra página.
++ * @param {boolean} isLoading - Si es true, muestra el indicador de carga en lugar de la lista.
+  * @param {string} searchTerm - Término de búsqueda actual para este panel.
+  * @param {function} onSearchChange - Callback al cambiar la búsqueda.
+  * @param {function} onSuspend - Callback al suspender.
+@@ -18,6 +24,11 @@ import { TAB_CONFIG } from "../constants/users.constants";
+ export default function UsersPanel({
+   panelKey,
+   users = [],
++  totalCount = 0,
++  page = 1,
++  totalPages = 1,
++  onPageChange,
++  isLoading = false,
+   searchTerm = "",
+   onSearchChange,
+   onSuspend,
+@@ -49,19 +60,26 @@ export default function UsersPanel({
+       {/* ── Contador Contextual (CA02) ── */}
+       <div>
+         <p className="text-sm font-semibold text-white">
+-          Se encontraron {users.length} {config.pluralLabel}
++          Se encontraron {isLoading ? "…" : totalCount} {config.pluralLabel}
+         </p>
+       </div>
+ 
+-      {/* ── Contenido: Tabla o Empty State (CA05, CA07, CA08) ── */}
+-      {users.length > 0 ? (
+-        <UsersTable
+-          users={users}
+-          isReadOnly={isReadOnly}
+-          onSuspend={(id) => onSuspend(panelKey, id)}
+-          onActivate={(id) => onActivate(panelKey, id)}
+-          onDelete={(id) => onDelete(panelKey, id)}
+-        />
++      {/* ── Contenido: Carga, Tabla o Empty State (CA05, CA07, CA08) ── */}
++      {isLoading ? (
++        <div className="flex h-64 items-center justify-center">
++          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#F78736] border-t-transparent" />
++        </div>
++      ) : users.length > 0 ? (
++        <>
++          <UsersTable
++            users={users}
++            isReadOnly={isReadOnly}
++            onSuspend={(id) => onSuspend(panelKey, id)}
++            onActivate={(id) => onActivate(panelKey, id)}
++            onDelete={(id) => onDelete(panelKey, id)}
++          />
++          <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} />
++        </>
+       ) : (
+         <UsersEmptyState
+           title={hasSearch ? "No se encontraron resultados" : config.emptyTitle}
+diff --git a/frontend/src/features/users/hooks/useUsersData.js b/frontend/src/features/users/hooks/useUsersData.js
+index 200514a..1e6635c 100644
+--- a/frontend/src/features/users/hooks/useUsersData.js
++++ b/frontend/src/features/users/hooks/useUsersData.js
+@@ -1,123 +1,127 @@
+-import { useState, useMemo, useCallback } from "react";
++import { useState, useEffect, useCallback } from "react";
+ import { USER_STATES } from "../constants/users.constants";
+-import {
+-  mockProfesionales,
+-  mockClientes,
+-  mockAdministradores,
+-} from "../data/mockUsersData";
++import { fetchUsers, updateUserStatus, deleteUser } from "../services/usersService";
++import { TAB_ROLES, mapUser, getUsersErrorMessage } from "../utils/usersMappers";
++
++export const PAGE_SIZE = 10;
++const SEARCH_DEBOUNCE_MS = 400;
++
++const initialByTab = (value) => ({ profesionales: value, clientes: value, administradores: value });
+ 
+ /**
+- * useUsersData — Hook para manejar el estado de usuarios, filtros de búsqueda,
+- * conteos dinámicos y mutaciones de estado en la pantalla de administración.
++ * useUsersData — Hook de la pantalla de usuarios: carga paginada por rol desde el backend,
++ * búsqueda con espera (debounce) y acciones de bloqueo / eliminación.
+  */
+ export function useUsersData() {
+-  const [usersByTab, setUsersByTab] = useState({
+-    profesionales: mockProfesionales,
+-    clientes: mockClientes,
+-    administradores: mockAdministradores,
+-  });
+-
+   const [activeTab, setActiveTab] = useState("profesionales");
+-  const [searchTerms, setSearchTerms] = useState({
+-    profesionales: "",
+-    clientes: "",
+-    administradores: "",
+-  });
++  const [searchTerms, setSearchTerms] = useState(initialByTab(""));
++  const [appliedSearches, setAppliedSearches] = useState(initialByTab(""));
++  const [pages, setPages] = useState(initialByTab(1));
++  const [reloadToken, setReloadToken] = useState(0);
++  const [actionError, setActionError] = useState(null);
++  const [result, setResult] = useState({ key: null, users: [], totalCount: 0, error: null });
+ 
+-  const [isLoading, setIsLoading] = useState(false);
+-  const [error, setError] = useState(null);
++  const searchTerm = searchTerms[activeTab];
++  const appliedSearch = appliedSearches[activeTab];
++  const page = pages[activeTab];
+ 
+-  // Actualizar término de búsqueda para un panel específico
+-  const setSearchTerm = useCallback((panelKey, term) => {
+-    setSearchTerms((prev) => ({
+-      ...prev,
+-      [panelKey]: term,
+-    }));
+-  }, []);
++  // La búsqueda se aplica recién cuando el usuario deja de escribir.
++  useEffect(() => {
++    const timer = setTimeout(() => {
++      setAppliedSearches((prev) => (prev[activeTab] === searchTerm ? prev : { ...prev, [activeTab]: searchTerm }));
++    }, SEARCH_DEBOUNCE_MS);
++    return () => clearTimeout(timer);
++  }, [searchTerm, activeTab]);
+ 
+-  // Lista sin filtrar del panel activo
+-  const currentTabUsers = usersByTab[activeTab] || [];
+-  const currentSearchTerm = searchTerms[activeTab] || "";
++  // Identifica la consulta actual: mientras result.key no coincida, la pantalla está cargando.
++  const requestKey = `${activeTab}|${appliedSearch}|${page}|${reloadToken}`;
+ 
+-  // Filtrado dinámico por número de orden / ID (CA04)
+-  const filteredUsers = useMemo(() => {
+-    const term = currentSearchTerm.trim().toLowerCase();
+-    if (!term) return currentTabUsers;
+-    return currentTabUsers.filter(
+-      (u) =>
+-        u.id.toLowerCase().includes(term) ||
+-        (u.nombre && u.nombre.toLowerCase().includes(term))
+-    );
+-  }, [currentTabUsers, currentSearchTerm]);
++  useEffect(() => {
++    let ignore = false;
++    fetchUsers({ role: TAB_ROLES[activeTab], search: appliedSearch, page, limit: PAGE_SIZE })
++      .then((data) => {
++        if (ignore) return;
++        setResult({ key: requestKey, users: data.items.map(mapUser), totalCount: data.meta.totalCount, error: null });
++      })
++      .catch((err) => {
++        if (ignore) return;
++        setResult({
++          key: requestKey,
++          users: [],
++          totalCount: 0,
++          error: getUsersErrorMessage(err, "No se pudieron cargar los usuarios."),
++        });
++      });
++    return () => {
++      ignore = true;
++    };
++  }, [activeTab, appliedSearch, page, requestKey]);
+ 
+-  // Contador total de usuarios registrados en la plataforma (CA02)
+-  const totalUsersCount = useMemo(() => {
+-    return (
+-      usersByTab.profesionales.filter((u) => u.estado !== USER_STATES.ELIMINADO).length +
+-      usersByTab.clientes.filter((u) => u.estado !== USER_STATES.ELIMINADO).length +
+-      usersByTab.administradores.filter((u) => u.estado !== USER_STATES.ELIMINADO).length
+-    );
+-  }, [usersByTab]);
++  const isLoading = result.key !== requestKey;
++  const totalPages = Math.max(1, Math.ceil(result.totalCount / PAGE_SIZE));
+ 
+-  // Cambiar estado a Suspendido (CA06)
+-  const handleSuspend = useCallback((panelKey, id) => {
+-    setUsersByTab((prev) => ({
+-      ...prev,
+-      [panelKey]: prev[panelKey].map((user) =>
+-        user.id === id ? { ...user, estado: USER_STATES.SUSPENDIDO } : user
+-      ),
+-    }));
++  const setSearchTerm = useCallback((panelKey, term) => {
++    setSearchTerms((prev) => ({ ...prev, [panelKey]: term }));
++    setPages((prev) => ({ ...prev, [panelKey]: 1 }));
+   }, []);
+ 
+-  // Cambiar estado a Activo (CA06)
+-  const handleActivate = useCallback((panelKey, id) => {
+-    setUsersByTab((prev) => ({
+-      ...prev,
+-      [panelKey]: prev[panelKey].map((user) =>
+-        user.id === id ? { ...user, estado: USER_STATES.ACTIVO } : user
+-      ),
+-    }));
+-  }, []);
++  const setPage = useCallback(
++    (nextPage) => setPages((prev) => ({ ...prev, [activeTab]: nextPage })),
++    [activeTab],
++  );
+ 
+-  // Cambiar estado a Eliminado (CA06)
+-  const handleDelete = useCallback((panelKey, id) => {
+-    setUsersByTab((prev) => ({
+-      ...prev,
+-      [panelKey]: prev[panelKey].map((user) =>
+-        user.id === id ? { ...user, estado: USER_STATES.ELIMINADO } : user
+-      ),
+-    }));
++  const refetch = useCallback(() => {
++    setActionError(null);
++    setReloadToken((token) => token + 1);
+   }, []);
+ 
+-  // Función de reintento en caso de simulación de error
+-  const refetch = useCallback(() => {
+-    setIsLoading(true);
+-    setError(null);
+-    setTimeout(() => {
+-      setUsersByTab({
+-        profesionales: mockProfesionales,
+-        clientes: mockClientes,
+-        administradores: mockAdministradores,
+-      });
+-      setIsLoading(false);
+-    }, 300);
++  // Cambia el estado de una fila solo después de que el backend confirma.
++  const changeStatus = useCallback(async (id, status, estado) => {
++    setActionError(null);
++    try {
++      await updateUserStatus(id, status);
++      setResult((prev) => ({
++        ...prev,
++        users: prev.users.map((user) => (user.id === id ? { ...user, estado } : user)),
++      }));
++    } catch (err) {
++      setActionError(getUsersErrorMessage(err, "No se pudo actualizar el usuario."));
++    }
+   }, []);
+ 
++  const handleSuspend = useCallback((panelKey, id) => changeStatus(id, "disabled", USER_STATES.SUSPENDIDO), [changeStatus]);
++  const handleActivate = useCallback((panelKey, id) => changeStatus(id, "active", USER_STATES.ACTIVO), [changeStatus]);
++
++  const handleDelete = useCallback(
++    async (panelKey, id) => {
++      setActionError(null);
++      try {
++        await deleteUser(id);
++        // Si era el único de la última página, se retrocede una; si no, se recarga la actual.
++        if (result.users.length === 1 && page > 1) setPage(page - 1);
++        else setReloadToken((token) => token + 1);
++      } catch (err) {
++        setActionError(getUsersErrorMessage(err, "No se pudo eliminar el usuario."));
++      }
++    },
++    [result.users.length, page, setPage],
++  );
++
+   return {
+-    usersByTab,
+     activeTab,
+     setActiveTab,
+     searchTerms,
+     setSearchTerm,
+-    currentSearchTerm,
+-    currentTabUsers,
+-    filteredUsers,
+-    totalUsersCount,
++    users: result.users,
++    totalCount: result.totalCount,
++    page,
++    totalPages,
++    setPage,
+     handleSuspend,
+     handleActivate,
+     handleDelete,
+     isLoading,
+-    error,
++    error: result.error || actionError,
+     refetch,
+   };
+ }
+diff --git a/frontend/src/features/users/pages/AdminUsersPage.jsx b/frontend/src/features/users/pages/AdminUsersPage.jsx
+index 30f4a4b..f7c0de8 100644
+--- a/frontend/src/features/users/pages/AdminUsersPage.jsx
++++ b/frontend/src/features/users/pages/AdminUsersPage.jsx
+@@ -26,7 +26,11 @@ export default function AdminUsersPage() {
+     setActiveTab,
+     searchTerms,
+     setSearchTerm,
+-    filteredUsers,
++    users,
++    totalCount,
++    page,
++    totalPages,
++    setPage,
+     handleSuspend,
+     handleActivate,
+     handleDelete,
+@@ -95,23 +99,22 @@ export default function AdminUsersPage() {
+         </div>
+       )}
+ 
+-      {/* ── Estado de Carga (CA07) ── */}
+-      {isLoading ? (
+-        <div className="flex h-64 items-center justify-center">
+-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#F78736] border-t-transparent" />
+-        </div>
+-      ) : (
+-        /* ── Panel Activo (CA04, CA05, CA06, CA07, CA08) ── */
+-        <UsersPanel
+-          panelKey={activeTab}
+-          users={filteredUsers}
+-          searchTerm={searchTerms[activeTab] || ""}
+-          onSearchChange={setSearchTerm}
+-          onSuspend={handleSuspend}
+-          onActivate={handleActivate}
+-          onDelete={handleDelete}
+-        />
+-      )}
++      {/* ── Panel Activo (CA04, CA05, CA06, CA07, CA08). La carga se muestra dentro del panel
++           para que el buscador no se desmonte (y pierda el foco) mientras se escribe. ── */}
++      <UsersPanel
++        panelKey={activeTab}
++        users={users}
++        totalCount={totalCount}
++        page={page}
++        totalPages={totalPages}
++        onPageChange={setPage}
++        isLoading={isLoading}
++        searchTerm={searchTerms[activeTab] || ""}
++        onSearchChange={setSearchTerm}
++        onSuspend={handleSuspend}
++        onActivate={handleActivate}
++        onDelete={handleDelete}
++      />
+     </div>
+   );
+-}
++}
+diff --git a/frontend/src/features/users/services/usersService.js b/frontend/src/features/users/services/usersService.js
+index e0b6793..420cd76 100644
+--- a/frontend/src/features/users/services/usersService.js
++++ b/frontend/src/features/users/services/usersService.js
+@@ -1,48 +1,38 @@
++import { api } from "../../../libs/axios";
++
+ /**
+- * usersService.js — Capa de servicios para gestión de usuarios.
+- * En esta etapa utiliza mocks locales; preparado para futura conexión HTTP.
++ * usersService.js — Capa de servicios para gestión de usuarios (rol administrador).
++ * Endpoints: /api/v1/admin/users
+  */
+ 
+-import {
+-  mockProfesionales,
+-  mockClientes,
+-  mockAdministradores,
+-} from "../data/mockUsersData";
+-
+ /**
+- * Obtiene todos los usuarios agrupados o iniciales.
++ * Lista paginada de usuarios de un rol.
++ * @param {object} params
++ * @param {"client"|"professional"|"administrator"} params.role
++ * @param {string} [params.search] - Nombre/apellido o UUID completo.
++ * @param {number} [params.page=1]
++ * @param {number} [params.limit=10]
++ * @returns {Promise<{items: Array, meta: {totalCount: number, page: number, limit: number, hasMore: boolean}}>}
+  */
+-export async function fetchAllUsers() {
+-  // Simulación de latencia de red mínima
+-  return new Promise((resolve) => {
+-    setTimeout(() => {
+-      resolve({
+-        profesionales: [...mockProfesionales],
+-        clientes: [...mockClientes],
+-        administradores: [...mockAdministradores],
+-      });
+-    }, 150);
++export async function fetchUsers({ role, search, page = 1, limit = 10 }) {
++  const { data } = await api.get("/admin/users", {
++    params: { role, search: search?.trim() || undefined, page, limit },
+   });
++  return data;
+ }
+ 
+ /**
+- * Actualiza el estado de un usuario.
++ * Bloquea (disabled) o desbloquea (active) un usuario.
+  */
+-export async function updateUserStatus(userId, newStatus) {
+-  return new Promise((resolve) => {
+-    setTimeout(() => {
+-      resolve({ success: true, userId, newStatus });
+-    }, 100);
+-  });
++export async function updateUserStatus(userId, status) {
++  const { data } = await api.patch(`/admin/users/${userId}/status`, { status });
++  return data;
+ }
+ 
+ /**
+- * Elimina un usuario.
++ * Elimina un usuario (borrado lógico en el backend).
+  */
+ export async function deleteUser(userId) {
+-  return new Promise((resolve) => {
+-    setTimeout(() => {
+-      resolve({ success: true, userId });
+-    }, 100);
+-  });
++  const { data } = await api.delete(`/admin/users/${userId}`);
++  return data;
+ }
+diff --git a/frontend/src/features/users/utils/usersMappers.js b/frontend/src/features/users/utils/usersMappers.js
+new file mode 100644
+index 0000000..a30ee09
+--- /dev/null
++++ b/frontend/src/features/users/utils/usersMappers.js
+@@ -0,0 +1,59 @@
++import { USER_STATES } from "../constants/users.constants";
++
++/** Pestaña de la pantalla → rol que entiende el backend. */
++export const TAB_ROLES = {
++  profesionales: "professional",
++  clientes: "client",
++  administradores: "administrator",
++};
++
++const STATUS_LABELS = {
++  active: USER_STATES.ACTIVO,
++  disabled: USER_STATES.SUSPENDIDO,
++  deleted: USER_STATES.ELIMINADO,
++};
++
++const ROLE_LABELS = {
++  client: "Cliente",
++  professional: "Profesional",
++  administrator: "Administrador",
++};
++
++const TIMEZONE = "America/Argentina/Buenos_Aires";
++const SHORT_ID_LENGTH = 8;
++
++const dateFormatter = new Intl.DateTimeFormat("es-AR", {
++  timeZone: TIMEZONE,
++  day: "2-digit",
++  month: "2-digit",
++  year: "numeric",
++});
++
++const timeFormatter = new Intl.DateTimeFormat("es-AR", {
++  timeZone: TIMEZONE,
++  hour: "2-digit",
++  minute: "2-digit",
++  hour12: false,
++});
++
++/** Usuario de la API → fila de la tabla. */
++export function mapUser(user) {
++  const createdAt = new Date(user.createdAt);
++  return {
++    id: user.id,
++    displayId: user.id.slice(0, SHORT_ID_LENGTH).toUpperCase(),
++    nombre: user.name,
++    rol: ROLE_LABELS[user.role] ?? user.role,
++    fecha: dateFormatter.format(createdAt),
++    hora: timeFormatter.format(createdAt),
++    estado: STATUS_LABELS[user.status] ?? USER_STATES.ACTIVO,
++  };
++}
++
++/** Mensaje legible según el error devuelto por la API. */
++export function getUsersErrorMessage(error, fallback) {
++  const status = error?.response?.status;
++  if (status === 403) return "No tenés permisos de administrador para realizar esta acción.";
++  if (status === 401) return "Tu sesión expiró. Volvé a iniciar sesión.";
++  return error?.response?.data?.error?.message || fallback;
++}
+diff --git a/frontend/vite.config.js b/frontend/vite.config.js
+index 27db6c2..71a8e6b 100644
+--- a/frontend/vite.config.js
++++ b/frontend/vite.config.js
+@@ -10,6 +10,11 @@ export default defineConfig({
+   ],
+   server: {
+     host: '0.0.0.0', // '0.0.0.0' en lugar de '127.0.0.1' para que se exponga en el contenedor
++    // En Windows (repo fuera de WSL2) Docker no propaga los eventos de archivo: sin polling, el hot reload no ve los cambios.
++    watch: {
++      usePolling: true,
++      interval: 500
++    },
+     proxy: {
+       '/api': process.env.BACKEND_URL || 'http://127.0.0.1:3000'
+     }
