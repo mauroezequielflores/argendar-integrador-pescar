@@ -56,13 +56,8 @@ export default function AdminLayout() {
 
   ];
 
-  const adminDisplayName = user?.lastName && user?.name
-    ? `${user.lastName} ${user.name}`
-    : "Apellido Nombre";
-
-  const adminInitials = user?.lastName
-    ? user.lastName.charAt(0).toUpperCase()
-    : "A";
+  const adminDisplayName = "Administrador";
+  const adminInitials = "A";
 
   return (
     <div className="flex flex-col h-screen bg-[#202020] text-[#FFFFFF] font-sans overflow-hidden">
