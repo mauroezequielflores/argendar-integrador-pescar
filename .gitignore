@@ -91,9 +91,10 @@ skills-lock.json
 .agents/
 
 # --- Documentación ---
-documentacion/
-docs/
-context/
+/documentacion/
+/docs/
+/context/
+/prueba/
 
 mcp.json
 # --- Claude Code (config local privada) ---
